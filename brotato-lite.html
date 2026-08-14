@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Brotato Lite</title>
+<style>
+  :root{
+    --bg:#14100e; --panel:#241c17; --panel2:#2f251e; --line:#4a3a2c;
+    --txt:#f2e6d8; --dim:#a4907c; --gold:#f0b429; --good:#7ec850; --bad:#e05a5a;
+    --t1:#9aa0a6; --t2:#5aa9e6; --t3:#b26be0; --t4:#f0b429;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);
+    font-family:"Trebuchet MS",Verdana,system-ui,sans-serif;overflow:hidden;
+    -webkit-user-select:none;user-select:none}
+  #wrap{position:relative;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}
+  #stage{position:relative;width:min(100vw,177.78vh);height:min(56.25vw,100vh)}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block;image-rendering:pixelated;background:#1b1613}
+
+  /* ---------- HUD ---------- */
+  #hud{position:absolute;inset:0;pointer-events:none;font-size:clamp(10px,1.15vh,15px)}
+  .hudTop{position:absolute;top:1.2%;left:50%;transform:translateX(-50%);
+    display:flex;gap:1.4em;align-items:center;background:rgba(20,16,14,.78);
+    border:2px solid var(--line);border-radius:.5em;padding:.35em 1em}
+  .hudTop b{color:var(--gold)}
+  #timer{font-size:1.5em;font-weight:bold;min-width:2.4em;text-align:center}
+  .hudLeft{position:absolute;top:1.2%;left:1%;width:19em}
+  .bar{height:1.5em;background:#000;border:2px solid var(--line);border-radius:.35em;overflow:hidden;position:relative}
+  .bar > i{position:absolute;inset:0;transform-origin:left;display:block}
+  .bar > span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:.85em;font-weight:bold;text-shadow:0 1px 2px #000}
+  #hpFill{background:linear-gradient(#e05a5a,#a02c2c)}
+  #xpBar{height:1.05em;margin-top:.3em}
+  #xpFill{background:linear-gradient(#5aa9e6,#2f6ea8)}
+  .hudRight{position:absolute;top:1.2%;right:1%;width:14em;text-align:right}
+  .wslot{background:rgba(20,16,14,.72);border:2px solid var(--line);border-radius:.35em;
+    padding:.15em .5em;margin-bottom:.25em;font-size:.9em;display:flex;justify-content:space-between;gap:.5em}
+  .hint{position:absolute;bottom:1.2%;left:50%;transform:translateX(-50%);color:var(--dim);font-size:.9em}
+
+  /* ---------- overlays ---------- */
+  .ov{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
+    background:rgba(12,9,8,.93);z-index:10;font-size:clamp(10px,1.2vh,16px);padding:1.5em;overflow:auto}
+  .ov.on{display:flex}
+  h1{font-size:3.4em;margin:0 0 .1em;color:var(--gold);letter-spacing:.06em;text-shadow:0 .06em 0 #7a5410}
+  h2{font-size:1.9em;margin:.1em 0 .6em}
+  .sub{color:var(--dim);margin-bottom:1.4em;text-align:center;max-width:46em;line-height:1.5}
+  button{font-family:inherit;font-size:1em;color:var(--txt);background:var(--panel2);
+    border:2px solid var(--line);border-radius:.4em;padding:.5em 1.1em;cursor:pointer}
+  button:hover:not(:disabled){background:#3c2f25;border-color:var(--gold)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  .big{font-size:1.35em;padding:.6em 1.8em;background:#3e6b2e;border-color:#6ab04c}
+  .big:hover:not(:disabled){background:#4f8a3a;border-color:var(--good)}
+  .row{display:flex;gap:.8em;flex-wrap:wrap;justify-content:center}
+
+  .cards{display:flex;gap:1em;flex-wrap:wrap;justify-content:center;max-width:78em}
+  .card{width:17em;background:var(--panel);border:2px solid var(--line);border-radius:.6em;
+    padding:.9em;cursor:pointer;text-align:left;transition:transform .08s}
+  .card:hover{border-color:var(--gold);transform:translateY(-3px)}
+  .card h3{margin:0 0 .35em;font-size:1.25em}
+  .card .flav{color:var(--dim);font-size:.9em;margin-bottom:.5em;font-style:italic}
+  .mod{font-size:.95em;line-height:1.55}
+  .up{color:var(--good)} .dn{color:var(--bad)}
+
+  /* ---------- shop ---------- */
+  #shop{justify-content:flex-start;padding:1.2em}
+  .shopHead{display:flex;align-items:center;gap:1.2em;width:100%;max-width:74em;margin-bottom:.7em;flex-wrap:wrap}
+  .shopHead h2{margin:0}
+  .money{font-size:1.5em;color:var(--gold);font-weight:bold}
+  .shopGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:.7em;width:100%;max-width:74em}
+  .sItem{background:var(--panel);border:2px solid var(--line);border-radius:.5em;padding:.7em;
+    display:flex;flex-direction:column;gap:.35em;min-height:13em;position:relative}
+  .sItem.locked{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+  .sItem.sold{opacity:.35}
+  .sName{font-weight:bold;font-size:1.12em;display:flex;justify-content:space-between;gap:.4em;align-items:baseline}
+  .tier{font-size:.72em;padding:.05em .45em;border-radius:.3em;border:1px solid currentColor;white-space:nowrap}
+  .kind{color:var(--dim);font-size:.85em}
+  .sBtns{margin-top:auto;display:flex;gap:.4em}
+  .sBtns button{flex:1;padding:.4em;font-size:.95em}
+  .buy{background:#3e6b2e;border-color:#6ab04c}
+  .lock{flex:0 0 3.2em}
+  .owned{width:100%;max-width:74em;margin-top:.8em;display:grid;grid-template-columns:1fr 1fr;gap:.8em}
+  .box{background:var(--panel);border:2px solid var(--line);border-radius:.5em;padding:.6em}
+  .box h4{margin:0 0 .4em;color:var(--dim);font-size:.95em;letter-spacing:.08em;text-transform:uppercase}
+  .chips{display:flex;flex-wrap:wrap;gap:.35em}
+  .chip{background:var(--panel2);border:1px solid var(--line);border-radius:.3em;padding:.15em .5em;
+    font-size:.88em;cursor:pointer;white-space:nowrap}
+  .chip:hover{border-color:var(--bad)}
+  .chip small{color:var(--dim)}
+
+  /* ---------- stats panel ---------- */
+  #stats{z-index:12}
+  .statGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.15em 2.2em;
+    background:var(--panel);border:2px solid var(--line);border-radius:.6em;padding:1em 1.4em;font-size:1.05em}
+  .sRow{display:flex;justify-content:space-between;gap:2em;padding:.12em 0;border-bottom:1px dashed #382c22}
+  .sRow b{color:var(--gold)}
+  .note{color:var(--dim);font-size:.85em;max-width:40em;text-align:center;margin-top:.8em;line-height:1.5}
+  .tag{position:absolute;top:.5em;right:.5em;font-size:.7em;color:var(--dim)}
+</style>
+</head>
+<body>
+<div id="wrap"><div id="stage">
+  <canvas id="cv" width="1280" height="720"></canvas>
+
+  <div id="hud">
+    <div class="hudLeft">
+      <div class="bar"><i id="hpFill"></i><span id="hpTxt">10 / 10</span></div>
+      <div class="bar" id="xpBar"><i id="xpFill"></i><span id="xpTxt">Lv 1</span></div>
+    </div>
+    <div class="hudTop">
+      <div>Wave <b id="waveNo">1</b></div>
+      <div id="timer">20</div>
+      <div>◆ <b id="mats">0</b></div>
+    </div>
+    <div class="hudRight" id="wlist"></div>
+    <div class="hint">WASD / Arrows to move &nbsp;·&nbsp; Tab: stats &nbsp;·&nbsp; Esc: pause</div>
+  </div>
+
+  <!-- MENU -->
+  <div class="ov on" id="menu">
+    <h1>BROTATO LITE</h1>
+    <div class="sub">A stripped-down auto-shooter. You only move — your weapons fire themselves.
+      Survive 20 waves, spend materials between waves, stack stats until you're unkillable.</div>
+    <h2>Pick your potato</h2>
+    <div class="cards" id="charCards"></div>
+    <div style="margin-top:1.4em" class="row">
+      <div>Danger:</div>
+      <button data-d="0" class="dbtn">0 — Normal</button>
+      <button data-d="1" class="dbtn">1 — Hard</button>
+      <button data-d="2" class="dbtn">2 — Brutal</button>
+    </div>
+    <div class="sub" style="margin:1em 0 0" id="menuPick">Selected: —</div>
+    <button class="big" id="startBtn" style="margin-top:.8em" disabled>START RUN</button>
+  </div>
+
+  <!-- LEVEL UP -->
+  <div class="ov" id="levelup">
+    <h2>Level <span id="luLevel">2</span> — choose an upgrade</h2>
+    <div class="sub" id="luLeft"></div>
+    <div class="cards" id="luCards"></div>
+  </div>
+
+  <!-- SHOP -->
+  <div class="ov" id="shop">
+    <div class="shopHead">
+      <h2 id="shopTitle">Shop</h2>
+      <div class="money">◆ <span id="shopMats">0</span></div>
+      <button id="rerollBtn">Reroll (1)</button>
+      <button id="statsBtn2">Stats</button>
+      <div style="flex:1"></div>
+      <button class="big" id="nextWave">Next Wave ▶</button>
+    </div>
+    <div class="sub" id="waveReport" style="margin:0 0 .6em;text-align:left;width:100%;max-width:74em"></div>
+    <div class="shopGrid" id="shopGrid"></div>
+    <div class="owned">
+      <div class="box"><h4>Weapons (<span id="wCount">0</span>/6) — click to sell</h4><div class="chips" id="wChips"></div></div>
+      <div class="box"><h4>Items — click to sell</h4><div class="chips" id="iChips"></div></div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="ov" id="stats">
+    <h2>Stats</h2>
+    <div class="statGrid" id="statGrid"></div>
+    <div class="note" id="statNote"></div>
+    <button style="margin-top:1.2em" id="statsClose">Close (Tab)</button>
+  </div>
+
+  <!-- PAUSE -->
+  <div class="ov" id="pause">
+    <h2>Paused</h2>
+    <div class="row">
+      <button class="big" id="resumeBtn">Resume</button>
+      <button id="statsBtn3">Stats</button>
+      <button id="quitBtn">Abandon run</button>
+    </div>
+  </div>
+
+  <!-- END -->
+  <div class="ov" id="end">
+    <h1 id="endTitle">GAME OVER</h1>
+    <div class="sub" id="endText"></div>
+    <button class="big" id="againBtn">Main Menu</button>
+  </div>
+</div></div>
+
+<script>
+"use strict";
+/* =========================================================================
+   BROTATO LITE — a simplified single-file clone of Brotato (Blobfish).
+   Mechanics mirrored from the real game where it matters:
+     · armor  : dmgMult = 1/(1+0.0666*armor)   → +6.66% EHP per point, always
+     · dodge  : hard cap 60%
+     · atkspd : cooldown/(1+as/100), floored at 1/12s  (12 attacks/sec cap)
+     · regen  : 0.20 HP/s for the 1st point, +0.089 HP/s per point after
+     · harvest: paid at wave end, then grows 5% per activation
+     · waves  : 20s, +5s each, capped at 60s, wave 20 = 90s
+     · shop   : price = base + wave + base*0.1*wave ; reroll = ⌊.75w⌋+⌊.4w⌋ (+⌊.4w⌋ each)
+   ========================================================================= */
+
+const W = 1280, H = 720;                       // arena = screen, no camera
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const $  = id => document.getElementById(id);
+
+const rand  = (a,b) => a + Math.random()*(b-a);
+const randi = (a,b) => Math.floor(rand(a,b+1));
+const pick  = a => a[(Math.random()*a.length)|0];
+const clamp = (v,a,b) => v<a?a:(v>b?b:v);
+const TAU = Math.PI*2;
+
+/* ============================ STAT DEFINITIONS =========================== */
+const STATS = {
+  maxHp:           {name:'Max HP',            pct:false},
+  hpRegen:         {name:'HP Regeneration',   pct:false},
+  lifeSteal:       {name:'Life Steal',        pct:true },
+  damage:          {name:'Damage',            pct:true },
+  meleeDamage:     {name:'Melee Damage',      pct:false},
+  rangedDamage:    {name:'Ranged Damage',     pct:false},
+  elementalDamage: {name:'Elemental Damage',  pct:false},
+  attackSpeed:     {name:'Attack Speed',      pct:true },
+  critChance:      {name:'Crit Chance',       pct:true },
+  engineering:     {name:'Engineering',       pct:false},
+  range:           {name:'Range',             pct:false},
+  armor:           {name:'Armor',             pct:false},
+  dodge:           {name:'Dodge',             pct:true },
+  speed:           {name:'Speed',             pct:true },
+  luck:            {name:'Luck',              pct:true },
+  harvesting:      {name:'Harvesting',        pct:false},
+};
+const STAT_KEYS = Object.keys(STATS);
+const BASE_HP = 14, BASE_SPEED = 250, PICKUP_R = 62;
+
+function modLine(mods){
+  return Object.keys(mods).map(k=>{
+    const v = mods[k], s = STATS[k];
+    return `<div class="${v>0?'up':'dn'}">${v>0?'+':''}${v}${s.pct?'%':''} ${s.name}</div>`;
+  }).join('');
+}
+
+/* ============================== CHARACTERS =============================== */
+const CHARS = [{
+  id:'wellRounded', name:'Well Rounded', flav:'Good at everything, great at nothing.',
+  base:{maxHp:5, speed:5, harvesting:8}, gain:{}, weapon:'pistol',
+  extra:['A clean baseline — every stat scales normally.'],
+},{
+  id:'ranger', name:'Ranger', flav:'Keep your distance. Always.',
+  base:{range:50, maxHp:2}, gain:{rangedDamage:1.5, maxHp:0.85}, weapon:'pistol',
+  noMelee:true,
+  extra:['Ranged Damage gains ×1.5','Max HP gains ×0.85','Cannot equip melee weapons','Hardest of the three — glass cannon'],
+},{
+  id:'brawler', name:'Brawler', flav:'Who needs guns when you have knuckles.',
+  base:{dodge:15, range:-30, rangedDamage:-50}, gain:{meleeDamage:1.25}, weapon:'fist',
+  fistAtkSpeed:0.5,
+  extra:['Melee Damage gains ×1.25','+50% Attack Speed with Fists','Ranged weapons are basically useless'],
+}];
+
+/* =============================== WEAPONS ================================ */
+/* class: melee | ranged | elemental | structure
+   scaling: which damage stat adds flat damage (and by how much)          */
+const WEAPONS = [
+  {id:'fist',  name:'Fist',        cls:'melee',  price:6,  dmg:5,  cd:0.40, range:160, crit:.01, cm:2.0,
+   scale:{meleeDamage:1}, arc:1.1, kb:180, flav:'Punch. Repeat.'},
+  {id:'knife', name:'Knife',       cls:'melee',  price:10, dmg:7,  cd:0.55, range:170, crit:.18, cm:2.0,
+   scale:{meleeDamage:1}, arc:0.8, kb:110, flav:'Precise. Crits often.'},
+  {id:'sword', name:'Sword',       cls:'melee',  price:16, dmg:19, cd:1.05, range:205, crit:.05, cm:2.0,
+   scale:{meleeDamage:1}, arc:1.9, kb:260, flav:'Wide arc, hits the whole crowd.'},
+  {id:'spear', name:'Spear',       cls:'melee',  price:15, dmg:16, cd:0.90, range:285, crit:.08, cm:2.0,
+   scale:{meleeDamage:1}, arc:0.45, kb:200, flav:'Long reach, pierces a line.'},
+
+  {id:'pistol',name:'Pistol',      cls:'ranged', price:11, dmg:11, cd:0.80, range:430, crit:.05, cm:2.0,
+   scale:{rangedDamage:1}, spd:640, flav:'Reliable pop-gun.'},
+  {id:'smg',   name:'SMG',         cls:'ranged', price:15, dmg:5,  cd:0.20, range:370, crit:.03, cm:2.0,
+   scale:{rangedDamage:0.6}, spd:700, spread:.10, flav:'Shreds. Scales poorly.'},
+  {id:'shotgun',name:'Shotgun',    cls:'ranged', price:18, dmg:6,  cd:1.10, range:300, crit:.04, cm:2.0,
+   scale:{rangedDamage:0.5}, spd:600, pellets:5, spread:.34, flav:'5 pellets. Hug them.'},
+  {id:'sniper',name:'Sniper Gun',  cls:'ranged', price:24, dmg:34, cd:1.80, range:620, crit:.25, cm:2.5,
+   scale:{rangedDamage:1.4}, spd:1150, pierce:3, flav:'Slow, huge, pierces 3.'},
+
+  {id:'torch', name:'Torch',       cls:'elemental', price:17, dmg:4, cd:0.16, range:200, crit:0, cm:2.0,
+   scale:{elementalDamage:0.5}, cone:0.55, burn:true, flav:'Cone of fire. Sets things alight.'},
+  {id:'wand',  name:'Wand',        cls:'elemental', price:20, dmg:15, cd:0.85, range:400, crit:.06, cm:2.0,
+   scale:{elementalDamage:1.2}, spd:420, homing:true, flav:'Homing bolt, never misses.'},
+
+  {id:'turret',name:'Turret',      cls:'structure', price:22, dmg:8, cd:0.75, range:420, crit:0, cm:2.0,
+   scale:{engineering:1.6}, spd:620, flav:'A structure. Scales with Engineering only.'},
+];
+const WEAPON_BY_ID = Object.fromEntries(WEAPONS.map(w=>[w.id,w]));
+const TIER_DMG  = [1, 1.55, 2.25, 3.2];
+const TIER_CD   = [1, 0.94, 0.88, 0.82];
+const TIER_COST = [1, 2.4, 5.0, 9.5];
+
+function weaponStats(id, tier){
+  const b = WEAPON_BY_ID[id], t = tier-1;
+  return {...b, tier,
+    dmg: Math.round(b.dmg * TIER_DMG[t]),
+    cd:  b.cd * TIER_CD[t],
+    crit: Math.min(1, b.crit * (1 + t*0.18)),
+    price: Math.round(b.price * TIER_COST[t]),
+  };
+}
+
+/* ================================ ITEMS ================================= */
+const ITEMS = [
+  // ---- Tier 1 ----
+  {id:'bandana',   name:'Bandana',      tier:1, price:11, mods:{range:10}, flav:'Look fast, be fast.'},
+  {id:'coffee',    name:'Coffee',       tier:1, price:13, mods:{speed:6, attackSpeed:4, maxHp:-2}, flav:'Jitters included.'},
+  {id:'leather',   name:'Leather Vest', tier:1, price:13, mods:{armor:2, speed:-3}, flav:'Cheap protection.'},
+  {id:'fertilizer',name:'Fertilizer',   tier:1, price:12, mods:{harvesting:5}, flav:'Grow your own economy.'},
+  {id:'elephant',  name:'Baby Elephant',tier:1, price:14, mods:{maxHp:4, meleeDamage:2}, flav:'Small but heavy.'},
+  {id:'alieneyes', name:'Alien Eyes',   tier:1, price:12, mods:{range:14, critChance:2}, flav:'Sees everything.'},
+  {id:'cigarette', name:'Cigarette',    tier:1, price:12, mods:{hpRegen:2, maxHp:-3}, flav:'Worth it? Debatable.'},
+  {id:'charm',     name:'Lucky Charm',  tier:1, price:12, mods:{luck:12}, flav:'Better loot, better shops.'},
+  {id:'falcon',    name:'Falcon',       tier:1, price:14, mods:{speed:7, attackSpeed:4}, flav:'Swoops.'},
+  {id:'lens',      name:'Lens',         tier:1, price:13, mods:{critChance:5}, flav:'Aim for the soft bits.'},
+  {id:'bat',       name:'Bat',          tier:1, price:14, mods:{lifeSteal:3, meleeDamage:2}, flav:'Drinks the difference.'},
+  {id:'blueprints',name:'Blueprints',   tier:1, price:12, mods:{engineering:3}, flav:'Turrets appreciate this.'},
+  {id:'detector',  name:'Metal Detector',tier:1,price:13, mods:{harvesting:3, luck:6}, flav:'Beep. Beep. Beeeep.'},
+  {id:'gunpowder', name:'Gunpowder',    tier:1, price:14, mods:{rangedDamage:3, damage:4}, flav:'Bang, but louder.'},
+  {id:'heart',     name:'Extra Heart',  tier:1, price:14, mods:{maxHp:6}, flav:'Spare parts.'},
+  {id:'stew',      name:'Hearty Stew',  tier:1, price:13, mods:{maxHp:4, hpRegen:1, speed:-2}, flav:'Sticks to your ribs.'},
+
+  // ---- Tier 2 ----
+  {id:'piggy',     name:'Piggy Bank',   tier:2, price:30, mods:{harvesting:9, luck:10}, flav:'Compounding potato interest.'},
+  {id:'spicy',     name:'Spicy Sauce',  tier:2, price:32, mods:{damage:10, maxHp:-3}, flav:'Hurts you a little too.'},
+  {id:'whetstone', name:'Whetstone',    tier:2, price:31, mods:{meleeDamage:4, attackSpeed:6}, flav:'Sharper, faster.'},
+  {id:'scope',     name:'Scope',        tier:2, price:33, mods:{rangedDamage:4, range:18}, flav:'Reach out.'},
+  {id:'magictorch',name:'Magic Torch',  tier:2, price:33, mods:{elementalDamage:4, damage:6}, flav:'Burns brighter.'},
+  {id:'tail',      name:'Tail',         tier:2, price:30, mods:{dodge:9, speed:-3}, flav:'Better balance.'},
+  {id:'adrenaline',name:'Adrenaline',   tier:2, price:32, mods:{maxHp:6, speed:9}, flav:'Fight AND flight.'},
+  {id:'medikit',   name:'Medikit',      tier:2, price:34, mods:{maxHp:12, hpRegen:3}, flav:'Patch it up.'},
+  {id:'wrench',    name:'Wrench',       tier:2, price:30, mods:{engineering:6, attackSpeed:4}, flav:'Tighten everything.'},
+  {id:'plating',   name:'Riveted Plate',tier:2, price:32, mods:{armor:4, speed:-5}, flav:'Slow and stubborn.'},
+  {id:'fang',      name:'Fang',         tier:2, price:33, mods:{lifeSteal:5, damage:5, maxHp:-4}, flav:'Vampiric.'},
+
+  // ---- Tier 3 ----
+  {id:'ninja',     name:'Ninja Headband',tier:3,price:62, mods:{dodge:13, speed:10, maxHp:-5}, flav:'Untouchable, briefly.'},
+  {id:'scars',     name:'Scars',        tier:3, price:60, mods:{armor:7, hpRegen:3, speed:-9}, flav:'Every one a lesson.'},
+  {id:'alienmagic',name:'Alien Magic',  tier:3, price:66, mods:{elementalDamage:7, damage:13, maxHp:-5}, flav:'Do not read aloud.'},
+  {id:'cyberball', name:'Cyberball',    tier:3, price:64, mods:{critChance:9, range:22, attackSpeed:6}, flav:'Beeps menacingly.'},
+  {id:'belt',      name:'Giant Belt',   tier:3, price:63, mods:{maxHp:16, armor:3, speed:-7}, flav:'Holds everything in.'},
+  {id:'tractor',   name:'Tractor',      tier:3, price:60, mods:{harvesting:17, engineering:4, speed:-6}, flav:'Farm the aliens.'},
+  {id:'focus',     name:'Focus',        tier:3, price:62, mods:{attackSpeed:17, range:-12}, flav:'Tunnel vision.'},
+  {id:'bloodyhand',name:'Bloody Hand',  tier:3, price:64, mods:{lifeSteal:8, meleeDamage:5, maxHp:-8}, flav:'Sticky.'},
+  {id:'silverbullet',name:'Silver Bullet',tier:3,price:66,mods:{rangedDamage:8, critChance:7}, flav:'For special occasions.'},
+
+  // ---- Tier 4 ----
+  {id:'crown',     name:'Crown',        tier:4, price:118, mods:{luck:35, harvesting:16}, flav:'Absolute unit of a potato.'},
+  {id:'padded',    name:'Padded Armor', tier:4, price:124, mods:{armor:11, maxHp:20, speed:-14}, flav:'A walking bunker.'},
+  {id:'stomach',   name:'Extra Stomach',tier:4, price:120, mods:{maxHp:28, hpRegen:6}, flav:'Room for seconds.'},
+  {id:'injection', name:'Injection',    tier:4, price:126, mods:{attackSpeed:22, speed:11, armor:-4}, flav:'Not FDA approved.'},
+  {id:'anvil',     name:'Anvil',        tier:4, price:128, mods:{meleeDamage:13, armor:5, speed:-11}, flav:'Swing responsibly.'},
+  {id:'ashes',     name:'Ashes',        tier:4, price:122, mods:{damage:26, maxHp:-9}, flav:'Everything burns eventually.'},
+  {id:'tongue',    name:'Alien Tongue', tier:4, price:126, mods:{lifeSteal:11, range:22, damage:8}, flav:'Slurp.'},
+  {id:'chameleon', name:'Chameleon',    tier:4, price:120, mods:{dodge:19, luck:15, damage:-8}, flav:'Now you don\'t see me.'},
+];
+const ITEM_BY_ID = Object.fromEntries(ITEMS.map(i=>[i.id,i]));
+
+/* =============================== UPGRADES =============================== */
+/* level-up cards — values straight from Brotato's upgrade table */
+const UPGRADES = [
+  {k:'maxHp',           v:[3,6,9,12]},
+  {k:'hpRegen',         v:[2,3,4,5]},
+  {k:'lifeSteal',       v:[1,2,3,4]},
+  {k:'damage',          v:[5,8,12,16]},
+  {k:'meleeDamage',     v:[2,4,6,8]},
+  {k:'rangedDamage',    v:[1,2,3,4]},
+  {k:'elementalDamage', v:[1,2,3,4]},
+  {k:'attackSpeed',     v:[5,10,15,20]},
+  {k:'critChance',      v:[3,5,7,9]},
+  {k:'engineering',     v:[2,3,4,5]},
+  {k:'range',           v:[15,30,45,60]},
+  {k:'armor',           v:[1,2,3,4]},
+  {k:'dodge',           v:[3,6,9,12]},
+  {k:'speed',           v:[3,6,9,12]},
+  {k:'luck',            v:[5,10,15,20]},
+  {k:'harvesting',      v:[5,8,10,12]},
+];
+const TIER_COL = ['var(--t1)','var(--t2)','var(--t3)','var(--t4)'];
+
+/* =============================== ENEMIES ================================ */
+const ENEMIES = [
+  {id:'baby',    name:'Baby Alien', hp:10, hpPer:4.0, dmg:2, dmgPer:.24, spd:[85,125], r:13, cost:1, mat:1, col:'#7ec850', from:1},
+  {id:'fly',     name:'Fly',        hp:6,  hpPer:2.6, dmg:2, dmgPer:.20, spd:[165,205],r:9,  cost:1, mat:1, col:'#d8e05a', from:2, wob:true},
+  {id:'charger', name:'Charger',    hp:20, hpPer:7.5, dmg:6, dmgPer:.42, spd:[70,95],  r:15, cost:3, mat:2, col:'#e07a3a', from:3, charge:true, noKb:true},
+  {id:'spitter', name:'Spitter',    hp:15, hpPer:6.0, dmg:5, dmgPer:.34, spd:[70,95],  r:14, cost:3, mat:2, col:'#b26be0', from:4, shoot:true},
+  {id:'exploder',name:'Exploder',   hp:16, hpPer:6.0, dmg:9, dmgPer:.46, spd:[115,150],r:14, cost:3, mat:2, col:'#e05a5a', from:5, boom:true},
+  {id:'tank',    name:'Chonk',      hp:70, hpPer:26,  dmg:9, dmgPer:.50, spd:[45,62],  r:23, cost:6, mat:4, col:'#5aa9e6', from:6, noKb:true},
+];
+const ELITE = {id:'elite', name:'ELITE', hp:220, hpPer:62, dmg:8, dmgPer:.38, spd:[62,72], r:34,
+               mat:30, col:'#f0b429', noKb:true, elite:true};
+const DANGER = [
+  {hp:1.00, dmg:1.00, budget:1.00, name:'Normal'},
+  {hp:1.30, dmg:1.20, budget:1.20, name:'Hard'},
+  {hp:1.70, dmg:1.45, budget:1.40, name:'Brutal'},
+];
+
+/* ============================== GAME STATE ============================== */
+let S = null;                       // full run state
+const keys = {};
+let paused = false, statsOpen = false, mode = 'menu';   // menu|playing|levelup|shop|end
+
+function newRun(charId, danger){
+  const ch = CHARS.find(c=>c.id===charId);
+  S = {
+    ch, danger, wave:1, time:0, waveLen:waveLength(1),
+    running:false, spawnBudget:0, spawnAcc:0, spawnTimer:0,
+    eliteWaves: rollEliteWaves(),
+    px:W/2, py:H/2, pvx:0, pvy:0, hp:BASE_HP, r:16, face:0,
+    invul:0, lsCd:0, regenAcc:0, hitFlash:0, shake:0,
+    weapons:[], items:[], upgrades:[],
+    level:1, xp:0, xpNeed:xpFor(1), pendingLevels:0,
+    materials:0, bag:0, dropped:0, harvestMult:1,
+    stats:null, kills:0, dmgDealt:0,
+    enemies:[], bullets:[], ebullets:[], mats:[], parts:[], texts:[], swings:[], turrets:[], drops:[],
+    shopStock:[], rerollCount:0, report:'',
+  };
+  addWeapon(ch.weapon, 1);
+  recompute();
+  S.hp = S.stats.maxHp;
+}
+function xpFor(level){ return Math.round((level+3)*(level+3)*0.82); }
+function waveLength(w){ return w===20 ? 90 : Math.min(20 + (w-1)*5, 60); }
+function rollEliteWaves(){ return [randi(11,12), randi(14,15), randi(17,18)]; }
+
+/* ---- inventory ---- */
+function addWeapon(id, tier){
+  const ex = S.weapons.find(w=>w.id===id && w.tier===tier && tier<4);
+  if(ex){ ex.tier++; refreshWeapon(ex); return 'merge'; }
+  if(S.weapons.length>=6) return 'full';
+  const w = {id, tier, cdLeft:0, uid:Math.random()};
+  refreshWeapon(w); S.weapons.push(w); return 'ok';
+}
+function refreshWeapon(w){ Object.assign(w, weaponStats(w.id, w.tier)); }
+
+function recompute(){
+  const st = {}; for(const k of STAT_KEYS) st[k]=0;
+  st.maxHp = BASE_HP;
+  // character base (not multiplied by its own gain modifiers)
+  for(const k in S.ch.base) st[k] += S.ch.base[k];
+  const gain = S.ch.gain || {};
+  const apply = mods => { for(const k in mods){
+    const v = mods[k];
+    st[k] += (v>0 && gain[k]!==undefined) ? v*gain[k] : v;   // multipliers boost gains only
+  }};
+  for(const it of S.items)    apply(ITEM_BY_ID[it].mods);
+  for(const u of S.upgrades)  apply({[u.k]: u.val});
+  for(const k of STAT_KEYS) st[k] = Math.round(st[k]);
+  st.maxHp = Math.max(1, st.maxHp);
+  S.stats = st;
+  if(S.hp > st.maxHp) S.hp = st.maxHp;
+}
+
+/* ---- derived formulas (the faithful bits) ---- */
+const armorMult   = a => a>=0 ? 1/(1+0.0666*a) : 1 - 0.0666*a;
+const dodgeChance = d => clamp(d,0,60)/100;
+const regenPerSec = r => r<=0 ? 0 : 0.20 + 0.089*(r-1);
+function atkCooldown(w){
+  const as = S.stats.attackSpeed + (S.ch.fistAtkSpeed && w.id==='fist' ? 50 : 0);
+  return Math.max(1/12, w.cd / (1 + as/100));
+}
+function weaponRange(w){
+  if(w.cls==='structure') return w.range;
+  return Math.max(40, w.range + S.stats.range);
+}
+function weaponDamage(w){
+  let flat = 0;
+  for(const k in w.scale) flat += S.stats[k] * w.scale[k];
+  let d = w.dmg + flat;
+  if(w.cls!=='structure') d *= (1 + S.stats.damage/100);   // Damage% never affects structures
+  return Math.max(1, d);
+}
+
+/* ============================== SPAWNING ================================ */
+function startWave(){
+  S.waveLen = waveLength(S.wave);
+  S.time = 0; S.running = true;
+  S.enemies.length=0; S.bullets.length=0; S.ebullets.length=0;
+  S.mats.length=0; S.parts.length=0; S.texts.length=0; S.drops.length=0; S.swings.length=0;
+  S.dropped = 0;
+  S.px = W/2; S.py = H/2; S.pvx=S.pvy=0;
+  // elite waves trade swarm pressure for the boss, like Brotato does
+  const eliteWave = S.eliteWaves.includes(S.wave);
+  S.spawnBudget = Math.round((9 + S.wave*4.6) * DANGER[S.danger].budget * (eliteWave?0.62:1));
+  S.spawnAcc = 0; S.spawnTimer = 0.4;
+  S.eliteSpawned = false;
+  buildTurrets();
+  for(const w of S.weapons) w.cdLeft = Math.random()*0.3;
+  mode='playing';
+  setOv(null);
+}
+function buildTurrets(){
+  S.turrets = S.weapons.filter(w=>w.cls==='structure').map(w=>({
+    x: rand(180,W-180), y: rand(150,H-150), cdLeft:0, w, r:16, ang:0
+  }));
+}
+function edgeSpawn(){
+  const s = randi(0,3), m = 46;
+  if(s===0) return {x:rand(0,W), y:-m};
+  if(s===1) return {x:rand(0,W), y:H+m};
+  if(s===2) return {x:-m,        y:rand(0,H)};
+  return       {x:W+m,           y:rand(0,H)};
+}
+function spawnEnemy(def, sp){
+  const d = DANGER[S.danger];
+  const hp = Math.round((def.hp + def.hpPer*(S.wave-1)) * d.hp);
+  const e = {
+    def, x:sp.x, y:sp.y, vx:0, vy:0, r:def.r,
+    hp, maxHp:hp,
+    dmg: Math.max(1, Math.round((def.dmg + def.dmgPer*(S.wave-1)) * d.dmg)),
+    spd: rand(def.spd[0], def.spd[1]),
+    touchCd:0, flash:0, state:0, t:0, shootCd:rand(1,2.4), burn:0, burnT:0, ang:0,
+  };
+  S.enemies.push(e); return e;
+}
+function updateSpawns(dt){
+  const stopAt = S.waveLen * 0.86;
+  // elite wave: one big guy at ~15% in
+  if(S.eliteWaves.includes(S.wave) && !S.eliteSpawned && S.time > S.waveLen*0.12){
+    S.eliteSpawned = true;
+    const e = spawnEnemy(ELITE, edgeSpawn());
+    e.shockCd = 3.5;
+    toast('ELITE INCOMING', '#f0b429');
+  }
+  if(S.time > stopAt || S.spawnBudget<=0) return;
+  // saturation cap — stop feeding the arena while it's already packed, so a
+  // slow build never gets buried under an un-killable wall of aliens
+  const maxAlive = Math.round((13 + S.wave*1.5) * DANGER[S.danger].budget);
+  if(S.enemies.length >= maxAlive) return;
+  S.spawnTimer -= dt;
+  if(S.spawnTimer > 0) return;
+  const pool = ENEMIES.filter(e=>S.wave >= e.from);
+  // spend a chunk of budget as a small group
+  const groupPts = Math.max(2, Math.round(S.spawnBudget / Math.max(1,(stopAt - S.time)) * 1.15));
+  let pts = Math.min(groupPts, S.spawnBudget);
+  const anchor = edgeSpawn();
+  let guard = 40;
+  while(pts > 0 && guard-- > 0){
+    const affordable = pool.filter(e=>e.cost <= pts);
+    const def = affordable.length ? pick(affordable) : pool[0];
+    if(def.cost > pts) break;
+    pts -= def.cost; S.spawnBudget -= def.cost;
+    spawnEnemy(def, {x: anchor.x + rand(-70,70), y: anchor.y + rand(-70,70)});
+  }
+  S.spawnTimer = rand(0.7, 1.25);
+}
+
+/* =============================== COMBAT ================================= */
+function nearestEnemy(x,y,range){
+  let best=null, bd=range*range;
+  for(const e of S.enemies){
+    const dx=e.x-x, dy=e.y-y, d=dx*dx+dy*dy;
+    if(d<bd){ bd=d; best=e; }
+  }
+  return best;
+}
+function fireWeapons(dt){
+  for(const w of S.weapons){
+    if(w.cls==='structure') continue;
+    w.cdLeft -= dt;
+    if(w.cdLeft > 0) continue;
+    const R = weaponRange(w);
+    const tgt = nearestEnemy(S.px, S.py, R);
+    if(!tgt) continue;
+    const ang = Math.atan2(tgt.y-S.py, tgt.x-S.px);
+    S.face = ang;
+    w.cdLeft = atkCooldown(w);
+    const dmg = weaponDamage(w);
+
+    if(w.cls==='melee'){
+      S.swings.push({x:S.px, y:S.py, ang, arc:w.arc, R, life:0.16, max:0.16, hit:new Set(), w, dmg});
+    } else if(w.cone){
+      S.swings.push({x:S.px, y:S.py, ang, arc:w.cone, R, life:0.11, max:0.11, hit:new Set(), w, dmg, fire:true});
+      for(let i=0;i<3;i++){
+        const a = ang + rand(-w.cone/2, w.cone/2), d = rand(20,R);
+        S.parts.push({x:S.px+Math.cos(a)*d, y:S.py+Math.sin(a)*d, vx:Math.cos(a)*60, vy:Math.sin(a)*60,
+          life:.3, max:.3, r:rand(3,7), col:pick(['#f0b429','#e07a3a','#e05a5a'])});
+      }
+    } else {
+      const n = w.pellets||1;
+      for(let i=0;i<n;i++){
+        const sp = w.spread||0;
+        const a = ang + (n>1 ? (i/(n-1)-0.5)*sp*2 : rand(-sp,sp));
+        S.bullets.push({x:S.px, y:S.py, vx:Math.cos(a)*w.spd, vy:Math.sin(a)*w.spd,
+          dmg, w, life:R/w.spd + 0.05, pierce:w.pierce||0, hit:new Set(),
+          homing:w.homing, r:w.homing?6:4, ang:a, spd:w.spd});
+      }
+    }
+  }
+  // turrets — Engineering only, unaffected by Damage%
+  for(const t of S.turrets){
+    t.cdLeft -= dt;
+    if(t.cdLeft>0) continue;
+    const tgt = nearestEnemy(t.x, t.y, t.w.range);
+    if(!tgt) continue;
+    const a = Math.atan2(tgt.y-t.y, tgt.x-t.x); t.ang = a;
+    t.cdLeft = Math.max(1/12, t.w.cd / (1 + S.stats.attackSpeed/100));
+    S.bullets.push({x:t.x, y:t.y, vx:Math.cos(a)*t.w.spd, vy:Math.sin(a)*t.w.spd,
+      dmg: weaponDamage(t.w), w:t.w, life:t.w.range/t.w.spd+0.05, pierce:0, hit:new Set(),
+      r:5, struct:true, ang:a, spd:t.w.spd});
+  }
+}
+
+function damageEnemy(e, dmg, w, kx, ky){
+  let d = dmg, crit = false;
+  const cc = (w.crit||0) + S.stats.critChance/100;
+  if(Math.random() < Math.min(1, cc)){ d *= (w.cm||2); crit = true; }
+  d = Math.max(1, Math.round(d));
+  e.hp -= d; e.flash = 0.1; S.dmgDealt += d;
+  S.texts.push({x:e.x+rand(-8,8), y:e.y-e.r-4, txt:d, life:.55, max:.55,
+    col: crit ? '#f0b429' : '#fff', big:crit});
+  if(!e.def.noKb && kx!==undefined){ e.vx += kx; e.vy += ky; }
+  // life steal — % chance to heal 1 HP, at most once per 0.1s
+  if(S.stats.lifeSteal>0 && S.lsCd<=0 && Math.random() < S.stats.lifeSteal/100){
+    S.lsCd = 0.1; heal(1);
+  }
+  if(e.hp<=0) killEnemy(e);
+}
+function killEnemy(e){
+  const i = S.enemies.indexOf(e); if(i<0) return;
+  S.enemies.splice(i,1); S.kills++;
+  for(let k=0;k<(e.def.elite?26:9);k++)
+    S.parts.push({x:e.x, y:e.y, vx:rand(-220,220), vy:rand(-220,220),
+      life:.45, max:.45, r:rand(2,e.def.elite?8:5), col:e.def.col});
+  const n = e.def.mat;
+  for(let k=0;k<n;k++)
+    S.mats.push({x:e.x+rand(-12,12), y:e.y+rand(-12,12), vx:rand(-70,70), vy:rand(-70,70), v:1, t:0});
+  // luck-gated healing fruit
+  if(Math.random() < 0.012 * (1 + S.stats.luck/100) * (e.def.elite?9:1))
+    S.drops.push({x:e.x, y:e.y, type:'fruit', t:0});
+  if(e.def.elite) S.shake = Math.max(S.shake, 12);
+}
+function heal(n){
+  S.hp = Math.min(S.stats.maxHp, S.hp + n);
+  S.texts.push({x:S.px+rand(-10,10), y:S.py-24, txt:'+'+n, life:.6, max:.6, col:'#7ec850'});
+}
+function hurtPlayer(raw){
+  if(S.invul>0) return;
+  if(Math.random() < dodgeChance(S.stats.dodge)){
+    S.texts.push({x:S.px, y:S.py-26, txt:'DODGE', life:.6, max:.6, col:'#5aa9e6'});
+    S.invul = 0.12; return;
+  }
+  const d = Math.max(1, Math.round(raw * armorMult(S.stats.armor)));
+  S.hp -= d; S.invul = 0.42; S.hitFlash = 0.25; S.shake = Math.max(S.shake, 6);
+  S.texts.push({x:S.px, y:S.py-26, txt:'-'+d, life:.7, max:.7, col:'#e05a5a', big:true});
+  if(S.hp<=0){ S.hp=0; endRun(false); }
+}
+
+/* =============================== UPDATE ================================= */
+function update(dt){
+  if(mode!=='playing' || paused) return;
+
+  S.time += dt;
+  S.lsCd -= dt; S.invul -= dt; S.hitFlash -= dt;
+  S.shake *= Math.pow(0.0015, dt);
+
+  // ---- movement (only thing the player controls) ----
+  let ax = (keys.d?1:0) - (keys.a?1:0);
+  let ay = (keys.s?1:0) - (keys.w?1:0);
+  const len = Math.hypot(ax,ay) || 1;
+  const sp = BASE_SPEED * (1 + S.stats.speed/100);
+  const tx = ax/len*sp, ty = ay/len*sp;
+  const acc = 14*dt;
+  S.pvx += (tx-S.pvx)*Math.min(1,acc); S.pvy += (ty-S.pvy)*Math.min(1,acc);
+  S.px = clamp(S.px + S.pvx*dt, 24, W-24);
+  S.py = clamp(S.py + S.pvy*dt, 24, H-24);
+
+  // ---- regen ----
+  const rps = regenPerSec(S.stats.hpRegen);
+  if(rps>0 && S.hp < S.stats.maxHp){
+    S.regenAcc += rps*dt;
+    while(S.regenAcc >= 1){ S.regenAcc -= 1; heal(1); }
+  }
+
+  updateSpawns(dt);
+  fireWeapons(dt);
+
+  // ---- enemies ----
+  for(let i=S.enemies.length-1;i>=0;i--){
+    const e = S.enemies[i], d = e.def; e.t += dt; e.flash -= dt; e.touchCd -= dt;
+    let dx = S.px-e.x, dy = S.py-e.y, dl = Math.hypot(dx,dy)||1;
+    e.ang = Math.atan2(dy,dx);
+
+    if(e.burn>0){                                   // torch burn DoT
+      e.burnT -= dt;
+      if(e.burnT<=0){ e.burnT=0.5; e.hp -= e.burn; e.flash=.08;
+        S.texts.push({x:e.x, y:e.y-e.r, txt:e.burn, life:.4, max:.4, col:'#e07a3a'});
+        if(e.hp<=0){ killEnemy(e); continue; } }
+      e.burnDur -= dt; if(e.burnDur<=0) e.burn=0;
+    }
+
+    if(d.charge){
+      if(e.state===0){                              // approach
+        e.vx += (dx/dl*e.spd - e.vx)*Math.min(1,8*dt);
+        e.vy += (dy/dl*e.spd - e.vy)*Math.min(1,8*dt);
+        if(dl < 300){ e.state=1; e.timer=0.55; }
+      } else if(e.state===1){                        // wind-up
+        e.timer -= dt; e.vx*=0.85; e.vy*=0.85;
+        if(e.timer<=0){ e.state=2; e.timer=0.75; e.cx=dx/dl; e.cy=dy/dl; }
+      } else if(e.state===2){                        // dash
+        e.timer -= dt; e.vx = e.cx*e.spd*4.6; e.vy = e.cy*e.spd*4.6;
+        if(e.timer<=0){ e.state=3; e.timer=1.1; }
+      } else { e.timer -= dt; e.vx*=0.9; e.vy*=0.9; if(e.timer<=0) e.state=0; }
+    } else if(d.shoot){
+      const want = 290;
+      const dir = dl > want+40 ? 1 : (dl < want-40 ? -1 : 0);
+      e.vx += (dx/dl*e.spd*dir - e.vx)*Math.min(1,6*dt);
+      e.vy += (dy/dl*e.spd*dir - e.vy)*Math.min(1,6*dt);
+      e.shootCd -= dt;
+      if(e.shootCd<=0 && dl < 520){
+        e.shootCd = rand(1.7, 2.6);
+        S.ebullets.push({x:e.x, y:e.y, vx:dx/dl*270, vy:dy/dl*270, dmg:e.dmg, life:2.6, r:7});
+      }
+    } else if(d.boom){
+      if(e.state===0){
+        e.vx += (dx/dl*e.spd - e.vx)*Math.min(1,7*dt);
+        e.vy += (dy/dl*e.spd - e.vy)*Math.min(1,7*dt);
+        if(dl < 52){ e.state=1; e.timer=0.45; }
+      } else {
+        e.timer -= dt; e.vx*=0.8; e.vy*=0.8;
+        if(e.timer<=0){ explode(e); continue; }
+      }
+    } else {
+      let mx = dx/dl, my = dy/dl;
+      if(d.wob){ const p = e.t*5; mx += Math.cos(p)*0.45; my += Math.sin(p)*0.45; }
+      e.vx += (mx*e.spd - e.vx)*Math.min(1,6*dt);
+      e.vy += (my*e.spd - e.vy)*Math.min(1,6*dt);
+      if(d.elite){
+        if(e.windup > 0){                       // telegraphed: it plants itself and flashes first
+          e.windup -= dt; e.vx *= 0.82; e.vy *= 0.82;
+          if(e.windup <= 0){
+            S.ebullets.push({ring:true, x:e.x, y:e.y, rad:10, dmg:e.dmg, life:1.2, max:1.2});
+            e.shockCd = 4.4; S.shake = Math.max(S.shake, 7);
+          }
+        } else {
+          e.shockCd -= dt;
+          if(e.shockCd <= 0) e.windup = 0.7;
+        }
+      }
+    }
+
+    e.x += e.vx*dt; e.y += e.vy*dt;
+    e.vx *= Math.pow(0.12, dt); e.vy *= Math.pow(0.12, dt);
+    e.x = clamp(e.x, -80, W+80); e.y = clamp(e.y, -80, H+80);
+
+    // contact damage
+    if(dl < e.r + S.r && e.touchCd<=0){
+      e.touchCd = 0.55; hurtPlayer(e.dmg);
+      if(d.boom){ explode(e); continue; }
+    }
+  }
+
+  // ---- player bullets ----
+  for(let i=S.bullets.length-1;i>=0;i--){
+    const b = S.bullets[i]; b.life -= dt;
+    if(b.homing){
+      const t = nearestEnemy(b.x,b.y,600);
+      if(t){ const a = Math.atan2(t.y-b.y, t.x-b.x);
+        let da = ((a-b.ang+Math.PI*3)%TAU)-Math.PI; b.ang += clamp(da,-5*dt,5*dt);
+        b.vx = Math.cos(b.ang)*b.spd; b.vy = Math.sin(b.ang)*b.spd; }
+    }
+    b.x += b.vx*dt; b.y += b.vy*dt;
+    if(b.life<=0 || b.x<-40||b.x>W+40||b.y<-40||b.y>H+40){ S.bullets.splice(i,1); continue; }
+    for(const e of S.enemies){
+      if(b.hit.has(e)) continue;
+      const dx=e.x-b.x, dy=e.y-b.y;
+      if(dx*dx+dy*dy < (e.r+b.r)*(e.r+b.r)){
+        b.hit.add(e);
+        const kb = b.struct ? 0 : 120;
+        damageEnemy(e, b.dmg, b.w, b.vx/b.spd*kb, b.vy/b.spd*kb);
+        for(let k=0;k<3;k++) S.parts.push({x:b.x,y:b.y,vx:rand(-90,90),vy:rand(-90,90),life:.2,max:.2,r:2,col:'#ffe9a8'});
+        if(b.pierce>0) b.pierce--; else { S.bullets.splice(i,1); break; }
+      }
+    }
+  }
+
+  // ---- melee swings / fire cones ----
+  for(let i=S.swings.length-1;i>=0;i--){
+    const s = S.swings[i]; s.life -= dt;
+    s.x = S.px; s.y = S.py;
+    for(const e of S.enemies){
+      if(s.hit.has(e)) continue;
+      const dx=e.x-s.x, dy=e.y-s.y, dl=Math.hypot(dx,dy);
+      if(dl > s.R + e.r) continue;
+      let da = Math.abs(((Math.atan2(dy,dx)-s.ang+Math.PI*3)%TAU)-Math.PI);
+      if(da <= s.arc/2 + e.r/Math.max(40,dl)){
+        s.hit.add(e);
+        damageEnemy(e, s.dmg, s.w, dx/(dl||1)*(s.w.kb||120), dy/(dl||1)*(s.w.kb||120));
+        if(s.fire && e.hp>0){ e.burn = Math.max(e.burn, Math.max(1,Math.round(s.dmg*0.35)));
+                              e.burnDur = 2.0; e.burnT = Math.min(e.burnT||0.5, 0.5); }
+      }
+    }
+    if(s.life<=0) S.swings.splice(i,1);
+  }
+
+  // ---- enemy bullets & shockwaves ----
+  for(let i=S.ebullets.length-1;i>=0;i--){
+    const b = S.ebullets[i]; b.life -= dt;
+    if(b.ring){
+      b.rad += 300*dt;
+      const dl = Math.hypot(S.px-b.x, S.py-b.y);
+      if(!b.done && Math.abs(dl - b.rad) < S.r+10){ b.done=true; hurtPlayer(b.dmg); }
+      if(b.life<=0) S.ebullets.splice(i,1);
+      continue;
+    }
+    b.x += b.vx*dt; b.y += b.vy*dt;
+    const dx=S.px-b.x, dy=S.py-b.y;
+    if(dx*dx+dy*dy < (S.r+b.r)*(S.r+b.r)){ hurtPlayer(b.dmg); S.ebullets.splice(i,1); continue; }
+    if(b.life<=0 || b.x<-40||b.x>W+40||b.y<-40||b.y>H+40) S.ebullets.splice(i,1);
+  }
+
+  // ---- materials magnetise & pickup ----
+  const pr = PICKUP_R;
+  for(let i=S.mats.length-1;i>=0;i--){
+    const m = S.mats[i]; m.t += dt;
+    const dx=S.px-m.x, dy=S.py-m.y, dl=Math.hypot(dx,dy)||1;
+    if(dl < pr || m.pull){
+      m.pull = true;
+      const pull = 520;
+      m.vx += dx/dl*pull*dt*6; m.vy += dy/dl*pull*dt*6;
+    }
+    m.x += m.vx*dt; m.y += m.vy*dt; m.vx*=Math.pow(0.04,dt); m.vy*=Math.pow(0.04,dt);
+    if(dl < 20){ gainMaterial(m.v); S.mats.splice(i,1); }
+  }
+  for(let i=S.drops.length-1;i>=0;i--){
+    const d = S.drops[i]; d.t += dt;
+    if(Math.hypot(S.px-d.x, S.py-d.y) < S.r+16){ heal(4); S.drops.splice(i,1); }
+  }
+
+  // ---- fx ----
+  for(let i=S.parts.length-1;i>=0;i--){ const p=S.parts[i]; p.life-=dt;
+    p.x+=p.vx*dt; p.y+=p.vy*dt; p.vx*=Math.pow(.05,dt); p.vy*=Math.pow(.05,dt);
+    if(p.life<=0) S.parts.splice(i,1); }
+  for(let i=S.texts.length-1;i>=0;i--){ const t=S.texts[i]; t.life-=dt; t.y-=34*dt;
+    if(t.life<=0) S.texts.splice(i,1); }
+
+  if(S.time >= S.waveLen) endWave();
+}
+function explode(e){
+  const i = S.enemies.indexOf(e); if(i>=0) S.enemies.splice(i,1);
+  S.shake = Math.max(S.shake, 8);
+  for(let k=0;k<22;k++) S.parts.push({x:e.x,y:e.y,vx:rand(-320,320),vy:rand(-320,320),
+    life:.5,max:.5,r:rand(3,8),col:pick(['#e05a5a','#e07a3a','#f0b429'])});
+  if(Math.hypot(S.px-e.x, S.py-e.y) < 84 + S.r) hurtPlayer(Math.round(e.dmg*1.2));
+  for(let k=0;k<e.def.mat;k++)
+    S.mats.push({x:e.x+rand(-14,14), y:e.y+rand(-14,14), vx:rand(-80,80), vy:rand(-80,80), v:1, t:0});
+}
+function gainMaterial(v){
+  S.materials += v; S.xp += v;
+  while(S.xp >= S.xpNeed){ S.xp -= S.xpNeed; S.level++; S.pendingLevels++; S.xpNeed = xpFor(S.level); }
+}
+function toast(txt,col){ S.texts.push({x:W/2, y:140, txt, life:1.8, max:1.8, col, big:true, fixed:true}); }
+
+/* ============================ WAVE / FLOW =============================== */
+function endWave(){
+  S.running = false;
+  // leftover ground materials go to the bag (Brotato behaviour)
+  const left = S.mats.length; S.bag += left; S.mats.length = 0;
+  // harvesting payout, then the payout itself grows 5% (compounds on a float,
+  // so small harvesting values still grow instead of being lost to flooring)
+  const harvest = Math.max(0, Math.floor(S.stats.harvesting * S.harvestMult));
+  for(let i=0;i<harvest;i++) gainMaterial(1);
+  if(S.stats.harvesting > 0) S.harvestMult *= 1.05;
+  // bag trickles back, worth double
+  const pull = Math.min(S.bag, 2 + Math.floor(S.wave/2));
+  S.bag -= pull;
+  for(let i=0;i<pull*2;i++) gainMaterial(1);
+
+  S.report = `<b>Wave ${S.wave} cleared.</b> &nbsp; Harvest <b>+${harvest}</b>` +
+             ` &nbsp;·&nbsp; Bag recovered <b>+${pull*2}</b> (${S.bag} still in bag)` +
+             ` &nbsp;·&nbsp; ${S.kills} total kills`;
+
+  if(S.wave >= 20){ endRun(true); return; }
+  S.enemies.length=0; S.ebullets.length=0; S.bullets.length=0;
+  nextStep();
+}
+function nextStep(){
+  if(S.pendingLevels > 0){ showLevelUp(); return; }
+  openShop();
+}
+function endRun(won){
+  mode='end';
+  $('endTitle').textContent = won ? 'YOU SURVIVED' : 'GAME OVER';
+  $('endTitle').style.color = won ? 'var(--good)' : 'var(--bad)';
+  $('endText').innerHTML =
+    `${S.ch.name} · Danger ${S.danger} · reached <b>wave ${S.wave}</b> at <b>level ${S.level}</b><br>` +
+    `${S.kills} kills · ${Math.round(S.dmgDealt).toLocaleString()} total damage · ` +
+    `${S.weapons.length} weapons · ${S.items.length} items`;
+  setOv('end');
+}
+
+/* ============================== LEVEL UP ================================ */
+function rollTierLevel(){
+  const lm = 1 + S.stats.luck/100, L = S.level;
+  const c4 = Math.min(0.12, Math.max(0,(L-9)*0.012)) * lm;
+  const c3 = Math.min(0.30, Math.max(0,(L-4)*0.022)) * lm;
+  const c2 = Math.min(0.65, 0.08 + L*0.03) * lm;
+  const r = Math.random();
+  if(r < c4) return 4; if(r < c4+c3) return 3; if(r < c4+c3+c2) return 2; return 1;
+}
+function showLevelUp(){
+  mode='levelup';
+  $('luLevel').textContent = S.level - S.pendingLevels + 1;
+  $('luLeft').textContent = S.pendingLevels>1 ? `${S.pendingLevels} level-ups queued` : '';
+  const pool = UPGRADES.slice(); const chosen = [];
+  for(let i=0;i<4 && pool.length;i++) chosen.push(pool.splice((Math.random()*pool.length)|0,1)[0]);
+  $('luCards').innerHTML = chosen.map((u,i)=>{
+    const t = rollTierLevel(), val = u.v[t-1], s = STATS[u.k];
+    return `<div class="card" data-i="${i}" data-k="${u.k}" data-v="${val}" data-t="${t}">
+      <h3>${s.name}</h3>
+      <div class="flav" style="color:${TIER_COL[t-1]}">Tier ${t}</div>
+      <div class="mod up" style="font-size:1.3em">+${val}${s.pct?'%':''} ${s.name}</div>
+    </div>`;
+  }).join('');
+  [...$('luCards').children].forEach(el=>el.onclick=()=>{
+    S.upgrades.push({k:el.dataset.k, val:+el.dataset.v, tier:+el.dataset.t});
+    recompute();
+    S.pendingLevels--;
+    nextStep();
+  });
+  setOv('levelup');
+}
+
+/* ================================ SHOP ================================== */
+function shopPrice(base){ return Math.max(1, Math.floor(base + S.wave + base*0.1*S.wave)); }
+function rerollCost(){
+  const inc = Math.floor(0.40*S.wave);
+  return Math.floor(S.wave*0.75) + inc + inc*S.rerollCount;
+}
+function rollTierShop(){
+  const lm = 1 + S.stats.luck/100, w = S.wave;
+  const c4 = w>=8 ? Math.min(0.08, (w-7)*0.012)*lm : 0;
+  const c3 = w>=4 ? Math.min(0.25, (w-3)*0.040)*lm : 0;
+  const c2 = w>=2 ? Math.min(0.60, (w-1)*0.080)*lm : 0;
+  const r = Math.random();
+  if(r<c4) return 4; if(r<c4+c3) return 3; if(r<c4+c3+c2) return 2; return 1;
+}
+function rollSlot(forceWeapon){
+  const tier = rollTierShop();
+  const wantWeapon = forceWeapon || Math.random() < 0.34;
+  if(wantWeapon){
+    let pool = WEAPONS;
+    if(S.ch.noMelee) pool = pool.filter(w=>w.cls!=='melee');
+    const w = pick(pool), st = weaponStats(w.id, tier);
+    return {kind:'weapon', id:w.id, tier, price:shopPrice(st.price), locked:false, sold:false};
+  }
+  const pool = ITEMS.filter(i=>i.tier===tier);
+  const it = pick(pool.length?pool:ITEMS.filter(i=>i.tier===1));
+  return {kind:'item', id:it.id, tier:it.tier, price:shopPrice(it.price), locked:false, sold:false};
+}
+function rollShop(keepLocked){
+  const kept = keepLocked ? S.shopStock.filter(s=>s.locked && !s.sold) : [];
+  const stock = kept.slice();
+  const need = 4 - stock.length;
+  // waves 1-2: guarantee 2 weapons; waves 3-5: guarantee 1
+  let guaranteed = S.wave<=2 ? 2 : (S.wave<=5 ? 1 : 0);
+  guaranteed -= kept.filter(k=>k.kind==='weapon').length;
+  for(let i=0;i<need;i++) stock.push(rollSlot(guaranteed-- > 0));
+  S.shopStock = stock;
+}
+function openShop(){
+  mode='shop'; S.rerollCount = 0;
+  rollShop(false);
+  renderShop();
+  setOv('shop');
+}
+function renderShop(){
+  $('shopTitle').textContent = `Shop — before Wave ${S.wave+1}`;
+  $('shopMats').textContent = S.materials;
+  $('waveReport').innerHTML = S.report;
+  const rc = rerollCost();
+  const rb = $('rerollBtn');
+  rb.textContent = `Reroll (◆${rc})`; rb.disabled = S.materials < rc;
+
+  $('shopGrid').innerHTML = S.shopStock.map((s,i)=>{
+    const isW = s.kind==='weapon';
+    const d = isW ? weaponStats(s.id, s.tier) : ITEM_BY_ID[s.id];
+    let body;
+    if(isW){
+      const owns = S.weapons.find(w=>w.id===s.id && w.tier===s.tier && s.tier<4);
+      body = `<div class="kind">${d.cls==='structure'?'Structure':d.cls[0].toUpperCase()+d.cls.slice(1)} weapon</div>
+        <div class="flav">${d.flav}</div>
+        <div class="mod">
+          <div>Damage <b>${d.dmg}</b> ${scaleTxt(d)}</div>
+          <div>Cooldown <b>${d.cd.toFixed(2)}s</b></div>
+          <div>Range <b>${d.range}</b>${d.pellets?` · ${d.pellets} pellets`:''}${d.pierce?` · pierce ${d.pierce}`:''}</div>
+          <div>Crit <b>${Math.round(d.crit*100)}%</b> ×${d.cm}</div>
+          ${owns?'<div class="up">Merges → Tier '+(s.tier+1)+'</div>':''}
+        </div>`;
+    } else {
+      body = `<div class="kind">Item</div><div class="flav">${d.flav}</div><div class="mod">${modLine(d.mods)}</div>`;
+    }
+    const blocked = isW && S.ch.noMelee && WEAPON_BY_ID[s.id].cls==='melee';
+    const full = isW && S.weapons.length>=6 && !S.weapons.find(w=>w.id===s.id && w.tier===s.tier && s.tier<4);
+    const can = !s.sold && S.materials>=s.price && !blocked && !full;
+    return `<div class="sItem ${s.locked?'locked':''} ${s.sold?'sold':''}">
+      <div class="sName"><span>${d.name}${isW && s.tier>1?' '+'★'.repeat(s.tier-1):''}</span>
+        <span class="tier" style="color:${TIER_COL[s.tier-1]}">T${s.tier}</span></div>
+      ${body}
+      <div class="sBtns">
+        <button class="buy" data-buy="${i}" ${can?'':'disabled'}>${
+          s.sold?'Sold':blocked?'Melee ✗':full?'Slots full':'◆'+s.price}</button>
+        <button class="lock" data-lock="${i}" ${s.sold?'disabled':''}>${s.locked?'🔒':'🔓'}</button>
+      </div></div>`;
+  }).join('');
+  $('shopGrid').querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>buy(+b.dataset.buy));
+  $('shopGrid').querySelectorAll('[data-lock]').forEach(b=>b.onclick=()=>{
+    const s = S.shopStock[+b.dataset.lock]; s.locked = !s.locked; renderShop(); });
+
+  $('wCount').textContent = S.weapons.length;
+  $('wChips').innerHTML = S.weapons.map((w,i)=>
+    `<div class="chip" data-sw="${i}" title="Sell for ◆${sellW(w)}">${w.name}${w.tier>1?' '+'★'.repeat(w.tier-1):''}
+      <small>T${w.tier} · ${Math.round(weaponDamage(w))}dmg</small></div>`).join('') || '<small style="color:#a4907c">none</small>';
+  $('iChips').innerHTML = S.items.map((id,i)=>{
+    const it = ITEM_BY_ID[id];
+    return `<div class="chip" data-si="${i}" title="Sell for ◆${sellI(it)}" style="color:${TIER_COL[it.tier-1]}">${it.name}</div>`;
+  }).join('') || '<small style="color:#a4907c">none</small>';
+  $('wChips').querySelectorAll('[data-sw]').forEach(b=>b.onclick=()=>sellWeapon(+b.dataset.sw));
+  $('iChips').querySelectorAll('[data-si]').forEach(b=>b.onclick=()=>sellItem(+b.dataset.si));
+}
+function scaleTxt(d){
+  const parts = Object.keys(d.scale).map(k=>`+${d.scale[k]===1?'':d.scale[k]+'×'}${STATS[k].name}`);
+  return `<small style="color:var(--dim)">(${parts.join(', ')})</small>`;
+}
+const sellW = w => Math.max(1, Math.floor(weaponStats(w.id,w.tier).price*0.5));
+const sellI = it => Math.max(1, Math.floor(it.price*0.5));
+function sellWeapon(i){
+  if(S.weapons.length<=1) return;
+  S.materials += sellW(S.weapons[i]); S.weapons.splice(i,1); recompute(); renderShop();
+}
+function sellItem(i){
+  S.materials += sellI(ITEM_BY_ID[S.items[i]]); S.items.splice(i,1); recompute(); renderShop();
+}
+function buy(i){
+  const s = S.shopStock[i];
+  if(s.sold || S.materials < s.price) return;
+  if(s.kind==='weapon'){
+    const r = addWeapon(s.id, s.tier);
+    if(r==='full') return;
+  } else S.items.push(s.id);
+  S.materials -= s.price; s.sold = true; s.locked = false;
+  recompute(); renderShop();
+}
+
+/* ================================ RENDER ================================ */
+function render(){
+  ctx.save();
+  if(S && S.shake>0.4) ctx.translate(rand(-S.shake,S.shake), rand(-S.shake,S.shake));
+  ctx.fillStyle = '#1b1613'; ctx.fillRect(-30,-30,W+60,H+60);
+
+  if(S){
+    // floor grid
+    ctx.strokeStyle = '#241d18'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for(let x=0;x<=W;x+=80){ ctx.moveTo(x,0); ctx.lineTo(x,H); }
+    for(let y=0;y<=H;y+=80){ ctx.moveTo(0,y); ctx.lineTo(W,y); }
+    ctx.stroke();
+    ctx.strokeStyle = '#3a2d23'; ctx.lineWidth = 6; ctx.strokeRect(3,3,W-6,H-6);
+
+    // weapon range ring (subtle)
+    if(S.weapons.length){
+      const R = Math.max(...S.weapons.filter(w=>w.cls!=='structure').map(weaponRange).concat([0]));
+      if(R>0){ ctx.strokeStyle='rgba(240,180,41,.09)'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.arc(S.px,S.py,R,0,TAU); ctx.stroke(); }
+    }
+    // turrets
+    for(const t of S.turrets){
+      ctx.fillStyle='#4a5a6a'; ctx.beginPath(); ctx.arc(t.x,t.y,t.r,0,TAU); ctx.fill();
+      ctx.strokeStyle='#8fa3b8'; ctx.lineWidth=3; ctx.stroke();
+      ctx.save(); ctx.translate(t.x,t.y); ctx.rotate(t.ang);
+      ctx.fillStyle='#8fa3b8'; ctx.fillRect(0,-4,24,8); ctx.restore();
+    }
+    // materials
+    for(const m of S.mats){
+      ctx.fillStyle='#7ec850'; ctx.save(); ctx.translate(m.x,m.y);
+      ctx.rotate(m.t*3); ctx.fillRect(-4,-4,8,8); ctx.restore();
+    }
+    for(const d of S.drops){
+      ctx.fillStyle='#e05a5a'; ctx.beginPath();
+      ctx.arc(d.x, d.y + Math.sin(d.t*4)*3, 9,0,TAU); ctx.fill();
+      ctx.fillStyle='#7ec850'; ctx.fillRect(d.x-2, d.y-14+Math.sin(d.t*4)*3, 4, 6);
+    }
+    // fire cones / melee swings
+    for(const s of S.swings){
+      const k = s.life/s.max;
+      ctx.fillStyle = s.fire ? `rgba(240,140,40,${0.32*k})` : `rgba(255,255,255,${0.24*k})`;
+      ctx.beginPath(); ctx.moveTo(s.x,s.y);
+      ctx.arc(s.x,s.y,s.R, s.ang-s.arc/2, s.ang+s.arc/2); ctx.closePath(); ctx.fill();
+      if(!s.fire){ ctx.strokeStyle=`rgba(255,255,255,${0.6*k})`; ctx.lineWidth=3;
+        ctx.beginPath(); ctx.arc(s.x,s.y,s.R, s.ang-s.arc/2, s.ang+s.arc/2); ctx.stroke(); }
+    }
+    // enemies
+    for(const e of S.enemies) drawEnemy(e);
+    // bullets
+    for(const b of S.bullets){
+      ctx.fillStyle = b.struct ? '#8fd0ff' : (b.homing ? '#c68bff' : '#ffe9a8');
+      ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,TAU); ctx.fill();
+    }
+    for(const b of S.ebullets){
+      if(b.ring){
+        ctx.strokeStyle=`rgba(240,180,41,${b.life/b.max})`; ctx.lineWidth=7;
+        ctx.beginPath(); ctx.arc(b.x,b.y,b.rad,0,TAU); ctx.stroke();
+      } else {
+        ctx.fillStyle='#ff5c5c'; ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,TAU); ctx.fill();
+        ctx.fillStyle='#ffb3b3'; ctx.beginPath(); ctx.arc(b.x,b.y,b.r*.45,0,TAU); ctx.fill();
+      }
+    }
+    drawPlayer();
+    // particles
+    for(const p of S.parts){
+      ctx.globalAlpha = Math.max(0,p.life/p.max); ctx.fillStyle=p.col;
+      ctx.fillRect(p.x-p.r/2, p.y-p.r/2, p.r, p.r);
+    }
+    ctx.globalAlpha = 1;
+    // floating text
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    for(const t of S.texts){
+      ctx.globalAlpha = Math.min(1, t.life/t.max*1.8);
+      ctx.font = `bold ${t.big?26:17}px Trebuchet MS, sans-serif`;
+      ctx.lineWidth=4; ctx.strokeStyle='rgba(0,0,0,.75)';
+      ctx.strokeText(t.txt, t.x, t.y); ctx.fillStyle=t.col; ctx.fillText(t.txt, t.x, t.y);
+    }
+    ctx.globalAlpha=1;
+    if(S.hitFlash>0){ ctx.fillStyle=`rgba(200,40,40,${S.hitFlash*0.5})`; ctx.fillRect(0,0,W,H); }
+  }
+  ctx.restore();
+}
+function drawPlayer(){
+  const x=S.px, y=S.py;
+  ctx.save(); ctx.translate(x,y);
+  ctx.fillStyle='rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(0,18,17,6,0,0,TAU); ctx.fill();
+  if(S.invul>0 && Math.floor(S.invul*20)%2===0) ctx.globalAlpha=0.5;
+  ctx.fillStyle='#c98a4b'; ctx.strokeStyle='#7a4f24'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.ellipse(0,0,17,19,0,0,TAU); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#5a3a1a';
+  ctx.beginPath(); ctx.arc(-6,-3,2.2,0,TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(9,6,1.8,0,TAU); ctx.fill();
+  ctx.fillStyle='#fff';
+  const ex=Math.cos(S.face)*2.5, ey=Math.sin(S.face)*2.5;
+  ctx.beginPath(); ctx.ellipse(-5+ex,-6+ey,4.5,5.5,0,0,TAU); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(6+ex,-6+ey,4.5,5.5,0,0,TAU); ctx.fill();
+  ctx.fillStyle='#1a1410';
+  ctx.beginPath(); ctx.arc(-5+ex*1.6,-6+ey*1.6,2.2,0,TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(6+ex*1.6,-6+ey*1.6,2.2,0,TAU); ctx.fill();
+  ctx.restore();
+}
+function drawEnemy(e){
+  const d=e.def;
+  ctx.save(); ctx.translate(e.x,e.y);
+  ctx.fillStyle='rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(0,e.r*.9,e.r*.85,e.r*.3,0,0,TAU); ctx.fill();
+  let col = e.flash>0 ? '#fff' : d.col;
+  if(e.burn>0 && e.flash<=0 && Math.floor(e.t*12)%2===0) col='#ff9a3c';
+  ctx.fillStyle=col; ctx.strokeStyle='rgba(0,0,0,.45)'; ctx.lineWidth=3;
+  if(d.charge){
+    if(e.state===1){ ctx.strokeStyle='#fff'; ctx.lineWidth=4; }   // flash while winding up
+    ctx.save();
+    ctx.rotate(e.state===2 ? Math.atan2(e.cy,e.cx) : e.ang);
+    ctx.beginPath(); ctx.moveTo(e.r,0); ctx.lineTo(-e.r*.8,-e.r); ctx.lineTo(-e.r*.4,0); ctx.lineTo(-e.r*.8,e.r);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  } else if(d.boom){
+    const p = e.state===1 ? 1+Math.sin(e.t*40)*0.22 : 1;
+    ctx.beginPath(); ctx.arc(0,0,e.r*p,0,TAU); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#2a1010'; ctx.beginPath(); ctx.arc(0,0,e.r*p*.4,0,TAU); ctx.fill();
+  } else if(d.shoot){
+    ctx.beginPath();
+    for(let i=0;i<6;i++){ const a=i/6*TAU-Math.PI/2; const R=e.r*(i%2?0.7:1);
+      i?ctx.lineTo(Math.cos(a)*R,Math.sin(a)*R):ctx.moveTo(Math.cos(a)*R,Math.sin(a)*R); }
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  } else if(d.elite){
+    if(e.windup>0) ctx.fillStyle = Math.floor(e.t*22)%2 ? '#fff' : d.col;
+    ctx.beginPath(); ctx.arc(0,0,e.r,0,TAU); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(0,0,e.r*0.62,0,TAU); ctx.stroke();
+    if(e.windup>0){                                  // charge-up ring warns where the wave starts
+      ctx.strokeStyle=`rgba(255,255,255,${0.35+0.45*(1-e.windup/0.7)})`; ctx.lineWidth=4;
+      ctx.beginPath(); ctx.arc(0,0,e.r + (1-e.windup/0.7)*40, 0, TAU); ctx.stroke();
+    }
+  } else if(d.wob){
+    ctx.beginPath(); ctx.arc(0,0,e.r,0,TAU); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=2;
+    const f=Math.sin(e.t*30)*e.r;
+    ctx.beginPath(); ctx.moveTo(-e.r,-2); ctx.lineTo(-e.r*1.9,-2+f*.3);
+    ctx.moveTo(e.r,-2); ctx.lineTo(e.r*1.9,-2+f*.3); ctx.stroke();
+  } else {
+    ctx.beginPath(); ctx.roundRect(-e.r,-e.r,e.r*2,e.r*2, e.r*0.4); ctx.fill(); ctx.stroke();
+  }
+  // eyes
+  ctx.fillStyle='#1a1410';
+  const eo = Math.min(2, e.r*0.14);
+  ctx.beginPath(); ctx.arc(-e.r*.3+Math.cos(e.ang)*eo, -e.r*.15+Math.sin(e.ang)*eo, Math.max(1.6,e.r*.13),0,TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc( e.r*.3+Math.cos(e.ang)*eo, -e.r*.15+Math.sin(e.ang)*eo, Math.max(1.6,e.r*.13),0,TAU); ctx.fill();
+  ctx.restore();
+  // hp bar
+  if(e.hp < e.maxHp){
+    const w = e.r*2.2, x = e.x-w/2, y = e.y-e.r-9;
+    ctx.fillStyle='rgba(0,0,0,.7)'; ctx.fillRect(x-1,y-1,w+2,5);
+    ctx.fillStyle= d.elite?'#f0b429':'#e05a5a'; ctx.fillRect(x,y,w*(e.hp/e.maxHp),3);
+  }
+}
+
+/* ================================ HUD =================================== */
+function drawHUD(){
+  if(!S) return;
+  const st = S.stats;
+  $('hpFill').style.transform = `scaleX(${clamp(S.hp/st.maxHp,0,1)})`;
+  $('hpTxt').textContent = `${Math.ceil(S.hp)} / ${st.maxHp}`;
+  $('xpFill').style.transform = `scaleX(${clamp(S.xp/S.xpNeed,0,1)})`;
+  $('xpTxt').textContent = `Lv ${S.level}`;
+  $('waveNo').textContent = S.wave;
+  $('timer').textContent = Math.max(0, Math.ceil(S.waveLen - S.time));
+  $('mats').textContent = S.materials;
+  $('wlist').innerHTML = S.weapons.map(w=>
+    `<div class="wslot"><span>${w.name}${w.tier>1?' '+'★'.repeat(w.tier-1):''}</span>
+     <b>${Math.round(weaponDamage(w))}</b></div>`).join('');
+}
+function showStats(){
+  const st = S ? S.stats : null; if(!st) return;
+  $('statGrid').innerHTML = STAT_KEYS.map(k=>{
+    const v = st[k], s = STATS[k];
+    let extra = '';
+    if(k==='armor')   extra = ` <small style="color:var(--dim)">(${Math.round((1-armorMult(v))*100)}% dmg taken reduction)</small>`;
+    if(k==='dodge')   extra = ` <small style="color:var(--dim)">(${Math.round(dodgeChance(v)*100)}% effective, cap 60)</small>`;
+    if(k==='hpRegen') extra = ` <small style="color:var(--dim)">(${regenPerSec(v).toFixed(2)} HP/s)</small>`;
+    if(k==='speed')   extra = ` <small style="color:var(--dim)">(${Math.round(BASE_SPEED*(1+v/100))} u/s)</small>`;
+    if(k==='harvesting' && v>0)
+      extra = ` <small style="color:var(--dim)">(pays ${Math.floor(v*S.harvestMult)}/wave, +5% each wave)</small>`;
+    return `<div class="sRow"><span>${s.name}</span><span><b>${v}${s.pct?'%':''}</b>${extra}</span></div>`;
+  }).join('');
+  $('statNote').innerHTML =
+    `<b>${S.ch.name}</b> · Danger ${S.danger} (${DANGER[S.danger].name}) · Wave ${S.wave} · Level ${S.level}<br>` +
+    (S.ch.extra||[]).join(' · ') +
+    `<br>Armor: each point = +6.66% effective HP. Attack Speed has diminishing returns and caps at 12 attacks/sec.`;
+  statsOpen = true; setOv('stats', true);
+}
+
+/* =============================== OVERLAYS =============================== */
+const OVS = ['menu','levelup','shop','stats','pause','end'];
+function setOv(name, keepUnder){
+  for(const o of OVS){
+    if(o==='stats' && keepUnder) continue;
+    if(o!==name) $(o).classList.remove('on');
+  }
+  if(name) $(name).classList.add('on');
+  if(!keepUnder && name!=='stats'){ $('stats').classList.remove('on'); statsOpen=false; }
+}
+
+/* ================================ INPUT ================================= */
+const KMAP = {arrowup:'w', arrowdown:'s', arrowleft:'a', arrowright:'d', w:'w', a:'a', s:'s', d:'d'};
+addEventListener('keydown', ev=>{
+  const k = ev.key.toLowerCase();
+  if(KMAP[k]){ keys[KMAP[k]] = true; ev.preventDefault(); }
+  if(k==='tab'){
+    ev.preventDefault();
+    if(mode==='menu'||mode==='end') return;
+    if(statsOpen){ statsOpen=false; $('stats').classList.remove('on'); }
+    else showStats();
+  }
+  if(k==='escape'){
+    if(mode==='playing'){
+      if(statsOpen){ statsOpen=false; $('stats').classList.remove('on'); return; }
+      paused = !paused; setOv(paused?'pause':null);
+    } else if(mode==='shop' && statsOpen){ statsOpen=false; $('stats').classList.remove('on'); }
+  }
+});
+addEventListener('keyup', ev=>{ const k=ev.key.toLowerCase(); if(KMAP[k]) keys[KMAP[k]]=false; });
+addEventListener('blur', ()=>{ for(const k in keys) keys[k]=false; });
+
+/* ============================== MENU WIRING ============================= */
+let selChar = null, selDanger = 0;
+$('charCards').innerHTML = CHARS.map(c=>`
+  <div class="card" data-c="${c.id}">
+    <h3>${c.name}</h3>
+    <div class="flav">${c.flav}</div>
+    <div class="mod">${modLine(c.base)}${(c.extra||[]).map(e=>`<div style="color:var(--dim)">${e}</div>`).join('')}</div>
+    <div class="mod" style="margin-top:.4em;color:var(--gold)">Starts with: ${WEAPON_BY_ID[c.weapon].name}</div>
+  </div>`).join('');
+function refreshMenu(){
+  [...$('charCards').children].forEach(el=>
+    el.style.borderColor = el.dataset.c===selChar ? 'var(--gold)' : 'var(--line)');
+  document.querySelectorAll('.dbtn').forEach(b=>
+    b.style.borderColor = (+b.dataset.d===selDanger) ? 'var(--gold)' : 'var(--line)');
+  const c = CHARS.find(x=>x.id===selChar);
+  $('menuPick').textContent = `Selected: ${c?c.name:'—'} · Danger ${selDanger} (${DANGER[selDanger].name})`;
+  $('startBtn').disabled = !selChar;
+}
+[...$('charCards').children].forEach(el=>el.onclick=()=>{ selChar = el.dataset.c; refreshMenu(); });
+document.querySelectorAll('.dbtn').forEach(b=>b.onclick=()=>{ selDanger = +b.dataset.d; refreshMenu(); });
+refreshMenu();
+
+$('startBtn').onclick = ()=>{ newRun(selChar, selDanger); startWave(); };
+$('nextWave').onclick = ()=>{ S.wave++; startWave(); };
+$('rerollBtn').onclick = ()=>{
+  const c = rerollCost(); if(S.materials < c) return;
+  S.materials -= c; S.rerollCount++; rollShop(true); renderShop();
+};
+$('statsBtn2').onclick = showStats;
+$('statsBtn3').onclick = showStats;
+$('statsClose').onclick = ()=>{ statsOpen=false; $('stats').classList.remove('on'); };
+$('resumeBtn').onclick = ()=>{ paused=false; setOv(null); };
+$('quitBtn').onclick   = ()=>{ paused=false; endRun(false); };
+$('againBtn').onclick  = ()=>{ mode='menu'; S=null; setOv('menu'); };
+
+/* ============================== MAIN LOOP =============================== */
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(0.05, (now-last)/1000); last = now;
+  update(dt);
+  render();
+  drawHUD();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

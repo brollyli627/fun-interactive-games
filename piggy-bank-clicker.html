@@ -1,0 +1,1973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Piggy Bank Tycoon</title>
+<style>
+  :root{
+    --plum:#241033; --plum2:#3a1a4e; --gold:#ffcf3f; --gold2:#ff9d2e;
+    --pink:#ff9ec4; --pink2:#f2679f; --ink:#2a0f38;
+    --good:#54e38a; --bad:#ff6b81;
+    --panel:rgba(28,10,42,.86);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{height:100%; margin:0; overflow:hidden}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,"Trebuchet MS",sans-serif;
+    color:#fff; background:#180a22;
+    user-select:none; touch-action:manipulation;
+  }
+  /* ---------- background ---------- */
+  #bg{position:fixed; inset:0; z-index:0;
+    background:
+      radial-gradient(900px 620px at 50% 38%, #57235f 0%, #3a1450 42%, #1d0a2b 78%, #140720 100%);}
+  #bg::after{
+    content:""; position:absolute; inset:0;
+    background:radial-gradient(closest-side,rgba(255,207,63,.16),transparent 70%);
+    width:900px; height:900px; left:50%; top:42%; transform:translate(-50%,-50%);
+    animation:breathe 6s ease-in-out infinite;
+  }
+  @keyframes breathe{0%,100%{opacity:.55; transform:translate(-50%,-50%) scale(1)}50%{opacity:.9; transform:translate(-50%,-50%) scale(1.08)}}
+  .rays{position:fixed; left:50%; top:44%; width:1400px; height:1400px; margin:-700px 0 0 -700px;
+    z-index:1; pointer-events:none; opacity:.13;
+    background:repeating-conic-gradient(from 0deg,rgba(255,214,102,.9) 0deg 5deg,transparent 5deg 16deg);
+    mask:radial-gradient(closest-side,transparent 18%,#000 40%,transparent 72%);
+    -webkit-mask:radial-gradient(closest-side,transparent 18%,#000 40%,transparent 72%);
+    animation:spin 90s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  #fx{position:fixed; inset:0; z-index:6; pointer-events:none}
+
+  /* ---------- stars badge ---------- */
+  #starWrap{position:fixed; left:14px; top:12px; z-index:20; max-width:44vw}
+  #starWrap .cap{font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:#ffdf8a; opacity:.8; margin-bottom:4px; text-shadow:0 2px 6px #000}
+  #stars{display:flex; flex-wrap:wrap; gap:3px; align-items:center}
+  .star{width:26px; height:26px; filter:drop-shadow(0 0 7px rgba(255,205,60,.85));
+    animation:starIn .5s cubic-bezier(.2,1.6,.4,1) both}
+  .star.idle{animation:starTwinkle 2.6s ease-in-out infinite}
+  @keyframes starIn{0%{transform:scale(0) rotate(-180deg); opacity:0}100%{transform:scale(1) rotate(0); opacity:1}}
+  @keyframes starTwinkle{0%,100%{filter:drop-shadow(0 0 6px rgba(255,205,60,.7))}50%{filter:drop-shadow(0 0 13px rgba(255,225,120,1))}}
+  #starMore{font-weight:800; font-size:15px; color:var(--gold); text-shadow:0 0 10px rgba(255,200,50,.8); margin-left:2px}
+  #multTag{margin-top:5px; display:inline-block; font-weight:800; font-size:12px;
+    background:linear-gradient(180deg,#ffd75e,#f59a17); color:#40230a; padding:3px 9px;
+    border-radius:99px; box-shadow:0 3px 0 #a35c00,0 0 16px rgba(255,190,60,.5)}
+
+  /* ---------- top HUD ---------- */
+  #hud{position:fixed; left:0; right:0; top:0; z-index:15; display:flex; flex-direction:column;
+    align-items:center; padding-top:14px; pointer-events:none}
+  #cash{font-size:clamp(30px,7.4vw,58px); font-weight:900; letter-spacing:-.02em; line-height:1;
+    color:#fff5cf; text-shadow:0 3px 0 #93540a,0 6px 18px rgba(0,0,0,.6),0 0 34px rgba(255,190,60,.45);
+    transition:transform .07s ease-out}
+  #cash.pop{transform:scale(1.075)}
+  #subline{margin-top:7px; font-size:13px; font-weight:700; color:#e6c7ff;
+    display:flex; gap:14px; flex-wrap:wrap; justify-content:center; text-shadow:0 2px 5px #000}
+  #subline b{color:var(--gold)}
+
+  /* ---------- stage / piggy ---------- */
+  #stage{position:fixed; inset:0; z-index:4; display:grid; place-items:center; }
+  #piggyHit{background:none; border:0; padding:0; cursor:pointer; position:relative;
+    width:min(78vw,400px); filter:drop-shadow(0 26px 26px rgba(0,0,0,.55))}
+  #piggyHit:focus-visible{outline:3px dashed rgba(255,215,90,.9); outline-offset:14px; border-radius:24px}
+  #piggyInner{animation:bob 3.4s ease-in-out infinite; transform-origin:50% 88%}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-.6deg)}50%{transform:translateY(-9px) rotate(.6deg)}}
+  #piggySvg{width:100%; height:auto; display:block; overflow:visible}
+  #glowRing{position:absolute; left:50%; top:56%; width:104%; aspect-ratio:1; transform:translate(-50%,-50%);
+    border-radius:50%; pointer-events:none; opacity:0;
+    background:radial-gradient(closest-side,rgba(255,222,120,.55),transparent 70%)}
+  #glowRing.hit{animation:ring .45s ease-out}
+  @keyframes ring{0%{opacity:.95; transform:translate(-50%,-50%) scale(.72)}100%{opacity:0; transform:translate(-50%,-50%) scale(1.3)}}
+  #hint{position:absolute; left:50%; bottom:-52px; transform:translateX(-50%); font-weight:800;
+    font-size:15px; color:#ffe89a; text-shadow:0 2px 8px #000; white-space:nowrap;
+    animation:hintBounce 1.1s ease-in-out infinite}
+  @keyframes hintBounce{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,7px)}}
+
+  /* ---------- prestige bar ---------- */
+  #prestige{position:fixed; left:50%; transform:translateX(-50%); bottom:104px; z-index:16;
+    width:min(92vw,470px); text-align:center}
+  #pbarTop{display:flex; justify-content:space-between; font-size:11.5px; font-weight:800;
+    letter-spacing:.1em; text-transform:uppercase; color:#d9b6f5; margin-bottom:5px;
+    text-shadow:0 2px 5px #000}
+  #pbar{height:15px; border-radius:99px; background:rgba(0,0,0,.46); overflow:hidden;
+    border:1.5px solid rgba(255,255,255,.16); box-shadow:inset 0 2px 7px rgba(0,0,0,.6)}
+  #pfill{height:100%; width:0%; border-radius:99px; transition:width .22s ease-out;
+    background:linear-gradient(90deg,#ff9d2e,#ffd95e,#fff3b0);
+    box-shadow:0 0 16px rgba(255,200,70,.85)}
+  #pfill.full{animation:fullPulse 1s ease-in-out infinite}
+  @keyframes fullPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.45)}}
+  #prestigeBtn{margin-top:9px; width:100%; padding:12px; font-size:15px; font-weight:900;
+    letter-spacing:.06em; text-transform:uppercase; border:0; border-radius:14px; cursor:pointer;
+    color:#4a2a00; background:linear-gradient(180deg,#ffe07a,#f2a01c);
+    box-shadow:0 5px 0 #a35c00,0 10px 24px rgba(0,0,0,.45); transition:transform .08s,filter .15s}
+  #prestigeBtn:active{transform:translateY(4px); box-shadow:0 1px 0 #a35c00}
+  #prestigeBtn[disabled]{cursor:not-allowed; filter:grayscale(.85) brightness(.62);
+    box-shadow:0 5px 0 #2c1a3d}
+  #prestigeBtn:not([disabled]){animation:pbtn 1.15s ease-in-out infinite}
+  @keyframes pbtn{0%,100%{box-shadow:0 5px 0 #a35c00,0 0 0 rgba(255,200,70,0)}
+                  50%{box-shadow:0 5px 0 #a35c00,0 0 30px rgba(255,210,90,.85)}}
+
+  /* ---------- buttons row ---------- */
+  #dock{position:fixed; right:14px; bottom:16px; z-index:22; display:flex; gap:10px; align-items:flex-end}
+  .fab{position:relative; border:0; cursor:pointer; border-radius:16px; font-weight:900;
+    color:#3a1c00; background:linear-gradient(180deg,#8ce6ff,#2ba7d8); padding:14px 18px; font-size:15px;
+    letter-spacing:.04em; box-shadow:0 5px 0 #14657f,0 10px 22px rgba(0,0,0,.4);
+    transition:transform .08s, filter .15s}
+  .fab:active{transform:translateY(4px); box-shadow:0 1px 0 #14657f}
+  .fab.small{padding:12px 13px; font-size:17px; background:linear-gradient(180deg,#cbb2e8,#8e6dc0);
+    box-shadow:0 5px 0 #4e3172,0 10px 22px rgba(0,0,0,.4)}
+  .fab.small:active{box-shadow:0 1px 0 #4e3172}
+  #shopDot{position:absolute; right:-4px; top:-4px; width:15px; height:15px; border-radius:50%;
+    background:var(--good); border:2.5px solid #10331f; display:none; animation:dot 1s infinite}
+  @keyframes dot{0%,100%{transform:scale(1)}50%{transform:scale(1.32)}}
+
+  /* ---------- shop ---------- */
+  #shop{position:fixed; top:0; right:0; bottom:0; width:min(94vw,428px); z-index:30;
+    background:var(--panel); backdrop-filter:blur(14px);
+    border-left:1.5px solid rgba(255,255,255,.12); box-shadow:-18px 0 50px rgba(0,0,0,.6);
+    transform:translateX(102%); transition:transform .3s cubic-bezier(.3,.9,.3,1);
+    display:flex; flex-direction:column}
+  #shop.open{transform:none}
+  .shopHead{padding:15px 16px 11px; border-bottom:1.5px solid rgba(255,255,255,.1)}
+  .shopHead h2{margin:0 0 3px; font-size:21px; letter-spacing:.02em}
+  .shopHead .bal{font-size:13px; font-weight:800; color:var(--gold)}
+  #closeShop{position:absolute; right:11px; top:11px; width:34px; height:34px; border-radius:10px;
+    border:0; cursor:pointer; font-size:19px; font-weight:900; color:#fff; background:rgba(255,255,255,.13)}
+  .buyRow{display:flex; gap:7px; margin-top:10px}
+  .buyRow button{flex:1; padding:7px; border-radius:9px; border:1.5px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.07); color:#e9d8ff; font-weight:900; font-size:12.5px; cursor:pointer}
+  .buyRow button.on{background:linear-gradient(180deg,#ffd75e,#f2a01c); color:#40230a; border-color:transparent}
+  #items{flex:1; overflow-y:auto; padding:12px 12px 18px; display:flex; flex-direction:column; gap:9px}
+  #items::-webkit-scrollbar{width:9px}
+  #items::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2); border-radius:9px}
+  .item{display:flex; gap:11px; align-items:center; padding:11px; border-radius:14px;
+    background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.04));
+    border:1.5px solid rgba(255,255,255,.1); cursor:pointer; transition:transform .08s,border-color .2s}
+  .item.can{border-color:rgba(84,227,138,.65); box-shadow:0 0 17px rgba(84,227,138,.2)}
+  .item.cant{opacity:.55; cursor:not-allowed}
+  .item.maxed{opacity:.72; cursor:default; border-color:rgba(255,207,63,.5)}
+  .item:active.can{transform:scale(.977)}
+  .ico{flex:0 0 46px; height:46px; border-radius:12px; display:grid; place-items:center; font-size:24px;
+    background:rgba(0,0,0,.32); box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.1)}
+  .meta{flex:1; min-width:0}
+  .nm{font-weight:900; font-size:15px; display:flex; align-items:center; gap:7px}
+  .lvl{font-size:10.5px; font-weight:900; padding:2px 7px; border-radius:99px;
+    background:rgba(255,255,255,.16); color:#ffe9a8}
+  .ds{font-size:12px; color:#d5bdf0; margin-top:2px; line-height:1.35}
+  .own{font-size:11px; color:#9be9b6; margin-top:2px; font-weight:700}
+  .price{flex:0 0 auto; text-align:right; font-weight:900; font-size:13.5px; color:var(--gold);
+    text-shadow:0 2px 5px #000; white-space:nowrap}
+  .price small{display:block; font-size:10px; color:#c9a6ec; font-weight:800}
+  .flash{animation:flash .4s ease-out}
+  @keyframes flash{0%{background:rgba(120,255,170,.5)}100%{background:transparent}}
+  .shopFoot{padding:10px 13px 13px; border-top:1.5px solid rgba(255,255,255,.1);
+    display:flex; gap:8px; font-size:12px}
+  .shopFoot button{flex:1; padding:9px; border-radius:10px; border:1.5px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.07); color:#e2cdff; font-weight:800; cursor:pointer}
+  .sect{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:#b48fd8;
+    font-weight:900; margin:7px 2px 1px}
+
+  /* ---------- market panel ---------- */
+  #market{position:fixed; top:0; left:0; bottom:0; width:min(94vw,436px); z-index:30;
+    background:var(--panel); backdrop-filter:blur(14px);
+    border-right:1.5px solid rgba(255,255,255,.12); box-shadow:18px 0 50px rgba(0,0,0,.6);
+    transform:translateX(-102%); transition:transform .3s cubic-bezier(.3,.9,.3,1);
+    display:flex; flex-direction:column}
+  #market.open{transform:none}
+  .mktHead{padding:15px 16px 11px; border-bottom:1.5px solid rgba(255,255,255,.1); position:relative}
+  .mktHead h2{margin:0 0 3px; font-size:21px}
+  .mktHead .bal{font-size:13px; font-weight:800; color:var(--gold)}
+  .mktHead .bal span.pv{color:#9be9b6}
+  #closeMkt{position:absolute; right:11px; top:11px; width:34px; height:34px; border-radius:10px;
+    border:0; cursor:pointer; font-size:19px; font-weight:900; color:#fff; background:rgba(255,255,255,.13)}
+  #tickClock{position:absolute; right:52px; top:15px; font-size:11.5px; font-weight:900;
+    color:#c8a6ee; letter-spacing:.06em}
+  .tabs{display:flex; gap:7px; margin-top:11px}
+  .tabs button{flex:1; padding:8px; border-radius:10px; border:1.5px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.07); color:#e9d8ff; font-weight:900; font-size:12.5px; cursor:pointer}
+  .tabs button.on{background:linear-gradient(180deg,#8ce6ff,#2ba7d8); color:#08303d; border-color:transparent}
+  #mktBody{flex:1; overflow-y:auto; padding:12px 12px 20px}
+  #mktBody::-webkit-scrollbar{width:9px}
+  #mktBody::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2); border-radius:9px}
+  .co{border-radius:15px; padding:12px; margin-bottom:10px;
+    background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.035));
+    border:1.5px solid rgba(255,255,255,.1)}
+  .coTop{display:flex; align-items:center; gap:10px}
+  .coIco{flex:0 0 42px; height:42px; border-radius:12px; display:grid; place-items:center; font-size:22px;
+    background:rgba(0,0,0,.32); box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.1)}
+  .coName{flex:1; min-width:0}
+  .coName b{font-size:15px; display:block}
+  .coName .tk{font-size:10.5px; font-weight:900; color:#b48fd8; letter-spacing:.1em}
+  .coName .bl{font-size:11px; color:#c0a4dd; margin-top:1px}
+  .coPx{text-align:right; white-space:nowrap}
+  .coPx .p{font-size:17px; font-weight:900; color:#fff6d6}
+  .coPx .d{font-size:12px; font-weight:900}
+  .up{color:var(--good)} .down{color:var(--bad)} .flatc{color:#c3aede}
+  .spark{width:100%; height:36px; display:block; margin:9px 0 2px}
+  .coHead{font-size:12px; line-height:1.4; color:#e4d0f7; font-style:italic;
+    padding:7px 9px; border-radius:9px; background:rgba(0,0,0,.26); margin:4px 0 8px}
+  .hold{display:flex; justify-content:space-between; font-size:11.5px; font-weight:700;
+    color:#cbb2e8; margin-bottom:8px; gap:8px; flex-wrap:wrap}
+  .hold b{color:#fff}
+  .coBtns{display:flex; gap:7px}
+  .coBtns button{flex:1; padding:10px 6px; border-radius:10px; border:0; font-weight:900;
+    font-size:13px; cursor:pointer; letter-spacing:.03em}
+  .bBuy{background:linear-gradient(180deg,#8ff0b6,#2fb567); color:#053a1d; box-shadow:0 3px 0 #14683a}
+  .bSell{background:linear-gradient(180deg,#ffb3bf,#e2506a); color:#490d18; box-shadow:0 3px 0 #8d1f33}
+  .coBtns button:active{transform:translateY(3px); box-shadow:none}
+  .coBtns button[disabled]{filter:grayscale(.8) brightness(.6); cursor:not-allowed; box-shadow:none}
+  .newsItem{padding:10px 11px; border-radius:12px; margin-bottom:8px;
+    background:rgba(255,255,255,.06); border:1.5px solid rgba(255,255,255,.09)}
+  .newsItem .who{font-size:10.5px; font-weight:900; letter-spacing:.1em; color:#a98fd0}
+  .newsItem .tx{font-size:13px; line-height:1.45; margin-top:3px; color:#f0e4ff}
+  .newsItem .ago{font-size:10.5px; color:#8f79ad; margin-top:4px; font-weight:700}
+  .empty{text-align:center; color:#a98fd0; font-size:13px; padding:26px 12px; line-height:1.6}
+  #mktDot{position:absolute; right:-4px; top:-4px; width:15px; height:15px; border-radius:50%;
+    background:#ffd35e; border:2.5px solid #4a2d05; display:none; animation:dot 1s infinite}
+
+  /* ---------- combo meter ---------- */
+  #comboWrap{margin-top:8px; text-align:center; animation:comboIn .2s ease-out}
+  @keyframes comboIn{0%{transform:scale(.7); opacity:0}100%{transform:scale(1); opacity:1}}
+  #comboTxt{font-size:15px; font-weight:900; color:#9ff0ff;
+    text-shadow:0 2px 0 #06414f,0 0 18px rgba(120,240,255,.75); letter-spacing:.02em}
+  #comboTxt.hot{color:#fff1a8; text-shadow:0 2px 0 #8a4a00,0 0 22px rgba(255,210,80,.9)}
+  #comboBar{width:132px; height:6px; margin:4px auto 0; border-radius:99px;
+    background:rgba(0,0,0,.5); overflow:hidden; box-shadow:inset 0 1px 3px rgba(0,0,0,.7)}
+  #comboFill{height:100%; width:0%; border-radius:99px;
+    background:linear-gradient(90deg,#4fd8ff,#a8f0ff,#fff6c0); box-shadow:0 0 10px rgba(110,225,255,.9)}
+
+  /* ---------- golden pig event ---------- */
+  #golden{position:fixed; z-index:40; border:0; background:none; padding:0; cursor:pointer;
+    width:104px; filter:drop-shadow(0 0 22px rgba(255,210,80,.95));
+    animation:goldFloat 1.9s ease-in-out infinite, goldPop .42s cubic-bezier(.2,1.7,.4,1) both}
+  #golden[hidden]{display:none}
+  #golden svg{display:block; width:100%; height:auto; overflow:visible}
+  #golden.leaving{animation:goldOut .5s ease-in forwards}
+  @keyframes goldPop{0%{transform:scale(0) rotate(-24deg); opacity:0}100%{transform:scale(1) rotate(0); opacity:1}}
+  @keyframes goldFloat{0%,100%{translate:0 0}50%{translate:0 -13px}}
+  @keyframes goldOut{to{opacity:0; transform:scale(.55) rotate(18deg)}}
+  #golden::after{content:"GOLDEN PIG!"; position:absolute; left:50%; bottom:-20px;
+    transform:translateX(-50%); font-size:11px; font-weight:900; letter-spacing:.1em;
+    color:#fff3bd; text-shadow:0 2px 6px #000,0 0 12px rgba(255,200,60,.9); white-space:nowrap}
+
+  /* ---------- piggy net-worth tiers ---------- */
+  #piggyHit[data-tier="1"] #piggySvg{filter:saturate(1.08) drop-shadow(0 0 16px rgba(255,168,92,.55))}
+  #piggyHit[data-tier="2"] #piggySvg{filter:saturate(.82) brightness(1.1) drop-shadow(0 0 20px rgba(196,222,255,.7))}
+  #piggyHit[data-tier="3"] #piggySvg{filter:saturate(1.18) drop-shadow(0 0 26px rgba(255,205,60,.85))}
+  #piggyHit[data-tier="4"] #piggySvg{filter:saturate(1.3) hue-rotate(-8deg) drop-shadow(0 0 32px rgba(150,235,255,.95))}
+  #piggyHit[data-tier="4"]{animation:tierShine 3.4s ease-in-out infinite}
+  @keyframes tierShine{0%,100%{filter:drop-shadow(0 26px 26px rgba(0,0,0,.55))}
+    50%{filter:drop-shadow(0 26px 26px rgba(0,0,0,.55)) drop-shadow(0 0 26px rgba(255,255,255,.5))}}
+  #tierOut{font-weight:900}
+
+  /* ---------- achievements ---------- */
+  /* top-right, so unlock popups never cover the cash counter */
+  #toasts{position:fixed; right:14px; top:14px; z-index:62;
+    display:flex; flex-direction:column; gap:8px; align-items:flex-end; pointer-events:none}
+  .toast{display:flex; align-items:center; gap:10px; padding:10px 15px 10px 11px; border-radius:14px;
+    background:linear-gradient(180deg,rgba(70,32,96,.97),rgba(38,16,54,.97));
+    border:1.5px solid rgba(255,207,63,.65); box-shadow:0 10px 30px rgba(0,0,0,.6),0 0 24px rgba(255,190,60,.3);
+    animation:toastIn .34s cubic-bezier(.2,1.6,.4,1) both; max-width:min(92vw,360px)}
+  .toast.out{animation:toastOut .4s ease-in forwards}
+  @keyframes toastIn{0%{transform:translateY(-24px) scale(.85); opacity:0}100%{transform:none; opacity:1}}
+  @keyframes toastOut{to{transform:translateY(-16px); opacity:0}}
+  .toast .tIco{font-size:24px}
+  .toast .tCap{font-size:10px; font-weight:900; letter-spacing:.14em; color:#ffd35e}
+  .toast .tNm{font-size:14px; font-weight:900; color:#fff}
+  #achGrid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px;
+    max-height:52vh; overflow-y:auto; text-align:left}
+  #achGrid::-webkit-scrollbar{width:8px}
+  #achGrid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2); border-radius:8px}
+  .ach{display:flex; gap:8px; align-items:center; padding:8px; border-radius:11px;
+    background:rgba(255,255,255,.06); border:1.5px solid rgba(255,255,255,.09)}
+  .ach.got{border-color:rgba(255,207,63,.6); background:rgba(255,200,60,.12)}
+  .ach .ai{font-size:19px; filter:grayscale(1) opacity(.5)}
+  .ach.got .ai{filter:none}
+  .ach .an{font-size:12px; font-weight:900; color:#d9c2f2}
+  .ach.got .an{color:#fff}
+  .ach .ad{font-size:10.5px; color:#a98fd0; line-height:1.3}
+
+  /* ---------- insider whisper ---------- */
+  .newsItem.whisper{border-color:rgba(120,240,255,.7); background:rgba(80,220,255,.11);
+    box-shadow:0 0 18px rgba(90,225,255,.18)}
+  .whisperTag{display:inline-block; font-size:9.5px; font-weight:900; letter-spacing:.12em;
+    padding:2px 7px; border-radius:99px; margin-bottom:4px;
+    background:linear-gradient(180deg,#9ff0ff,#35b6d8); color:#04323d}
+  .coHead.whisper{border:1.5px solid rgba(120,240,255,.6); background:rgba(80,220,255,.12);
+    color:#e8fbff; font-style:normal}
+
+  /* ---------- modal ---------- */
+  #modalWrap{position:fixed; inset:0; z-index:60; background:rgba(8,2,14,.72); backdrop-filter:blur(4px);
+    display:none; place-items:center; padding:22px}
+  #modalWrap.open{display:grid}
+  .modal{width:min(94vw,400px); background:linear-gradient(180deg,#3a1a4e,#25102f);
+    border:1.5px solid rgba(255,255,255,.16); border-radius:20px; padding:20px; text-align:center;
+    box-shadow:0 24px 60px rgba(0,0,0,.65); animation:mIn .26s cubic-bezier(.2,1.5,.4,1) both}
+  @keyframes mIn{0%{transform:scale(.85) translateY(14px); opacity:0}100%{transform:none; opacity:1}}
+  .modal h3{margin:0 0 9px; font-size:22px}
+  .modal p{margin:0 0 8px; font-size:14px; line-height:1.5; color:#e0cbf5}
+  .modal .hl{color:var(--gold); font-weight:900}
+  .mBtns{display:flex; gap:9px; margin-top:16px}
+  .mBtns button{flex:1; padding:12px; border-radius:12px; border:0; font-weight:900; font-size:14px;
+    cursor:pointer; letter-spacing:.03em}
+  .mNo{background:rgba(255,255,255,.14); color:#fff}
+  .mYes{background:linear-gradient(180deg,#ffe07a,#f2a01c); color:#4a2a00; box-shadow:0 4px 0 #a35c00}
+
+  /* ---------- prestige flash ---------- */
+  #whiteout{position:fixed; inset:0; z-index:55; background:#fff; opacity:0; pointer-events:none}
+  #whiteout.go{animation:wo 1.1s ease-out}
+  @keyframes wo{0%{opacity:0}12%{opacity:.92}100%{opacity:0}}
+  #banner{position:fixed; left:50%; top:38%; transform:translate(-50%,-50%) scale(.6); z-index:58;
+    font-size:clamp(26px,8vw,54px); font-weight:900; letter-spacing:.03em; text-align:center;
+    color:#fff3c4; text-shadow:0 4px 0 #b8710a,0 0 40px rgba(255,200,60,.9);
+    opacity:0; pointer-events:none; white-space:nowrap}
+  #banner.go{animation:ban 2.1s cubic-bezier(.2,1.4,.3,1) both}
+  @keyframes ban{0%{opacity:0; transform:translate(-50%,-50%) scale(.5)}
+    18%{opacity:1; transform:translate(-50%,-50%) scale(1.06)}
+    76%{opacity:1; transform:translate(-50%,-50%) scale(1)}
+    100%{opacity:0; transform:translate(-50%,-52%) scale(1.04)}}
+  @media (max-width:520px){
+    #prestige{bottom:96px; width:94vw}
+    .fab{padding:13px 12px; font-size:13.5px}
+    .fab.small{padding:12px 10px; font-size:16px}
+    #dock{gap:7px; right:10px}
+    #toasts{right:8px; left:8px; align-items:center}
+  }
+  @media (prefers-reduced-motion:reduce){
+    #piggyInner,.rays,#bg::after{animation:none}
+  }
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<div class="rays"></div>
+
+<div id="starWrap">
+  <div class="cap">Prestige</div>
+  <div id="stars"></div>
+  <div id="multTag">×1.00 cash</div>
+</div>
+
+<div id="hud">
+  <div id="cash">$0</div>
+  <div id="subline">
+    <span><b id="perClick">$1</b> / click</span>
+    <span>mult <b id="multOut">×1.00</b></span>
+    <span id="critOut" hidden>crit <b>0%</b></span>
+    <span id="autoOut" hidden>auto <b>0/s</b></span>
+    <span id="tierOut" hidden></span>
+  </div>
+  <div id="comboWrap" hidden>
+    <div id="comboTxt">×1.00 combo</div>
+    <div id="comboBar"><div id="comboFill"></div></div>
+  </div>
+</div>
+
+<div id="stage">
+  <button id="piggyHit" aria-label="Click the piggy bank to earn cash">
+    <div id="glowRing"></div>
+    <div id="piggyInner">
+      <svg id="piggySvg" viewBox="0 0 340 270" aria-hidden="true">
+        <defs>
+          <radialGradient id="gBody" cx="34%" cy="26%" r="82%">
+            <stop offset="0" stop-color="#ffd3e4"/><stop offset="46%" stop-color="#ff9ec4"/>
+            <stop offset="100%" stop-color="#e05a95"/>
+          </radialGradient>
+          <radialGradient id="gSnout" cx="36%" cy="30%" r="80%">
+            <stop offset="0" stop-color="#ffd9ea"/><stop offset="100%" stop-color="#f478ab"/>
+          </radialGradient>
+          <linearGradient id="gEar" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ffb3d2"/><stop offset="100%" stop-color="#d9578f"/>
+          </linearGradient>
+          <linearGradient id="gSlot" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#5c1436"/><stop offset="100%" stop-color="#992a5c"/>
+          </linearGradient>
+          <linearGradient id="gCoin" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#fff2b0"/><stop offset="50%" stop-color="#ffcf3f"/>
+            <stop offset="100%" stop-color="#e08a12"/>
+          </linearGradient>
+        </defs>
+        <!-- shadow -->
+        <ellipse cx="172" cy="243" rx="104" ry="15" fill="rgba(0,0,0,.32)"/>
+        <!-- legs -->
+        <g fill="#e368a0">
+          <rect x="76"  y="196" width="38" height="42" rx="16"/>
+          <rect x="132" y="200" width="38" height="40" rx="16"/>
+          <rect x="196" y="200" width="38" height="40" rx="16"/>
+          <rect x="248" y="196" width="38" height="42" rx="16"/>
+        </g>
+        <!-- tail -->
+        <path d="M292 132 c22-10 30 8 18 18 c-11 9-24 1-18-10" fill="none" stroke="#e368a0"
+              stroke-width="11" stroke-linecap="round"/>
+        <!-- ears -->
+        <path d="M120 52 c16-24 44-20 48 6 c2 15-10 26-24 26 c-16 0-32-16-24-32z" fill="url(#gEar)"/>
+        <path d="M228 56 c18-20 44-12 42 14 c-1 15-14 24-28 21 c-15-3-25-22-14-35z" fill="url(#gEar)"/>
+        <!-- body -->
+        <ellipse cx="176" cy="140" rx="118" ry="86" fill="url(#gBody)"/>
+        <!-- body highlight -->
+        <ellipse cx="128" cy="94" rx="52" ry="30" fill="rgba(255,255,255,.32)" transform="rotate(-22 128 94)"/>
+        <!-- coin slot -->
+        <g id="slotG">
+          <rect x="146" y="66" width="76" height="15" rx="7.5" fill="url(#gSlot)"
+                transform="rotate(-7 184 73)"/>
+          <rect x="149" y="68" width="70" height="4" rx="2" fill="rgba(0,0,0,.45)"
+                transform="rotate(-7 184 70)"/>
+        </g>
+        <!-- snout -->
+        <ellipse cx="70" cy="150" rx="40" ry="33" fill="url(#gSnout)"/>
+        <ellipse cx="58" cy="145" rx="7" ry="9" fill="#c94b83"/>
+        <ellipse cx="82" cy="148" rx="7" ry="9" fill="#c94b83"/>
+        <!-- eye -->
+        <ellipse cx="118" cy="106" rx="11" ry="12.5" fill="#3a1128"/>
+        <circle cx="122" cy="101" r="4" fill="#fff"/>
+        <circle cx="114" cy="112" r="2" fill="rgba(255,255,255,.7)"/>
+        <!-- brow + blush -->
+        <path d="M104 86 q14-9 28-3" stroke="#d15c8e" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <ellipse cx="106" cy="140" rx="17" ry="11" fill="rgba(255,120,170,.45)"/>
+        <!-- little coin peeking in slot -->
+        <circle id="peekCoin" cx="184" cy="60" r="17" fill="url(#gCoin)" stroke="#b9760c" stroke-width="2.5"/>
+        <text x="184" y="67" text-anchor="middle" font-size="19" font-weight="900"
+              fill="#a9670a" font-family="Segoe UI,sans-serif">$</text>
+      </svg>
+    </div>
+    <div id="hint">▲ tap the piggy ▲</div>
+  </button>
+</div>
+
+<canvas id="fx"></canvas>
+
+<div id="prestige">
+  <div id="pbarTop"><span>Prestige progress</span><span id="pText">$0 / $10M</span></div>
+  <div id="pbar"><div id="pfill"></div></div>
+  <button id="prestigeBtn" disabled>Prestige ★ locked</button>
+</div>
+
+<div id="dock">
+  <button class="fab small" id="muteBtn" title="Mute">🔊</button>
+  <button class="fab small" id="achDock" title="Awards">🏆</button>
+  <button class="fab" id="mktBtn">📈 MARKET<span id="mktDot"></span></button>
+  <button class="fab" id="shopBtn">🛒 SHOP<span id="shopDot"></span></button>
+</div>
+
+<aside id="market" aria-hidden="true">
+  <div class="mktHead">
+    <button id="closeMkt" aria-label="Close market">✕</button>
+    <div id="tickClock">next 1:00</div>
+    <h2>📈 Piggy Exchange</h2>
+    <div class="bal">Cash: <span id="mktBal">$0</span> &nbsp;·&nbsp;
+      Portfolio: <span class="pv" id="mktPort">$0</span></div>
+    <div class="tabs">
+      <button data-tab="market" class="on">Market</button>
+      <button data-tab="news">📰 News</button>
+    </div>
+    <div class="buyRow" id="qtyRow">
+      <button data-qty="1" class="on">Trade ×1</button>
+      <button data-qty="10">Trade ×10</button>
+      <button data-qty="max">Trade MAX</button>
+    </div>
+  </div>
+  <div id="mktBody"></div>
+</aside>
+
+<aside id="shop" aria-hidden="true">
+  <div class="shopHead">
+    <button id="closeShop" aria-label="Close shop">✕</button>
+    <h2>🛒 Piggy Shop</h2>
+    <div class="bal">Balance: <span id="shopBal">$0</span></div>
+    <div class="buyRow">
+      <button data-buy="1" class="on">Buy ×1</button>
+      <button data-buy="10">Buy ×10</button>
+      <button data-buy="max">Buy MAX</button>
+    </div>
+  </div>
+  <div id="items"></div>
+  <div class="shopFoot">
+    <button id="resetBtn">↺ Reset</button>
+    <button id="statsBtn">📊 Stats</button>
+    <button id="achBtn">🏆 Awards</button>
+  </div>
+</aside>
+
+<button id="golden" hidden aria-label="Golden pig — click for a big bonus">
+  <svg viewBox="0 0 340 270" aria-hidden="true">
+    <defs>
+      <radialGradient id="gGold" cx="34%" cy="26%" r="82%">
+        <stop offset="0" stop-color="#fffbe0"/><stop offset="45%" stop-color="#ffd451"/>
+        <stop offset="100%" stop-color="#c9820b"/>
+      </radialGradient>
+      <radialGradient id="gGoldSn" cx="36%" cy="30%" r="80%">
+        <stop offset="0" stop-color="#fff6cd"/><stop offset="100%" stop-color="#e0a319"/>
+      </radialGradient>
+    </defs>
+    <g fill="#dba116">
+      <rect x="76" y="196" width="38" height="42" rx="16"/>
+      <rect x="132" y="200" width="38" height="40" rx="16"/>
+      <rect x="196" y="200" width="38" height="40" rx="16"/>
+      <rect x="248" y="196" width="38" height="42" rx="16"/>
+    </g>
+    <path d="M292 132 c22-10 30 8 18 18 c-11 9-24 1-18-10" fill="none" stroke="#dba116"
+          stroke-width="11" stroke-linecap="round"/>
+    <path d="M120 52 c16-24 44-20 48 6 c2 15-10 26-24 26 c-16 0-32-16-24-32z" fill="#e8b52c"/>
+    <path d="M228 56 c18-20 44-12 42 14 c-1 15-14 24-28 21 c-15-3-25-22-14-35z" fill="#e8b52c"/>
+    <ellipse cx="176" cy="140" rx="118" ry="86" fill="url(#gGold)"/>
+    <ellipse cx="128" cy="94" rx="52" ry="30" fill="rgba(255,255,255,.45)" transform="rotate(-22 128 94)"/>
+    <rect x="146" y="66" width="76" height="15" rx="7.5" fill="#8a5c07" transform="rotate(-7 184 73)"/>
+    <ellipse cx="70" cy="150" rx="40" ry="33" fill="url(#gGoldSn)"/>
+    <ellipse cx="58" cy="145" rx="7" ry="9" fill="#a9720a"/>
+    <ellipse cx="82" cy="148" rx="7" ry="9" fill="#a9720a"/>
+    <ellipse cx="118" cy="106" rx="11" ry="12.5" fill="#4a3208"/>
+    <circle cx="122" cy="101" r="4" fill="#fff"/>
+  </svg>
+</button>
+
+<div id="toasts"></div>
+<div id="whiteout"></div>
+<div id="banner"></div>
+<div id="modalWrap"><div class="modal" id="modal"></div></div>
+
+<script>
+"use strict";
+/* ================================================================
+   Piggy Bank Tycoon — single-file clicker
+   Balance calibrated by simulation: first prestige ($10M) lands at
+   ~14 min @3.5 clicks/s (~20 min relaxed, ~10 min frantic).
+   ================================================================ */
+
+const CRIT_MULT   = 8;      // crit payout multiplier
+const PRESTIGE_REQ = 1.2e8; // base "earned this run" needed for star #1
+const REQ_SCALE   = 1.5;    // requirement growth per star
+const PRESTIGE_GAIN = 1.5;  // cash multiplier per star (compounding)
+const MAX_COINS   = 260;
+
+/* ---- market tuning (re-validated by simulation at 90s ticks: buy & hold is a
+        fair 0.00%/tick, reading the news is worth ~+2.1%/tick (~+23% per run),
+        and prices sit on their rails only ~2% of ticks) ---- */
+const TICK_MS   = 90000;    // one price move every 90 seconds
+const TREND_KEYS = ['strong_down','down','flat','up','strong_up'];
+const DRIFT     = { strong_down:-0.075, down:-0.040, flat:0, up:0.040, strong_up:0.075 };
+const NOISE_SD  = 0.024;    // gaussian jitter, scaled by company volatility
+const REVERT    = 0.070;    // pull back toward base price (in log space)
+const NEWS_ACC  = 0.78;     // default chance a headline reflects the real trend
+const TREND_MIN=3, TREND_MAX=6;  // trend lasts 3-6 ticks = 4.5-9 real minutes
+const INSIDER_CHANCE = 0.12;     // per tick, one company may leak a reliable tip
+const INSIDER_ACC    = 0.96;
+
+/* ---- golden pig event (worth ~45 clicks, ~1 every 2.5 min) ---- */
+const GOLD_MULT = 45, GOLD_MIN_MS = 105000, GOLD_MAX_MS = 195000, GOLD_LIFE = 9;
+const GOLD_FIRST_MS = 25000;  // first-ever pig comes early, so players learn it exists
+
+/* ---- click combo: rewards sustained clicking, manual clicks only ---- */
+const COMBO_WINDOW = 900;   // ms before the streak starts draining
+const COMBO_STEP = 0.005, COMBO_MAX = 1.35, COMBO_DRAIN = 40;
+
+/* ---- offline autoclicker credit ---- */
+const OFFLINE_EFF = 0.5, OFFLINE_CAP_MS = 20*60000, OFFLINE_MIN_MS = 90000;
+
+/* ---- net-worth tiers shown on the piggy itself ---- */
+const TIERS = [
+  { at:0,    name:'Clay',    icon:'🐷' },
+  { at:1e5,  name:'Bronze',  icon:'🥉' },
+  { at:1e7,  name:'Silver',  icon:'🥈' },
+  { at:1e9,  name:'Gold',    icon:'🥇' },
+  { at:1e11, name:'Diamond', icon:'💎' },
+];
+const SELL_CONFIRM_MIN = 250000;  // confirm big MAX sells above this
+
+/* ---------------- shop definition ---------------- */
+const SHOP = [
+  { id:'feed',  name:'Piggy Feed',  icon:'🌽', kind:'flat', amt:1,    base:15,    growth:1.30,
+    desc:'Well-fed pigs cough up fatter coins.' },
+  { id:'slop',  name:'Golden Slop', icon:'🥣', kind:'flat', amt:12,   base:900,   growth:1.30,
+    desc:'Premium gilded feed. Tastes expensive.' },
+  { id:'press', name:'Coin Press',  icon:'⚙️', kind:'flat', amt:140,  base:40000, growth:1.30,
+    desc:'Stamps fresh coins inside the piggy.' },
+  { id:'vault', name:'Vault Snout', icon:'🏦', kind:'flat', amt:2000, base:5e6,   growth:1.30,
+    desc:'A snout with its own routing number.' },
+
+  { id:'polish',name:'Piggy Polish',icon:'✨', kind:'mult', amt:1.15, base:400,   growth:3.20, cap:6,
+    desc:'Slippery shine — coins slide out faster.' },
+  { id:'charm', name:'Lucky Charm', icon:'🍀', kind:'mult', amt:1.30, base:60000, growth:3.20, cap:5,
+    desc:'Statistically dubious. Financially superb.' },
+  { id:'aura',  name:'Golden Aura', icon:'👑', kind:'mult', amt:1.60, base:2e6,   growth:3.20, cap:4,
+    desc:'The piggy ascends to minor royalty.' },
+
+  { id:'snout', name:'Lucky Snout', icon:'🎯', kind:'crit', amt:0.03, base:5000,  growth:2.60, cap:7,
+    desc:'+3% chance of a ×'+CRIT_MULT+' JACKPOT click.' },
+
+  { id:'robo',  name:'Robo Trotter',icon:'🤖', kind:'auto', amt:0.5,  base:25000, growth:1.90, cap:10,
+    desc:'A tireless mechanical hoof taps the piggy for you.' },
+];
+const BY_ID = Object.fromEntries(SHOP.map(u=>[u.id,u]));
+
+/* ---------------- the listed companies ----------------
+   vol scales every move; clamp caps a single tick; lo/hi are the price rails
+   as a multiple of base; acc is how often this company's news tells the truth. */
+const COMPANIES = [
+  { id:'snt', name:'Snoutcorp',      tk:'SNT', icon:'🐷', base:1200,  vol:1.00,
+    clamp:0.16, lo:0.28, hi:3.6, acc:0.78,
+    bl:'Artisanal truffle logistics', thing:'truffle futures' },
+  { id:'trt', name:'Trotter & Sons', tk:'TRT', icon:'🏭', base:9500,  vol:0.70,
+    clamp:0.16, lo:0.28, hi:3.6, acc:0.78,
+    bl:'Industrial slop conglomerate', thing:'bulk slop' },
+  { id:'onk', name:'OinkTech',       tk:'ONK', icon:'🚀', base:48000, vol:1.35,
+    clamp:0.16, lo:0.25, hi:4.0, acc:0.78,
+    bl:'AI-powered snout analytics', thing:'snout data' },
+  { id:'bbq', name:'Bacon Bits Inc.',tk:'BBQ', icon:'🥓', base:320,   vol:1.90,
+    clamp:0.28, lo:0.15, hi:6.5, acc:0.58, meme:true,
+    bl:'Meme-grade snack speculation', thing:'novelty bacon' },
+];
+const CO_BY_ID = Object.fromEntries(COMPANIES.map(c=>[c.id,c]));
+
+/* ---------------- achievements (cosmetic — no balance impact) ---------------- */
+const ACHS = [
+  { id:'c1',   icon:'👆', name:'First Poke',      desc:'Click the piggy once',            ok:()=>S.clicks>=1 },
+  { id:'c2',   icon:'✋', name:'Hundred Club',    desc:'100 clicks',                      ok:()=>S.clicks>=100 },
+  { id:'c3',   icon:'💪', name:'Blistered',       desc:'1,000 clicks',                    ok:()=>S.clicks>=1000 },
+  { id:'c4',   icon:'🦾', name:'Iron Finger',     desc:'10,000 clicks',                   ok:()=>S.clicks>=10000 },
+  { id:'m1',   icon:'💵', name:'Pocket Change',   desc:'Earn $100K lifetime',             ok:()=>S.lifetime>=1e5 },
+  { id:'m2',   icon:'💰', name:'Piggy Rich',      desc:'Earn $10M lifetime',              ok:()=>S.lifetime>=1e7 },
+  { id:'m3',   icon:'🏦', name:'Snout Tycoon',    desc:'Earn $1B lifetime',               ok:()=>S.lifetime>=1e9 },
+  { id:'j1',   icon:'🎯', name:'Lucky Strike',    desc:'Land your first jackpot',         ok:()=>S.crits>=1 },
+  { id:'j2',   icon:'🎰', name:'Hot Snout',       desc:'Land 25 jackpots',                ok:()=>S.crits>=25 },
+  { id:'j3',   icon:'🔥', name:'Jackpot Junkie',  desc:'Land 200 jackpots',               ok:()=>S.crits>=200 },
+  { id:'p1',   icon:'⭐', name:'Smashed It',      desc:'Prestige once',                   ok:()=>S.stars>=1 },
+  { id:'p2',   icon:'🌟', name:'Triple Star',     desc:'Reach 3 stars',                   ok:()=>S.stars>=3 },
+  { id:'p3',   icon:'✨', name:'Constellation',   desc:'Reach 10 stars',                  ok:()=>S.stars>=10 },
+  { id:'g1',   icon:'🐖', name:'Golden Touch',    desc:'Catch a golden pig',              ok:()=>S.goldens>=1 },
+  { id:'g2',   icon:'👑', name:'Pig Whisperer',   desc:'Catch 10 golden pigs',            ok:()=>S.goldens>=10 },
+  { id:'g3',   icon:'🏆', name:'Midas Sty',       desc:'Catch 50 golden pigs',            ok:()=>S.goldens>=50 },
+  { id:'k1',   icon:'⚡', name:'In The Zone',     desc:'Reach a 50 combo',                ok:()=>S.comboBest>=50 },
+  { id:'k2',   icon:'🌀', name:'Unstoppable',     desc:'Reach a 120 combo',               ok:()=>S.comboBest>=120 },
+  { id:'t1',   icon:'📈', name:'Day Trader',      desc:'Make your first trade',           ok:()=>S.trades>=1 },
+  { id:'t2',   icon:'💹', name:'In The Green',    desc:'$1M realized trading profit',     ok:()=>S.realized>=1e6 },
+  { id:'t3',   icon:'🥓', name:'Meme Believer',   desc:'Hold 500 shares of BBQ at once',  ok:()=>S.mk.co.bbq.shares>=500 },
+  { id:'t4',   icon:'🤫', name:'Inside Voice',    desc:'Read an insider whisper',         ok:()=>S.whispersSeen>=1 },
+  { id:'a1',   icon:'🤖', name:'Fully Automated', desc:'Max out Robo Trotter',            ok:()=>(S.lv.robo||0)>=10 },
+  { id:'a2',   icon:'🛒', name:'Big Spender',     desc:'Buy 150 upgrade levels total',
+    ok:()=>Object.values(S.lv).reduce((a,b)=>a+b,0)>=150 },
+];
+
+/* Headlines carry the direction in their WORDING only — no numbers, no arrows,
+   no colour coding. You have to actually read them. 78% are honest. */
+const NEWS = {
+  strong_up: [
+    '{n} just signed a monster distribution deal — {t} orders are stacking up faster than they can ship.',
+    'Rivals are openly panicking about {n}. Every desk on the street upgraded it this morning.',
+    'Leaked memo: {n} is quietly buying back its own shares. Insiders are loading up on {t}.',
+    '{n} smashed its own records again. Management called the {t} pipeline "frankly embarrassing to us".',
+  ],
+  up: [
+    '{n} is nudging ahead. Warehouse chatter says {t} is moving a little quicker than last month.',
+    'Steady week for {n} — nothing dramatic, but the {t} order book keeps creeping upward.',
+    'A mid-tier analyst upgraded {n} to "quietly promising". The {t} unit is finding its feet.',
+    '{n} opened a second loading bay. Small sign, but they only do that when {t} demand holds up.',
+  ],
+  flat: [
+    '{n} is doing exactly what it did last month. The {t} desk describes trading as "adequate".',
+    'Nothing to report from {n}. The {t} division held a meeting about holding fewer meetings.',
+    '{n} reaffirmed guidance, changed nothing, and went back to sleep. {t} volumes are flat.',
+    'Analysts covering {n} have started writing about other companies. {t} is simply steady.',
+  ],
+  down: [
+    '{n} is losing a little shelf space. Buyers say the {t} contracts are getting renegotiated down.',
+    'Two mid-level managers left {n} this week. The {t} unit is "under review", whatever that means.',
+    'Softening demand at {n}. One distributor quietly halved its standing {t} order.',
+    '{n} pushed a product launch back a quarter. The {t} team blamed "sequencing".',
+  ],
+  strong_down: [
+    'Regulators walked into {n} unannounced this morning. The {t} warehouse is sealed off.',
+    '{n} lost its biggest buyer and the CFO resigned in the same 24 hours. {t} inventory is piling up.',
+    'Half the {n} board is heading for the exit. Nobody will say a word about the {t} numbers.',
+    '{n} suspended its dividend and told staff to "expect a difficult season" for {t}.',
+  ],
+};
+
+/* ---------------- state ---------------- */
+const freshCo = c => ({ price:c.base, prev:c.base, trend:'flat',
+                        left:1 + (Math.random()*3|0), hist:[c.base],
+                        shares:0, basis:0, feed:[] });
+const FRESH = () => ({
+  v:3, cash:0, runEarned:0, lifetime:0, stars:0, clicks:0, crits:0, autoClicks:0, realized:0,
+  lastSeenNews:0, goldens:0, comboBest:0, trades:0, whispersSeen:0, lastSeen:Date.now(),
+  achs:[],
+  lv:Object.fromEntries(SHOP.map(u=>[u.id,0])),
+  mk:{ next: Date.now()+TICK_MS, co: Object.fromEntries(COMPANIES.map(c=>[c.id, freshCo(c)])) },
+  muted:false, buyMode:1, qtyMode:1, started:Date.now(), runStart:Date.now(), seenHint:false
+});
+let S = FRESH();
+
+const SAVE_KEY = 'piggyBankTycoon.v3';
+function save(){
+  S.lastSeen = Date.now();
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){}
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY); if(!raw) return;
+    const d = JSON.parse(raw); if(!d || typeof d!=='object') return;
+    const f = FRESH();
+    S = Object.assign(f, d);
+    S.lv = Object.assign(Object.fromEntries(SHOP.map(u=>[u.id,0])), d.lv||{});
+    for(const k in S.lv){                             // tolerate added/removed upgrades
+      if(!BY_ID[k]) delete S.lv[k];
+      else S.lv[k] = Math.max(0, Math.floor(+S.lv[k] || 0));
+    }
+    for(const k of ['cash','runEarned','lifetime','stars','clicks','crits','autoClicks','realized',
+                    'lastSeenNews','goldens','comboBest','trades','whispersSeen','lastSeen'])
+      S[k] = Number.isFinite(+S[k]) ? +S[k] : 0;
+    const known = new Set(ACHS.map(a=>a.id));
+    S.achs = Array.isArray(d.achs) ? d.achs.filter(x=>known.has(x)) : [];
+
+    // ---- market migration: rebuild anything missing or malformed ----
+    const savedMk = (d.mk && typeof d.mk==='object') ? d.mk : {};
+    S.mk = { next:+savedMk.next, co:{} };
+    for(const c of COMPANIES){
+      const o = (savedMk.co && savedMk.co[c.id]) || null;
+      const n = freshCo(c);
+      if(o){
+        n.price  = clamp(+o.price || c.base, c.base*c.lo, c.base*c.hi);
+        n.prev   = +o.prev || n.price;
+        n.trend  = TREND_KEYS.includes(o.trend) ? o.trend : 'flat';
+        n.left   = Math.max(0, Math.min(TREND_MAX, Math.floor(+o.left || 0)));
+        n.hist   = Array.isArray(o.hist) ? o.hist.filter(Number.isFinite).slice(-24) : [n.price];
+        if(!n.hist.length) n.hist = [n.price];
+        n.shares = Math.max(0, Math.floor(+o.shares || 0));
+        n.basis  = Math.max(0, +o.basis || 0);
+        n.feed   = Array.isArray(o.feed) ? o.feed.filter(x=>x&&typeof x.text==='string').slice(0,12) : [];
+      }
+      S.mk.co[c.id] = n;
+    }
+    // a wild `next` (clock change, very long absence, corrupt save) resyncs to now
+    if(!Number.isFinite(S.mk.next) || S.mk.next > Date.now()+TICK_MS*2
+       || S.mk.next < Date.now()-TICK_MS*240) S.mk.next = Date.now()+TICK_MS;
+    if(S.qtyMode !== 'max') S.qtyMode = [1,10].includes(+S.qtyMode) ? +S.qtyMode : 1;
+    if(S.buyMode !== 'max') S.buyMode = [1,10].includes(+S.buyMode) ? +S.buyMode : 1;
+  }catch(e){ S = FRESH(); }
+}
+
+/* ---------------- number formatting ---------------- */
+const clamp = (v,lo,hi) => v<lo?lo:v>hi?hi:v;
+const UNITS = ['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc','Ud','Dd','Td'];
+function fmt(n){
+  if(!Number.isFinite(n)) return '∞';
+  if(n < 0) return '-'+fmt(-n);
+  if(n < 1000) return (Math.floor(n*10)/10).toString().replace(/\.0$/,'');
+  let t = 0;
+  while(n >= 1000 && t < UNITS.length-1){ n/=1000; t++; }
+  const dp = n>=100 ? 0 : n>=10 ? 1 : 2;
+  return n.toFixed(dp).replace(/\.0+$/,'') + UNITS[t];
+}
+const money = n => '$'+fmt(n);
+/* share prices deserve real digits, not "1.2K" */
+const px = n => n < 1e6 ? '$'+Math.round(n).toLocaleString('en-US') : money(n);
+const pct = v => (v>=0?'+':'')+(v*100).toFixed(2)+'%';
+
+/* ---------------- derived values ---------------- */
+const prestigeMult = () => Math.pow(PRESTIGE_GAIN, S.stars);
+const requirement  = () => PRESTIGE_REQ * Math.pow(REQ_SCALE, S.stars);
+
+function stats(){
+  let base = 1, mult = 1, crit = 0, auto = 0;
+  for(const u of SHOP){
+    const n = S.lv[u.id]||0; if(!n) continue;
+    if(u.kind==='flat')      base += u.amt*n;
+    else if(u.kind==='mult') mult *= Math.pow(u.amt, n);
+    else if(u.kind==='crit') crit += u.amt*n;
+    else if(u.kind==='auto') auto += u.amt*n;
+  }
+  mult *= prestigeMult();
+  crit = Math.min(crit, 0.95);
+  return { base, mult, crit, auto, perClick: base*mult };
+}
+const costOf = (u, lv) => Math.ceil(u.base * Math.pow(u.growth, lv));
+function bulkCost(u, count){
+  let lv = S.lv[u.id]||0, total = 0, n = 0;
+  const cap = u.cap ?? Infinity;
+  while(n < count && lv < cap){
+    const c = costOf(u, lv);
+    if(!Number.isFinite(c)) break;
+    total += c; lv++; n++;
+  }
+  return { total, n };
+}
+function affordableCount(u){
+  let lv = S.lv[u.id]||0, spend = 0, n = 0;
+  const cap = u.cap ?? Infinity;
+  while(n < 5000 && lv < cap){
+    const c = costOf(u, lv);
+    if(spend + c > S.cash) break;
+    spend += c; lv++; n++;
+  }
+  return { total:spend, n };
+}
+function plan(u){
+  if(S.buyMode === 'max') return affordableCount(u);
+  return bulkCost(u, S.buyMode);
+}
+
+/* ================================================================
+   MARKET ENGINE — validated by simulation: buy & hold is a fair
+   ~0%/tick, reading the news is worth ~+1.7%/tick, and only ~1%
+   of minutes move more than 12%.
+   ================================================================ */
+function gauss(sd){
+  let u=0, v=0;
+  while(u===0) u = Math.random();
+  while(v===0) v = Math.random();
+  return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v) * sd;
+}
+function weightedPick(items, weights){
+  let total = 0; for(const w of weights) total += w;
+  let r = Math.random()*total;
+  for(let i=0;i<items.length;i++){ r -= weights[i]; if(r<=0) return items[i]; }
+  return items[items.length-1];
+}
+function nextTrend(trend){
+  const i = TREND_KEYS.indexOf(trend);
+  const choices = [Math.max(0,i-2), Math.max(0,i-1), i, Math.min(4,i+1), Math.min(4,i+2)];
+  return TREND_KEYS[weightedPick(choices, [1,3,2,3,1])];
+}
+function reportedTrend(trend, acc){
+  if(Math.random() < acc) return trend;           // most headlines are honest
+  const i = TREND_KEYS.indexOf(trend);
+  return TREND_KEYS[Math.random()<0.5 ? Math.max(0,i-1) : Math.min(4,i+1)];
+}
+function pickNews(def, trend, whisper){
+  const t = reportedTrend(trend, whisper ? INSIDER_ACC : def.acc);
+  const arr = NEWS[t];
+  const text = arr[(Math.random()*arr.length)|0].replace(/\{n\}/g, def.name).replace(/\{t\}/g, def.thing);
+  return { text, trend:t, ts:Date.now(), whisper: !!whisper };
+}
+function tickOne(id, whisper){
+  const def = CO_BY_ID[id], co = S.mk.co[id];
+  if(co.left <= 0){
+    co.trend = nextTrend(co.trend);
+    co.left = TREND_MIN + (Math.random()*(TREND_MAX-TREND_MIN+1)|0);
+  } else co.left--;
+
+  let move = DRIFT[co.trend]*def.vol + gauss(NOISE_SD)*def.vol - REVERT*Math.log(co.price/def.base);
+  move = clamp(move, -def.clamp, def.clamp);
+  co.prev = co.price;
+  co.price = clamp(co.price*(1+move), def.base*def.lo, def.base*def.hi);
+  co.hist.push(co.price); if(co.hist.length > 24) co.hist.shift();
+
+  co.feed.unshift(pickNews(def, co.trend, whisper));
+  if(co.feed.length > 12) co.feed.length = 12;
+}
+function tickMarket(){
+  // at most one company leaks a reliable tip per tick
+  const leaker = Math.random() < INSIDER_CHANCE
+    ? COMPANIES[(Math.random()*COMPANIES.length)|0].id : null;
+  for(const c of COMPANIES) tickOne(c.id, c.id === leaker);
+  S.mk.next += TICK_MS;
+}
+function updateTickClock(){
+  const msLeft = Math.max(0, S.mk.next - Date.now());
+  const s = Math.ceil(msLeft/1000), mm = Math.floor(s/60), ss = s%60;
+  tickClock.textContent = `next ${mm}:${ss.toString().padStart(2,'0')}`;
+}
+function marketPulse(playSound){
+  let guard = 0;
+  while(Date.now() >= S.mk.next && guard < 240){ tickMarket(); guard++; }
+  if(guard > 0){
+    if(marketEl.classList.contains('open')) refreshMarket();
+    const anyNew = COMPANIES.some(c => {
+      const f = S.mk.co[c.id].feed[0];
+      return f && f.ts > S.lastSeenNews;
+    });
+    if(anyNew && !marketEl.classList.contains('open')) mktDot.style.display = 'block';
+    if(guard===1 && playSound && document.visibilityState==='visible'){ Snd.resume(); Snd.tick(); }
+    save();
+  }
+  updateTickClock();
+}
+
+/* ================================================================
+   AUDIO — everything synthesized, no assets
+   ================================================================ */
+const Snd = {
+  ctx:null, master:null, noise:null, last:0,
+  init(){
+    if(this.ctx) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return;
+    this.ctx = new AC();
+    this.master = this.ctx.createGain();
+    this.master.gain.value = S.muted ? 0 : 0.5;
+    // gentle limiter so rapid clicking never clips
+    const comp = this.ctx.createDynamicsCompressor();
+    comp.threshold.value = -14; comp.ratio.value = 6; comp.attack.value = .003; comp.release.value = .18;
+    this.master.connect(comp); comp.connect(this.ctx.destination);
+
+    const len = this.ctx.sampleRate * 1.2;
+    const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for(let i=0;i<len;i++) d[i] = Math.random()*2-1;
+    this.noise = buf;
+  },
+  resume(){ this.init(); if(this.ctx && this.ctx.state === 'suspended') this.ctx.resume(); },
+  setMuted(m){ S.muted = m; if(this.master) this.master.gain.value = m?0:0.5; },
+  ready(){ return !!this.ctx && !S.muted; },
+
+  tone({freq=880, freq2=null, type='square', t0=0, dur=.2, gain=.2, cut=5000, glide=0}){
+    if(!this.ready()) return;
+    const ctx=this.ctx, t=ctx.currentTime+t0;
+    const o=ctx.createOscillator(), g=ctx.createGain(), lp=ctx.createBiquadFilter();
+    o.type=type; lp.type='lowpass'; lp.frequency.value=cut;
+    o.frequency.setValueAtTime(freq, t);
+    if(freq2 != null){
+      if(glide) o.frequency.exponentialRampToValueAtTime(freq2, t+dur*glide);
+      else      o.frequency.setValueAtTime(freq2, t+dur*0.28);
+    }
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t+0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(lp); lp.connect(g); g.connect(this.master);
+    o.start(t); o.stop(t+dur+0.02);
+  },
+  hiss({t0=0, dur=.18, gain=.14, freq=3200, q=1.1, type='bandpass'}){
+    if(!this.ready()) return;
+    const ctx=this.ctx, t=ctx.currentTime+t0;
+    const s=ctx.createBufferSource(); s.buffer=this.noise;
+    const f=ctx.createBiquadFilter(); f.type=type; f.frequency.value=freq; f.Q.value=q;
+    const g=ctx.createGain();
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(gain,t+0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    s.connect(f); f.connect(g); g.connect(this.master);
+    s.start(t); s.stop(t+dur+0.02);
+  },
+
+  /* coin clink — two-note blip, pitch rises with click combo */
+  coin(step=0){
+    if(!this.ready()) return;
+    const now = performance.now();
+    if(now - this.last < 22) return;      // rate limit
+    this.last = now;
+    const k = Math.pow(2, step/12);
+    this.tone({freq:988*k,  freq2:1319*k, type:'square', dur:.26, gain:.17, cut:4600});
+    this.tone({freq:180,    freq2:110,    type:'sine',   dur:.10, gain:.20, glide:1}); // body thunk
+    this.hiss({dur:.05, gain:.05, freq:5200, q:.8});
+  },
+  /* jackpot */
+  crit(){
+    if(!this.ready()) return;
+    [0,.055,.11].forEach((t0,i)=>
+      this.tone({freq:1046*Math.pow(2,i*2/12), freq2:1568*Math.pow(2,i*2/12),
+                 type:'square', t0, dur:.3, gain:.18, cut:6000}));
+    this.tone({freq:130, freq2:70, type:'triangle', dur:.35, gain:.28, glide:1});
+    this.hiss({dur:.5, gain:.10, freq:6500, q:.6});
+  },
+  /* cha-ching! cash register on purchase */
+  chaching(){
+    if(!this.ready()) return;
+    this.hiss({dur:.09, gain:.20, freq:2600, q:.9});                       // the "cha"
+    this.tone({freq:196, freq2:120, type:'triangle', dur:.13, gain:.22, glide:1});
+    const bells = [1046.5, 1568, 2093];                                    // the "ching"
+    bells.forEach((f,i)=> this.tone({freq:f, type:'sine', t0:.055,
+                                     dur:.85 - i*.16, gain:.20 - i*.055, cut:9000}));
+    this.tone({freq:1318.5, type:'sine', t0:.10, dur:.6, gain:.10, cut:9000});
+    this.hiss({dur:.45, gain:.045, freq:7600, q:.5, t0:.05});
+  },
+  /* prestige fanfare */
+  fanfare(){
+    if(!this.ready()) return;
+    const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5, 1568];
+    notes.forEach((f,i)=>{
+      this.tone({freq:f, type:'triangle', t0:i*.1,  dur:.75, gain:.19, cut:9000});
+      this.tone({freq:f*2, type:'sine',   t0:i*.1,  dur:.5,  gain:.07, cut:11000});
+    });
+    this.tone({freq:130.8, freq2:65.4, type:'sine', dur:1.2, gain:.3, glide:1});
+    this.hiss({t0:.15, dur:1.5, gain:.09, freq:9000, q:.4});
+    this.tone({freq:2093, type:'sine', t0:.62, dur:1.5, gain:.09, cut:12000});
+  },
+  blip(up=true){
+    this.tone({freq:up?660:440, freq2:up?880:330, type:'triangle', dur:.09, gain:.13});
+  },
+  /* soft chime marking a live market tick */
+  tick(){
+    if(!this.ready()) return;
+    this.tone({freq:784, freq2:988, type:'sine', dur:.22, gain:.14, cut:6000, glide:1});
+    this.tone({freq:1568, type:'sine', t0:.05, dur:.3, gain:.08, cut:8000});
+  }
+};
+
+/* ================================================================
+   PARTICLE CANVAS
+   ================================================================ */
+const cv = document.getElementById('fx');
+const cx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1;
+function resize(){
+  DPR = Math.min(devicePixelRatio||1, 2);
+  W = innerWidth; H = innerHeight;
+  cv.width = Math.floor(W*DPR); cv.height = Math.floor(H*DPR);
+  cv.style.width = W+'px'; cv.style.height = H+'px';
+  cx.setTransform(DPR,0,0,DPR,0,0);
+  piggyBox = null;
+}
+addEventListener('resize', resize);
+
+const coins = [];   // {x,y,vx,vy,r,rot,spin,life,max,gold}
+const texts = [];   // {x,y,vy,life,max,str,size,color,crit}
+const sparks = [];  // {x,y,vx,vy,life,max,r,hue}
+let shake = 0, shakeX = 0, shakeY = 0;
+
+function spawnCoin(x, y, power){
+  if(coins.length > MAX_COINS) coins.splice(0, 12);
+  const a = -Math.PI/2 + (Math.random()-.5)*1.5;
+  const sp = 300 + Math.random()*430 + power*90;
+  coins.push({
+    x, y, vx:Math.cos(a)*sp*.72, vy:Math.sin(a)*sp,
+    r: 10 + Math.random()*7 + power*3.5,
+    rot: Math.random()*6.28, spin:(Math.random()-.5)*13,
+    life:0, max: 2.4 + Math.random()*1.4, bounces:0, big: power>0
+  });
+}
+function spawnText(x, y, str, opt={}){
+  texts.push({ x, y, vy:-58 - Math.random()*26, life:0, max: opt.max||1.15, str,
+    size: opt.size||24, color: opt.color||'#fff3b8', stroke: opt.stroke||'#7a3d00',
+    drift:(Math.random()-.5)*30 });
+}
+function spawnSparks(x, y, n, spread){
+  for(let i=0;i<n;i++){
+    const a = Math.random()*6.283, sp = 60 + Math.random()*(spread||260);
+    sparks.push({ x, y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp - 60,
+      life:0, max:.45+Math.random()*.5, r:2+Math.random()*3.4,
+      hue: 38 + Math.random()*22 });
+  }
+}
+function coinRain(n){
+  for(let i=0;i<n;i++){
+    coins.push({
+      x: Math.random()*W, y: -30 - Math.random()*H*0.85,
+      vx:(Math.random()-.5)*90, vy: 60+Math.random()*160,
+      r: 11+Math.random()*12, rot:Math.random()*6.28, spin:(Math.random()-.5)*11,
+      life:0, max: 4.2+Math.random()*2, bounces:0, big:true
+    });
+  }
+}
+
+function drawCoin(c){
+  const floorY = H - 14;
+  const squash = Math.abs(Math.cos(c.rot));           // fake 3D spin
+  const w = Math.max(c.r*0.16, c.r*squash);
+  cx.save();
+  cx.translate(c.x, c.y);
+  // fade out at end of life
+  const t = c.life/c.max;
+  cx.globalAlpha = t > .78 ? Math.max(0,(1-t)/.22) : 1;
+  cx.scale(w/c.r, 1);
+  const g = cx.createLinearGradient(-c.r,-c.r,c.r,c.r);
+  g.addColorStop(0,'#fff6c0'); g.addColorStop(.45,'#ffcf3f'); g.addColorStop(1,'#d9820c');
+  cx.beginPath(); cx.arc(0,0,c.r,0,6.2832);
+  cx.fillStyle = g; cx.fill();
+  cx.lineWidth = Math.max(1.2, c.r*.13); cx.strokeStyle = 'rgba(150,84,4,.85)'; cx.stroke();
+  cx.beginPath(); cx.arc(0,0,c.r*.62,0,6.2832);
+  cx.strokeStyle = 'rgba(255,246,190,.75)'; cx.lineWidth = Math.max(1, c.r*.1); cx.stroke();
+  if(squash > .42){
+    cx.fillStyle = 'rgba(150,84,4,.9)';
+    cx.font = '900 '+(c.r*1.12).toFixed(0)+'px Segoe UI, sans-serif';
+    cx.textAlign='center'; cx.textBaseline='middle';
+    cx.fillText('$', 0, c.r*.06);
+  }
+  cx.restore();
+  // ground shadow
+  if(c.y < floorY){
+    const d = Math.min(1, (floorY - c.y)/460);
+    cx.globalAlpha = (1-d)*0.3 * (c.life/c.max > .78 ? 0 : 1);
+    cx.fillStyle='#000'; cx.beginPath();
+    cx.ellipse(c.x, floorY+4, c.r*1.5*(1-d*.5), c.r*.38*(1-d*.5), 0, 0, 6.2832);
+    cx.fill(); cx.globalAlpha=1;
+  }
+}
+
+function step(dt){
+  const floorY = H - 14;
+  for(let i=coins.length-1;i>=0;i--){
+    const c = coins[i];
+    c.life += dt;
+    c.vy += 1750*dt;
+    c.x += c.vx*dt; c.y += c.vy*dt; c.rot += c.spin*dt;
+    if(c.y > floorY - c.r){
+      c.y = floorY - c.r;
+      if(Math.abs(c.vy) > 40 && c.bounces < 4){
+        c.vy *= -0.46; c.vx *= 0.72; c.spin *= 0.6; c.bounces++;
+        if(c.bounces===1 && c.r>14 && Math.random()<.35) spawnSparks(c.x, c.y, 2, 90);
+      } else { c.vy = 0; c.vx *= 0.86; c.spin *= .9; }
+    }
+    if(c.x < -60 || c.x > W+60 || c.life > c.max) coins.splice(i,1);
+  }
+  for(let i=texts.length-1;i>=0;i--){
+    const p = texts[i]; p.life += dt;
+    p.y += p.vy*dt; p.vy += 46*dt; p.x += p.drift*dt;
+    if(p.life > p.max) texts.splice(i,1);
+  }
+  for(let i=sparks.length-1;i>=0;i--){
+    const s = sparks[i]; s.life += dt;
+    s.vy += 620*dt; s.x += s.vx*dt; s.y += s.vy*dt; s.vx *= .985;
+    if(s.life > s.max) sparks.splice(i,1);
+  }
+  if(shake > 0){
+    shake = Math.max(0, shake - dt*34);
+    shakeX = (Math.random()-.5)*shake; shakeY = (Math.random()-.5)*shake;
+    stage.style.transform = `translate(${shakeX}px,${shakeY}px)`;
+  } else if(shakeX || shakeY){
+    shakeX = shakeY = 0; stage.style.transform = '';
+  }
+  // piggy squish spring
+  if(squish > 0.001){
+    squish *= Math.exp(-dt*11);
+    piggyInner.style.transform =
+      `translateY(${squish*9}px) scale(${1+squish*.075},${1-squish*.085})`;
+  } else if(squish){ squish = 0; piggyInner.style.transform=''; }
+
+  // ---- combo drains once you stop clicking ----
+  if(combo > 0 && performance.now() - lastClickT > COMBO_WINDOW){
+    combo = Math.max(0, combo - COMBO_DRAIN*dt);
+    refreshCombo();
+  }
+
+  // ---- golden pig scheduling ----
+  if(goldVisible){
+    goldLife -= dt;
+    if(goldLife <= 0) hideGolden(false);
+  } else {
+    goldTimer -= dt;
+    if(goldTimer <= 0) showGolden();
+  }
+
+  // ---- passive income from the Robo Trotter autoclicker ----
+  const autoRate = (S.lv.robo||0) * BY_ID.robo.amt;
+  if(autoRate > 0){
+    const st = stats();
+    const ev = st.perClick * (1 + st.crit*(CRIT_MULT-1));  // matches manual click's expected value
+    const gain = ev * autoRate * dt;
+    S.cash += gain; S.runEarned += gain; S.lifetime += gain;
+
+    autoPulseT += dt;
+    if(autoPulseT >= 1){
+      autoPulseT -= 1;
+      autoPulse(ev * autoRate);
+      S.autoClicks++;
+    }
+    autoUiT += dt;
+    if(autoUiT >= 0.1){
+      autoUiT = 0;
+      refreshHUD(); refreshTier();
+      if(shopEl.classList.contains('open')) refreshShop();
+      if(marketEl.classList.contains('open')) refreshMarketNumbers();
+    }
+  }
+}
+
+function autoPulse(amount){
+  if(amount <= 0) return;
+  const slot = piggyPoint();
+  spawnCoin(slot.x + (Math.random()-.5)*24, slot.y, 0);
+  spawnSparks(slot.x, slot.y, 3, 90);
+  spawnText(slot.x, slot.y - 8, '+'+money(amount), {size:15, color:'#bfe8ff', stroke:'#0d4b63', max:.9});
+  Snd.resume(); Snd.coin(-4);
+}
+
+function draw(){
+  cx.clearRect(0,0,W,H);
+  cx.save(); cx.translate(shakeX, shakeY);
+  for(const s of sparks){
+    const a = 1 - s.life/s.max;
+    cx.globalAlpha = a;
+    cx.fillStyle = `hsl(${s.hue} 100% ${58+a*22}%)`;
+    cx.beginPath(); cx.arc(s.x, s.y, s.r*a + .6, 0, 6.2832); cx.fill();
+  }
+  cx.globalAlpha = 1;
+  for(const c of coins) drawCoin(c);
+  cx.textAlign = 'center'; cx.textBaseline = 'middle';
+  for(const p of texts){
+    const t = p.life/p.max;
+    cx.globalAlpha = t < .1 ? t/.1 : Math.max(0, 1 - (t-.1)/.9);
+    const sc = t < .16 ? 1 + (1 - t/.16)*.42 : 1;
+    cx.save(); cx.translate(p.x, p.y); cx.scale(sc, sc);
+    cx.font = `900 ${p.size}px "Segoe UI", system-ui, sans-serif`;
+    cx.lineWidth = Math.max(3, p.size*.18); cx.strokeStyle = p.stroke;
+    cx.strokeText(p.str, 0, 0);
+    cx.fillStyle = p.color; cx.fillText(p.str, 0, 0);
+    cx.restore();
+  }
+  cx.globalAlpha = 1; cx.restore();
+}
+
+let lastT = performance.now(), loopErrs = 0;
+function loop(now){
+  // reschedule FIRST: one bad frame must never kill the whole animation loop
+  requestAnimationFrame(loop);
+  const dt = Math.min(0.05, (now - lastT)/1000); lastT = now;
+  try{ step(dt); draw(); }
+  catch(e){ if(loopErrs++ < 3) console.error('frame error', e); }
+}
+
+/* ================================================================
+   DOM refs + UI
+   ================================================================ */
+const $ = id => document.getElementById(id);
+const stage=$('stage'), piggyInner=$('piggyInner'), piggyHit=$('piggyHit'),
+      cashEl=$('cash'), perClickEl=$('perClick'), multOut=$('multOut'), critOut=$('critOut'),
+      autoOut=$('autoOut'),
+      itemsEl=$('items'), shopEl=$('shop'), shopBal=$('shopBal'), shopDot=$('shopDot'),
+      pfill=$('pfill'), pText=$('pText'), prestigeBtn=$('prestigeBtn'),
+      starsEl=$('stars'), starWrapEl=$('starWrap'), multTag=$('multTag'),
+      modalWrap=$('modalWrap'), modal=$('modal'), banner=$('banner'),
+      whiteout=$('whiteout'), hint=$('hint'), glowRing=$('glowRing'),
+      marketEl=$('market'), mktBtn=$('mktBtn'), closeMkt=$('closeMkt'), mktDot=$('mktDot'),
+      tickClock=$('tickClock'), mktBal=$('mktBal'), mktPort=$('mktPort'), mktBody=$('mktBody'),
+      comboWrap=$('comboWrap'), comboTxt=$('comboTxt'), comboFill=$('comboFill'), tierOut=$('tierOut');
+
+let squish = 0, piggyBox = null, combo = 0, lastClickT = 0, cashPopT = 0;
+let mktTab = 'market', autoPulseT = 0, autoUiT = 0;
+
+const STAR_SVG = `<svg class="star" viewBox="0 0 24 24"><defs>
+  <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0" stop-color="#fff3ab"/><stop offset="55%" stop-color="#ffc93c"/>
+  <stop offset="100%" stop-color="#f08a10"/></linearGradient></defs>
+  <path d="M12 1.6l3.1 6.5 7.1.95-5.2 4.9 1.3 7-6.3-3.5-6.3 3.5 1.3-7L1.9 9.05 9 8.1z"
+    fill="url(#sg)" stroke="#8a4c00" stroke-width="1"/></svg>`;
+
+function renderStars(popLast){
+  const n = S.stars;
+  const show = Math.min(n, 10);
+  starsEl.innerHTML = Array.from({length:show}, () => STAR_SVG).join('')
+    + (n > 10 ? `<span id="starMore">+${n-10}</span>` : '');
+  starsEl.querySelectorAll('.star').forEach((s,i)=>{
+    if(!(popLast && i===show-1)) s.classList.add('idle');
+    s.style.animationDelay = (popLast ? i*0.045 : Math.random()*2)+'s';
+  });
+  multTag.textContent = '×'+prestigeMult().toFixed(2)+' cash';
+  starWrapEl.style.opacity = n ? 1 : .55;
+}
+
+function refreshHUD(){
+  const st = stats();
+  cashEl.textContent = money(S.cash);
+  perClickEl.textContent = money(st.perClick);
+  multOut.textContent = '×'+ (st.mult<100 ? st.mult.toFixed(2) : fmt(st.mult));
+  if(st.crit > 0){
+    critOut.hidden = false;
+    critOut.querySelector('b').textContent = Math.round(st.crit*100)+'%';
+  } else critOut.hidden = true;
+  if(st.auto > 0){
+    autoOut.hidden = false;
+    autoOut.querySelector('b').textContent = st.auto.toFixed(1)+'/s';
+  } else autoOut.hidden = true;
+
+  const req = requirement(), pct = Math.min(100, S.runEarned/req*100);
+  pfill.style.width = pct+'%';
+  pfill.classList.toggle('full', pct >= 100);
+  pText.textContent = money(S.runEarned)+' / '+money(req);
+  const can = S.runEarned >= req;
+  prestigeBtn.disabled = !can;
+  prestigeBtn.textContent = can
+    ? `★ PRESTIGE  →  ×${(prestigeMult()*PRESTIGE_GAIN).toFixed(2)} cash`
+    : `Prestige ★ at ${money(req)} earned`;
+
+  shopBal.textContent = money(S.cash);
+  let anyAfford = false;
+  for(const u of SHOP){
+    const lv = S.lv[u.id]||0;
+    if(u.cap != null && lv >= u.cap) continue;
+    if(S.cash >= costOf(u, lv)){ anyAfford = true; break; }
+  }
+  shopDot.style.display = (anyAfford && !shopEl.classList.contains('open')) ? 'block' : 'none';
+}
+
+function effectText(u){
+  if(u.kind==='flat') return `+${money(u.amt)} per click`;
+  if(u.kind==='mult') return `×${u.amt.toFixed(2)} all cash`;
+  if(u.kind==='crit') return `+${(u.amt*100).toFixed(0)}% jackpot chance`;
+  return `+${u.amt.toFixed(1)} auto-clicks / sec`;
+}
+function ownedText(u){
+  const lv = S.lv[u.id]||0; if(!lv) return '';
+  if(u.kind==='flat') return `owned: +${money(u.amt*lv)} / click`;
+  if(u.kind==='mult') return `owned: ×${Math.pow(u.amt,lv).toFixed(2)}`;
+  if(u.kind==='crit') return `owned: ${(u.amt*lv*100).toFixed(0)}% jackpot`;
+  return `owned: ${(u.amt*lv).toFixed(1)} auto-clicks/sec`;
+}
+
+function buildShop(){
+  itemsEl.innerHTML = '';
+  const groups = [
+    ['Cash per click', SHOP.filter(u=>u.kind==='flat')],
+    ['Multipliers',    SHOP.filter(u=>u.kind==='mult')],
+    ['Luck',           SHOP.filter(u=>u.kind==='crit')],
+    ['Automation',     SHOP.filter(u=>u.kind==='auto')],
+  ];
+  for(const [label, list] of groups){
+    const h = document.createElement('div');
+    h.className = 'sect'; h.textContent = label; itemsEl.appendChild(h);
+    for(const u of list){
+      const el = document.createElement('div');
+      el.className = 'item'; el.dataset.id = u.id;
+      el.innerHTML =
+        `<div class="ico">${u.icon}</div>
+         <div class="meta">
+           <div class="nm">${u.name}<span class="lvl">Lv 0</span></div>
+           <div class="ds">${u.desc}</div>
+           <div class="own"></div>
+         </div>
+         <div class="price"><span class="pv">$0</span><small></small></div>`;
+      el.addEventListener('click', () => buy(u.id, el));
+      itemsEl.appendChild(el);
+    }
+  }
+  refreshShop();
+}
+
+function refreshShop(){
+  for(const el of itemsEl.querySelectorAll('.item')){
+    const u = BY_ID[el.dataset.id], lv = S.lv[u.id]||0;
+    const maxed = u.cap != null && lv >= u.cap;
+    const p = maxed ? {total:0,n:0} : plan(u);
+    el.querySelector('.lvl').textContent = 'Lv '+lv + (u.cap!=null ? ' / '+u.cap : '');
+    el.querySelector('.ds').textContent = u.desc + ' — ' + effectText(u);
+    el.querySelector('.own').textContent = ownedText(u);
+    const pv = el.querySelector('.pv'), sm = el.querySelector('.price small');
+    if(maxed){
+      pv.textContent = 'MAX'; sm.textContent = '';
+      el.className = 'item maxed';
+    } else if(p.n === 0){
+      const c = costOf(u, lv);
+      pv.textContent = money(c); sm.textContent = 'need more';
+      el.className = 'item cant';
+    } else {
+      pv.textContent = money(p.total);
+      sm.textContent = p.n > 1 ? '×'+p.n+' levels' : '1 level';
+      el.className = 'item ' + (S.cash >= p.total ? 'can' : 'cant');
+    }
+  }
+}
+
+/* ================================================================
+   MARKET UI
+   ================================================================ */
+function sparkSVG(hist, up){
+  const w=300, h=36, pad=3, n=hist.length;
+  if(n < 2) return `<svg class="spark" viewBox="0 0 ${w} ${h}"></svg>`;
+  const lo=Math.min(...hist), hi=Math.max(...hist), span=Math.max(1e-9, hi-lo);
+  const pts = hist.map((v,i)=>{
+    const x = pad + i*(w-2*pad)/(n-1);
+    const y = h-pad - (v-lo)/span*(h-2*pad);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const color = up ? '#54e38a' : '#ff6b81';
+  const area = `${pad},${h-pad} ${pts.join(' ')} ${w-pad},${h-pad}`;
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <polyline points="${area}" fill="${color}" fill-opacity=".14" stroke="none"/>
+    <polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="2.4"
+      stroke-linejoin="round" stroke-linecap="round"/>
+  </svg>`;
+}
+function tradeQtyPreview(id, side){
+  const co = S.mk.co[id];
+  if(side === 'buy'){
+    const affordMax = Math.floor(S.cash / co.price);
+    return S.qtyMode === 'max' ? affordMax : Math.min(S.qtyMode, affordMax);
+  }
+  return S.qtyMode === 'max' ? co.shares : Math.min(S.qtyMode, co.shares);
+}
+function agoText(ts){
+  const s = Math.max(0, Math.round((Date.now()-ts)/1000));
+  if(s < 45) return 'just now';
+  const m = Math.round(s/60);
+  if(m < 60) return m+' min ago';
+  return Math.round(m/60)+' hr ago';
+}
+function renderCompanyCard(c){
+  const co = S.mk.co[c.id];
+  const chg = co.prev ? (co.price-co.prev)/co.prev : 0;
+  const dirClass = chg > 0.0005 ? 'up' : chg < -0.0005 ? 'down' : 'flatc';
+  const arrow = chg > 0.0005 ? '▲' : chg < -0.0005 ? '▼' : '—';
+  const top = co.feed[0];
+  const headline = top ? top.text : `No news on ${c.name} yet — check back after the market moves.`;
+  const wh = top && top.whisper;
+  const value = co.shares*co.price;
+  const avg = co.shares>0 ? co.basis/co.shares : 0;
+  const pl = co.shares>0 ? (co.price-avg)*co.shares : 0;
+  const plPct = avg>0 ? (co.price-avg)/avg : 0;
+  const buyQty = tradeQtyPreview(c.id,'buy'), sellQty = tradeQtyPreview(c.id,'sell');
+  return `<div class="co">
+    <div class="coTop">
+      <div class="coIco">${c.icon}</div>
+      <div class="coName"><b>${c.name}</b><span class="tk">${c.tk}${c.meme?' · HIGH RISK':''}</span><div class="bl">${c.bl}</div></div>
+      <div class="coPx"><div class="p">${px(co.price)}</div><div class="d ${dirClass}">${arrow} ${pct(chg)}</div></div>
+    </div>
+    ${sparkSVG(co.hist, chg>=0)}
+    <div class="coHead${wh?' whisper':''}">${wh?'<span class="whisperTag">🤫 INSIDER WHISPER</span><br>':''}"${headline}"</div>
+    <div class="hold">${co.shares>0
+      ? `<span>Holding <b>${co.shares.toLocaleString()}</b> @ avg ${px(avg)}</span>`
+        + `<span>Value <b>${money(value)}</b></span>`
+        + `<span class="${pl>=0?'up':'down'}">${pl>=0?'+':''}${money(pl)} (${pct(plPct)})</span>`
+      : `<span>You don't own any ${c.tk} yet.</span>`}</div>
+    <div class="coBtns">
+      <button class="bBuy" data-buy-co="${c.id}" ${buyQty<=0?'disabled':''}>
+        Buy${buyQty>0?` ×${buyQty.toLocaleString()} · ${money(buyQty*co.price)}`:''}</button>
+      <button class="bSell" data-sell-co="${c.id}" ${sellQty<=0?'disabled':''}>
+        Sell${sellQty>0?` ×${sellQty.toLocaleString()} · ${money(sellQty*co.price)}`:''}</button>
+    </div>
+  </div>`;
+}
+function renderNewsTab(){
+  const all = [];
+  for(const c of COMPANIES) for(const item of S.mk.co[c.id].feed) all.push({...item, co:c});
+  if(!all.length) return `<div class="empty">No headlines yet.<br>Check back after the market's first move.</div>`;
+  all.sort((a,b)=>b.ts-a.ts);
+  return all.slice(0,40).map(it => `
+    <div class="newsItem${it.whisper?' whisper':''}">
+      <div class="who">${it.co.icon} ${it.co.name} · ${it.co.tk}</div>
+      ${it.whisper?'<div class="whisperTag">🤫 INSIDER WHISPER</div>':''}
+      <div class="tx">${it.text}</div>
+      <div class="ago">${agoText(it.ts)}</div>
+    </div>`).join('');
+}
+/* cheap path: just the header numbers, no DOM rebuild */
+function refreshMarketNumbers(){
+  mktBal.textContent = money(S.cash);
+  let port = 0; for(const c of COMPANIES) port += S.mk.co[c.id].shares * S.mk.co[c.id].price;
+  mktPort.textContent = money(port);
+}
+// seeded at boot from the save, so reloading can't re-count an old whisper
+let lastWhisperTs = 0;
+function refreshMarket(){
+  refreshMarketNumbers();
+  const keepScroll = mktBody.scrollTop;          // don't yank the list out from under a reader
+  mktBody.innerHTML = mktTab==='market'
+    ? COMPANIES.map(renderCompanyCard).join('')
+    : renderNewsTab();
+  mktBody.scrollTop = keepScroll;
+  // seeing a whisper on screen counts as reading it — once per whisper, not per repaint
+  for(const c of COMPANIES){
+    const f = S.mk.co[c.id].feed[0];
+    if(f && f.whisper && f.ts > lastWhisperTs){
+      lastWhisperTs = f.ts; S.whispersSeen++; checkAchs();
+    }
+  }
+}
+function buyStock(id, btn){
+  const co = S.mk.co[id], def = CO_BY_ID[id];
+  const qty = tradeQtyPreview(id,'buy');
+  Snd.resume();
+  if(qty <= 0){
+    Snd.blip(false);
+    btn.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},
+                 {transform:'translateX(6px)'},{transform:'translateX(0)'}], {duration:180});
+    return;
+  }
+  const cost = qty*co.price;
+  S.cash -= cost; co.shares += qty; co.basis += cost; S.trades++;
+  Snd.chaching();
+  const b = btn.getBoundingClientRect();
+  spawnSparks(b.left+b.width/2, b.top+b.height/2, 16, 200);
+  spawnText(b.left+b.width/2, b.top, `+${qty.toLocaleString()} ${def.tk}`,
+            {size:18, color:'#c9ffdd', stroke:'#12603a', max:1.0});
+  refreshHUD(); refreshTier(); refreshMarket(); refreshShop(); checkAchs(); save();
+}
+function doSell(id, qty, btn){
+  const co = S.mk.co[id];
+  if(qty <= 0 || co.shares <= 0) return;
+  qty = Math.min(qty, co.shares);
+  const avg = co.shares>0 ? co.basis/co.shares : 0;
+  const proceeds = qty*co.price, basisSold = avg*qty;
+  co.shares -= qty; co.basis = Math.max(0, co.basis - basisSold);
+  if(co.shares <= 0){ co.shares = 0; co.basis = 0; }
+  S.cash += proceeds; S.realized += (proceeds - basisSold); S.trades++;
+  Snd.resume(); Snd.chaching();
+  const b = btn ? btn.getBoundingClientRect() : {left:innerWidth/2,top:innerHeight/2,width:0,height:0};
+  spawnSparks(b.left+b.width/2, b.top+b.height/2, 16, 200);
+  spawnText(b.left+b.width/2, b.top, `+${money(proceeds)}`,
+            {size:18, color:'#ffd9df', stroke:'#7a1626', max:1.0});
+  refreshHUD(); refreshTier(); refreshMarket(); refreshShop(); checkAchs(); save();
+}
+function sellStock(id, btn){
+  const co = S.mk.co[id], def = CO_BY_ID[id];
+  const qty = tradeQtyPreview(id,'sell');
+  Snd.resume();
+  if(qty <= 0){
+    Snd.blip(false);
+    btn.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},
+                 {transform:'translateX(6px)'},{transform:'translateX(0)'}], {duration:180});
+    return;
+  }
+  const proceeds = qty*co.price;
+  // a big "sell everything" is easy to misclick — confirm it first
+  if(S.qtyMode === 'max' && qty > 1 && proceeds >= SELL_CONFIRM_MIN){
+    const avg = co.basis/co.shares, pl = (co.price-avg)*qty;
+    Snd.blip(true);
+    showModal(
+      `<h3>Sell your whole ${def.tk} position?</h3>
+       <p>That's <b>${qty.toLocaleString()}</b> shares of ${def.name} at ${px(co.price)},
+          for <span class="hl">${money(proceeds)}</span>.</p>
+       <p style="font-size:13px" class="${pl>=0?'':''}">Locks in a realized
+          ${pl>=0?'profit':'loss'} of <span class="hl">${pl>=0?'+':''}${money(pl)}</span>.</p>`,
+      ()=>doSell(id, qty, btn), 'Sell it all');
+    return;
+  }
+  doSell(id, qty, btn);
+}
+mktBody.addEventListener('click', e => {
+  const b = e.target.closest('[data-buy-co],[data-sell-co]');
+  if(!b) return;
+  if(b.dataset.buyCo) buyStock(b.dataset.buyCo, b);
+  else if(b.dataset.sellCo) sellStock(b.dataset.sellCo, b);
+});
+function setMarket(open){
+  marketEl.classList.toggle('open', open);
+  marketEl.setAttribute('aria-hidden', String(!open));
+  if(open){ S.lastSeenNews = Date.now(); mktDot.style.display='none'; refreshMarket(); save(); }
+  Snd.resume(); Snd.blip(open);
+}
+mktBtn.addEventListener('click', ()=>setMarket(!marketEl.classList.contains('open')));
+closeMkt.addEventListener('click', ()=>setMarket(false));
+document.querySelectorAll('.mktHead .tabs button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.mktHead .tabs button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); mktTab = b.dataset.tab;
+    Snd.resume(); Snd.blip(true);
+    refreshMarket();
+  });
+});
+document.querySelectorAll('#qtyRow button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('#qtyRow button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    const v = b.dataset.qty;
+    S.qtyMode = v==='max' ? 'max' : +v;
+    Snd.resume(); Snd.blip(true);
+    refreshMarket(); save();
+  });
+});
+
+/* ================================================================
+   COMBO · GOLDEN PIG · TIERS · ACHIEVEMENTS
+   ================================================================ */
+const comboMult = () => Math.min(COMBO_MAX, 1 + combo*COMBO_STEP);
+
+function refreshCombo(){
+  if(combo < 5){ comboWrap.hidden = true; return; }
+  comboWrap.hidden = false;
+  const m = comboMult();
+  comboTxt.textContent = `×${m.toFixed(2)} combo · ${Math.floor(combo)}`;
+  comboTxt.classList.toggle('hot', m >= COMBO_MAX - 1e-9);
+  const pctFull = (m-1)/(COMBO_MAX-1)*100;
+  comboFill.style.width = Math.min(100, pctFull)+'%';
+}
+
+/* ---- net-worth tier shown on the piggy ---- */
+let curTier = -1;
+function tierOf(v){ let t=0; for(let i=0;i<TIERS.length;i++) if(v>=TIERS[i].at) t=i; return t; }
+function refreshTier(){
+  const t = tierOf(S.lifetime);
+  tierOut.hidden = t === 0;
+  tierOut.innerHTML = `${TIERS[t].icon} <b>${TIERS[t].name}</b>`;
+  if(t === curTier) return;
+  const rising = curTier >= 0 && t > curTier;
+  curTier = t;
+  piggyHit.dataset.tier = t;
+  if(rising){
+    const slot = piggyPoint();
+    spawnText(slot.x, slot.y - 60, `${TIERS[t].name.toUpperCase()} PIGGY!`,
+              {size:28, color:'#fff6cf', stroke:'#8a4a00', max:1.6});
+    spawnSparks(slot.x, slot.y, 60, 460);
+    shake = Math.max(shake, 12);
+    Snd.resume(); Snd.fanfare();
+  }
+}
+
+/* ---- golden pig event ---- */
+let goldTimer = GOLD_MIN_MS/1000 + Math.random()*(GOLD_MAX_MS-GOLD_MIN_MS)/1000;
+let goldLife = 0, goldVisible = false;
+const goldenEl = $('golden');
+
+function armGolden(){
+  // show the very first one quickly so the mechanic gets discovered
+  goldTimer = S.goldens === 0
+    ? (GOLD_FIRST_MS + Math.random()*20000)/1000
+    : (GOLD_MIN_MS + Math.random()*(GOLD_MAX_MS-GOLD_MIN_MS))/1000;
+}
+function showGolden(){
+  const w = 104, h = 92;
+  // keep clear of whichever side panels are open, so it's never hidden behind one
+  let loX = 0.06*W, hiX = W - w - 0.06*W;
+  if(marketEl.classList.contains('open'))
+    loX = Math.max(loX, marketEl.getBoundingClientRect().right + 12);
+  if(shopEl.classList.contains('open'))
+    hiX = Math.min(hiX, shopEl.getBoundingClientRect().left - w - 12);
+  if(hiX < loX){ loX = 0.06*W; hiX = Math.max(loX, W - w - 0.06*W); }  // no room: centre-ish
+  const x = loX + Math.random()*Math.max(1, hiX - loX);
+  const y = 0.20*H + Math.random()*Math.max(1, H*0.44 - h);
+  goldenEl.style.left = x+'px'; goldenEl.style.top = y+'px';
+  goldenEl.hidden = false; goldenEl.classList.remove('leaving');
+  goldVisible = true; goldLife = GOLD_LIFE;
+  Snd.resume(); Snd.tick();
+  spawnSparks(x+w/2, y+h/2, 26, 300);
+}
+function hideGolden(caught){
+  if(!goldVisible) return;
+  goldVisible = false;
+  goldenEl.classList.add('leaving');
+  setTimeout(()=>{ goldenEl.hidden = true; goldenEl.classList.remove('leaving'); }, caught?0:480);
+  armGolden();
+}
+goldenEl.addEventListener('pointerdown', e => {
+  e.preventDefault(); e.stopPropagation();
+  if(!goldVisible) return;
+  const st = stats();
+  const gain = st.perClick * GOLD_MULT;
+  S.cash += gain; S.runEarned += gain; S.lifetime += gain; S.goldens++;
+
+  const b = goldenEl.getBoundingClientRect();
+  const cxp = b.left+b.width/2, cyp = b.top+b.height/2;
+  Snd.resume(); Snd.crit(); setTimeout(()=>{ if(!S.muted) Snd.chaching(); }, 140);
+  shake = 24;
+  for(let i=0;i<38;i++) spawnCoin(cxp + (Math.random()-.5)*70, cyp, 1);
+  spawnSparks(cxp, cyp, 80, 560);
+  spawnText(cxp, cyp-42, 'GOLDEN PIG!', {size:30, color:'#fff', stroke:'#b8710a', max:1.7});
+  spawnText(cxp, cyp, '+'+money(gain), {size:34, color:'#ffef9f', stroke:'#a8410a', max:1.7});
+
+  hideGolden(true);
+  refreshHUD(); refreshTier(); checkAchs();
+  if(shopEl.classList.contains('open')) refreshShop();
+  if(marketEl.classList.contains('open')) refreshMarket();
+  save();
+});
+
+/* ---- achievements ---- */
+const toastsEl = $('toasts');
+function toast(a){
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = `<div class="tIco">${a.icon}</div>
+    <div><div class="tCap">ACHIEVEMENT UNLOCKED</div><div class="tNm">${a.name}</div></div>`;
+  toastsEl.appendChild(el);
+  setTimeout(()=>{ el.classList.add('out'); setTimeout(()=>el.remove(), 420); }, 3200);
+}
+function checkAchs(){
+  let got = false;
+  for(const a of ACHS){
+    if(S.achs.includes(a.id)) continue;
+    let ok = false;
+    try{ ok = !!a.ok(); }catch(e){ ok = false; }
+    if(ok){ S.achs.push(a.id); toast(a); got = true; }
+  }
+  if(got){ Snd.resume(); Snd.tick(); save(); }
+}
+function openAwards(){
+  Snd.resume(); Snd.blip(true);
+  const rows = ACHS.map(a=>{
+    const got = S.achs.includes(a.id);
+    return `<div class="ach${got?' got':''}">
+      <div class="ai">${got?a.icon:'🔒'}</div>
+      <div><div class="an">${got?a.name:'???'}</div><div class="ad">${a.desc}</div></div>
+    </div>`;
+  }).join('');
+  showModal(`<h3>🏆 Awards</h3>
+    <p style="font-size:13px">${S.achs.length} of ${ACHS.length} unlocked</p>
+    <div id="achGrid">${rows}</div>`, null, '', 'Close');
+}
+$('achBtn').addEventListener('click', openAwards);
+$('achDock').addEventListener('click', openAwards);
+
+/* ---- "while you were away" summary ---- */
+function offlineReport(pre, awayMs){
+  const st = stats();
+  let credited = 0;
+  if(st.auto > 0){
+    const eff = Math.min(awayMs, OFFLINE_CAP_MS)/1000 * OFFLINE_EFF;
+    credited = st.perClick * (1+st.crit*(CRIT_MULT-1)) * st.auto * eff;
+    S.cash += credited; S.runEarned += credited; S.lifetime += credited;
+  }
+  const moves = COMPANIES.map(c=>{
+    const before = pre[c.id], after = S.mk.co[c.id].price;
+    const d = before ? (after-before)/before : 0;
+    return { c, d, after };
+  }).filter(m => Math.abs(m.d) > 0.0005);
+
+  if(credited <= 0 && !moves.length) return;
+
+  const mins = Math.max(1, Math.round(awayMs/60000));
+  const away = mins < 60 ? `${mins} min` : `${(mins/60).toFixed(1)} hr`;
+  const rows = moves.map(m =>
+    `<div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0">
+       <span>${m.c.icon} ${m.c.tk}</span>
+       <span class="${m.d>=0?'up':'down'}" style="font-weight:900">${pct(m.d)} → ${px(m.after)}</span>
+     </div>`).join('');
+  showModal(
+    `<h3>🌙 While you were away</h3>
+     <p style="font-size:13px">You were gone about <b>${away}</b>.</p>
+     ${credited>0 ? `<p>🤖 Robo Trotter banked <span class="hl">${money(credited)}</span>
+        <span style="font-size:11.5px;opacity:.7">(at ${OFFLINE_EFF*100}% rate, capped at
+        ${OFFLINE_CAP_MS/60000} min)</span></p>` : ''}
+     ${rows ? `<p style="margin-bottom:4px">📈 The market moved:</p>${rows}` : ''}`,
+    null, '', 'Nice');
+}
+
+/* ---------------- clicking the piggy ---------------- */
+function piggyPoint(){
+  if(!piggyBox) piggyBox = piggyHit.getBoundingClientRect();
+  const b = piggyBox;
+  return { x: b.left + b.width*0.545, y: b.top + b.height*0.30 };  // the coin slot
+}
+
+function clickPiggy(ev){
+  Snd.resume();
+  const st = stats();
+
+  // the streak grows while you keep clicking, and boosts manual clicks only
+  const now = performance.now();
+  if(now - lastClickT < COMBO_WINDOW) combo = Math.min(combo+1, 400);
+  else combo = 1;
+  lastClickT = now;
+  if(combo > S.comboBest) S.comboBest = Math.floor(combo);
+
+  const isCrit = Math.random() < st.crit;
+  const gain = st.perClick * comboMult() * (isCrit ? CRIT_MULT : 1);
+
+  S.cash += gain; S.runEarned += gain; S.lifetime += gain; S.clicks++;
+  if(isCrit) S.crits++;
+  refreshCombo();
+
+  squish = 1;
+  glowRing.classList.remove('hit'); void glowRing.offsetWidth; glowRing.classList.add('hit');
+  cashEl.classList.add('pop'); cashPopT = 0.09;
+
+  const slot = piggyPoint();
+  const px = (ev && ev.clientX) ? ev.clientX : slot.x;
+  const py = (ev && ev.clientY) ? ev.clientY : slot.y;
+
+  if(isCrit){
+    Snd.crit();
+    shake = 17;
+    for(let i=0;i<26;i++) spawnCoin(slot.x + (Math.random()-.5)*40, slot.y, 1);
+    spawnSparks(slot.x, slot.y, 46, 420);
+    spawnText(slot.x, slot.y - 46, 'JACKPOT!', {size:34, color:'#fff', stroke:'#c0392b', max:1.5});
+    spawnText(px, py, '+'+money(gain), {size:34, color:'#ffef9f', stroke:'#a8410a', max:1.5});
+  } else {
+    Snd.coin(Math.min(combo*0.18, 13));
+    const n = 2 + (Math.random()*2|0);
+    for(let i=0;i<n;i++) spawnCoin(slot.x + (Math.random()-.5)*30, slot.y, 0);
+    spawnSparks(slot.x, slot.y, 5, 150);
+    spawnText(px, py - 12, '+'+money(gain), {size:23});
+    if(combo > 6 && combo % 6 === 0) shake = Math.min(6, shake+3);
+  }
+
+  if(!S.seenHint){ S.seenHint = true; hint.style.display='none'; }
+  refreshHUD(); refreshTier(); checkAchs();
+  if(shopEl.classList.contains('open')) refreshShop();
+}
+
+piggyHit.addEventListener('pointerdown', e => { e.preventDefault(); clickPiggy(e); });
+piggyHit.addEventListener('keydown', e => {
+  if(e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); clickPiggy(null); }
+});
+addEventListener('keydown', e => {
+  if(e.code === 'Space' && document.activeElement !== piggyHit
+     && !modalWrap.classList.contains('open')){ e.preventDefault(); clickPiggy(null); }
+});
+
+/* ---------------- buying ---------------- */
+function buy(id, el){
+  const u = BY_ID[id], lv = S.lv[u.id]||0;
+  if(u.cap != null && lv >= u.cap) return;
+  const p = plan(u);
+  if(p.n === 0 || S.cash < p.total){
+    Snd.resume(); Snd.blip(false);
+    el.animate([{transform:'translateX(0)'},{transform:'translateX(-7px)'},
+                {transform:'translateX(7px)'},{transform:'translateX(0)'}], {duration:200});
+    return;
+  }
+  Snd.resume();
+  S.cash -= p.total; S.lv[u.id] = lv + p.n;
+  Snd.chaching();
+
+  el.classList.add('flash');
+  setTimeout(()=>el.classList.remove('flash'), 400);
+  const b = el.getBoundingClientRect();
+  spawnSparks(b.left + b.width*0.14, b.top + b.height/2, 22, 260);
+  spawnText(b.left + b.width*0.5, b.top + b.height*0.3,
+            p.n>1 ? `${u.name} ×${p.n}!` : `${u.name} up!`,
+            {size:20, color:'#c9ffdd', stroke:'#12603a', max:1.1});
+  for(let i=0;i<6;i++) spawnCoin(b.left + 30 + Math.random()*40, b.top + b.height/2, 0);
+
+  refreshHUD(); refreshShop(); save();
+}
+
+/* buy-amount toggle (scoped to the shop panel — the market has its own #qtyRow) */
+document.querySelectorAll('.shopHead .buyRow button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.shopHead .buyRow button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    const v = b.dataset.buy;
+    S.buyMode = v === 'max' ? 'max' : +v;
+    Snd.resume(); Snd.blip(true);
+    refreshShop(); save();
+  });
+});
+
+/* ---------------- shop open/close ---------------- */
+function setShop(open){
+  shopEl.classList.toggle('open', open);
+  shopEl.setAttribute('aria-hidden', String(!open));
+  if(open){ refreshShop(); shopDot.style.display='none'; }
+  Snd.resume(); Snd.blip(open);
+}
+$('shopBtn').addEventListener('click', ()=>setShop(!shopEl.classList.contains('open')));
+$('closeShop').addEventListener('click', ()=>setShop(false));
+addEventListener('keydown', e => { if(e.key==='Escape'){ setShop(false); setMarket(false); } });
+
+/* ---------------- mute ---------------- */
+const muteBtn = $('muteBtn');
+function paintMute(){ muteBtn.textContent = S.muted ? '🔇' : '🔊'; }
+muteBtn.addEventListener('click', ()=>{
+  Snd.resume(); Snd.setMuted(!S.muted); paintMute();
+  if(!S.muted) Snd.blip(true);
+  save();
+});
+
+/* ---------------- modal helper ---------------- */
+function showModal(html, onYes, yesLabel='Confirm', noLabel='Cancel'){
+  modal.innerHTML = html +
+    `<div class="mBtns"><button class="mNo">${noLabel}</button>
+     ${onYes ? `<button class="mYes">${yesLabel}</button>` : ''}</div>`;
+  modalWrap.classList.add('open');
+  modal.querySelector('.mNo').onclick = ()=>{ modalWrap.classList.remove('open'); Snd.blip(false); };
+  const y = modal.querySelector('.mYes');
+  if(y) y.onclick = ()=>{ modalWrap.classList.remove('open'); onYes(); };
+}
+modalWrap.addEventListener('click', e=>{ if(e.target===modalWrap) modalWrap.classList.remove('open'); });
+
+/* ---------------- prestige ---------------- */
+prestigeBtn.addEventListener('click', ()=>{
+  if(S.runEarned < requirement()) return;
+  Snd.resume(); Snd.blip(true);
+  const next = S.stars + 1;
+  let held = 0; for(const c of COMPANIES) held += S.mk.co[c.id].shares*S.mk.co[c.id].price;
+  showModal(
+    `<h3>★ Prestige to ${next} star${next>1?'s':''}?</h3>
+     <p>Smash the piggy open and start fresh. You <b>lose</b> your cash, every
+        shop upgrade${held>0?` and your <b>${money(held)}</b> of shares`:' and any shares you hold'}.</p>
+     <p>You <b>keep</b> your stars — and your permanent bonus rises from
+        <span class="hl">×${prestigeMult().toFixed(2)}</span> to
+        <span class="hl">×${(prestigeMult()*PRESTIGE_GAIN).toFixed(2)}</span> cash forever.</p>
+     <p style="font-size:12.5px;opacity:.75">Next star will need
+        ${money(PRESTIGE_REQ*Math.pow(REQ_SCALE,next))} earned.</p>`,
+    doPrestige, 'Smash it! ★');
+});
+
+function doPrestige(){
+  S.stars++;
+  S.cash = 0; S.runEarned = 0; S.runStart = Date.now();
+  for(const k in S.lv) S.lv[k] = 0;
+  // shares are cash-equivalent, so they can't survive the smash either
+  for(const c of COMPANIES){ S.mk.co[c.id].shares = 0; S.mk.co[c.id].basis = 0; }
+  combo = 0; refreshCombo();
+
+  Snd.resume(); Snd.fanfare();
+  whiteout.classList.remove('go'); void whiteout.offsetWidth; whiteout.classList.add('go');
+  banner.textContent = `★ ${S.stars} STAR${S.stars>1?'S':''}  ×${prestigeMult().toFixed(2)}`;
+  banner.classList.remove('go'); void banner.offsetWidth; banner.classList.add('go');
+  shake = 30;
+  coinRain(150);
+  const slot = piggyPoint();
+  spawnSparks(slot.x, slot.y, 110, 620);
+  setTimeout(()=>{ if(!S.muted) Snd.chaching(); }, 700);
+  setTimeout(()=>coinRain(70), 420);
+
+  renderStars(true);
+  refreshHUD(); refreshShop(); refreshTier(); checkAchs();
+  if(marketEl.classList.contains('open')) refreshMarket();
+  save();
+}
+
+/* ---------------- reset + stats ---------------- */
+$('resetBtn').addEventListener('click', ()=>{
+  Snd.resume();
+  showModal(
+    `<h3>Reset everything?</h3>
+     <p>This wipes your cash, upgrades <b>and all ${S.stars} star${S.stars===1?'':'s'}</b>.
+        There is no undo.</p>`,
+    ()=>{
+      S = FRESH(); paintMute(); Snd.setMuted(false);
+      try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+      document.querySelectorAll('.shopHead .buyRow button').forEach((x,i)=>x.classList.toggle('on', i===0));
+      document.querySelectorAll('#qtyRow button').forEach((x,i)=>x.classList.toggle('on', i===0));
+      hint.style.display = '';
+      combo = 0; refreshCombo(); curTier = -1;
+      hideGolden(true);
+      renderStars(false); refreshHUD(); refreshShop(); refreshTier(); refreshMarket();
+      Snd.blip(false);
+    }, 'Wipe it');
+});
+
+$('statsBtn').addEventListener('click', ()=>{
+  Snd.resume(); Snd.blip(true);
+  const st = stats();
+  const mins = Math.max(1, Math.round((Date.now()-S.runStart)/60000));
+  const total = Math.max(1, Math.round((Date.now()-S.started)/60000));
+  let port = 0; for(const c of COMPANIES) port += S.mk.co[c.id].shares * S.mk.co[c.id].price;
+  showModal(
+    `<h3>📊 Stats</h3>
+     <p style="text-align:left;line-height:1.85">
+      Lifetime earned: <span class="hl">${money(S.lifetime)}</span><br>
+      This run: <span class="hl">${money(S.runEarned)}</span><br>
+      Cash per click: <span class="hl">${money(st.perClick)}</span><br>
+      Total multiplier: <span class="hl">×${st.mult<1000?st.mult.toFixed(2):fmt(st.mult)}</span><br>
+      Auto-clicks: <span class="hl">${st.auto.toFixed(1)}/s</span><br>
+      Stars: <span class="hl">★ ${S.stars}</span> (×${prestigeMult().toFixed(2)})<br>
+      Piggy tier: <span class="hl">${TIERS[tierOf(S.lifetime)].icon} ${TIERS[tierOf(S.lifetime)].name}</span><br>
+      Clicks: <span class="hl">${S.clicks.toLocaleString()}</span><br>
+      Jackpots: <span class="hl">${S.crits.toLocaleString()}</span><br>
+      Best combo: <span class="hl">${S.comboBest.toLocaleString()}</span><br>
+      Golden pigs caught: <span class="hl">${S.goldens.toLocaleString()}</span><br>
+      Trades made: <span class="hl">${S.trades.toLocaleString()}</span><br>
+      Awards: <span class="hl">${S.achs.length} / ${ACHS.length}</span><br>
+      Portfolio value: <span class="hl">${money(port)}</span><br>
+      Realized trading P/L: <span class="hl">${S.realized>=0?'+':''}${money(S.realized)}</span><br>
+      This run: <span class="hl">${mins} min</span> &nbsp;·&nbsp; total: <span class="hl">${total} min</span>
+     </p>`, null, '', 'Close');
+});
+
+/* ---------------- cash pop timer ---------------- */
+setInterval(()=>{
+  if(cashPopT > 0){ cashPopT -= 0.05; if(cashPopT <= 0) cashEl.classList.remove('pop'); }
+}, 50);
+
+/* ---------------- boot ---------------- */
+load();
+resize();
+paintMute();
+renderStars(false);
+buildShop();
+refreshHUD();
+refreshTier();
+
+// snapshot prices before catch-up so the away-summary can report real moves
+const awayMs = Math.max(0, Date.now() - (S.lastSeen||Date.now()));
+const prePrices = Object.fromEntries(COMPANIES.map(c=>[c.id, S.mk.co[c.id].price]));
+// don't re-count whispers the player already saw before reloading
+for(const c of COMPANIES)
+  for(const f of S.mk.co[c.id].feed)
+    if(f.whisper && f.ts > lastWhisperTs) lastWhisperTs = f.ts;
+marketPulse(false);                 // replay any ticks missed while away
+if(awayMs >= OFFLINE_MIN_MS) offlineReport(prePrices, awayMs);
+setInterval(()=>marketPulse(true), 1000);
+checkAchs();
+armGolden();
+if(S.seenHint || S.clicks > 0) hint.style.display = 'none';
+requestAnimationFrame(loop);
+
+setInterval(save, 5000);
+addEventListener('visibilitychange', ()=>{ if(document.hidden) save(); });
+addEventListener('beforeunload', save);
+addEventListener('scroll', ()=>{ piggyBox = null; });
+// first gesture anywhere unlocks audio (browser autoplay policy)
+addEventListener('pointerdown', ()=>Snd.resume(), {once:true});
+</script>
+</body>
+</html>
