@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dial It In: Math Edition</title>
+<style>
+  :root {
+    --bg1: #1a1a2e;
+    --bg2: #0f0c29;
+    --panel: rgba(255,255,255,0.06);
+    --panel-border: rgba(255,255,255,0.12);
+    --cyan: #00e5ff;
+    --pink: #ff2e88;
+    --yellow: #ffd23f;
+    --green: #06d6a0;
+    --red: #ef476f;
+    --purple: #9b5de5;
+    --text: #f4f4fb;
+    --text-dim: #a9a9c2;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    background: radial-gradient(circle at 20% 10%, #2a1a4a, var(--bg1) 45%, var(--bg2) 100%);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text);
+    overflow-x: hidden;
+    user-select: none;
+  }
+
+  body { position: relative; min-height: 100vh; }
+
+  /* ---------- top bar ---------- */
+  .top-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    z-index: 30;
+    pointer-events: none;
+  }
+  .top-bar h1 {
+    margin: 0;
+    font-size: clamp(18px, 3vw, 26px);
+    background: linear-gradient(90deg, var(--cyan), var(--pink));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 2px 18px rgba(0,229,255,0.25);
+    pointer-events: auto;
+  }
+  .top-controls {
+    display: flex;
+    gap: 8px;
+    pointer-events: auto;
+  }
+  .icon-btn {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    color: var(--text);
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    font-size: 17px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  .icon-btn:hover { transform: scale(1.08); background: rgba(255,255,255,0.12); }
+  .icon-btn:active { transform: scale(0.94); }
+
+  /* ---------- wand button ---------- */
+  #wand-btn {
+    position: fixed;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 30;
+    width: 62px; height: 62px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, var(--purple), var(--pink));
+    box-shadow: 0 0 0 rgba(155,93,229,0.6), 0 6px 18px rgba(0,0,0,0.4);
+    color: #fff;
+    font-size: 26px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    animation: wand-pulse 2.4s ease-in-out infinite;
+  }
+  #wand-btn.show { display: flex; }
+  #wand-btn:disabled {
+    filter: grayscale(0.85);
+    opacity: 0.45;
+    cursor: not-allowed;
+    animation: none;
+  }
+  #wand-btn .charge-badge {
+    position: absolute;
+    top: -6px; right: -6px;
+    background: var(--yellow);
+    color: #2a1a00;
+    font-size: 12px;
+    font-weight: 700;
+    min-width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+  @keyframes wand-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(155,93,229,0.55), 0 6px 18px rgba(0,0,0,0.4); }
+    50% { box-shadow: 0 0 0 14px rgba(155,93,229,0), 0 6px 18px rgba(0,0,0,0.4); }
+  }
+
+  /* ---------- chicken ---------- */
+  #chicken-layer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 25;
+    overflow: hidden;
+  }
+  #chicken {
+    position: absolute;
+    top: 70px;
+    left: -80px;
+    font-size: 46px;
+    filter: drop-shadow(0 6px 10px rgba(0,0,0,0.4));
+    transform: scaleX(1);
+  }
+  #chicken.flap { animation: flap 0.35s ease-in-out infinite; }
+  @keyframes flap {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-6px) rotate(-4deg); }
+  }
+  #chicken.flying-right { animation: fly-right 6.5s linear forwards, flap 0.35s ease-in-out infinite; }
+  #chicken.flying-left { animation: fly-left 6.5s linear forwards, flap 0.35s ease-in-out infinite; transform: scaleX(-1); }
+  @keyframes fly-right {
+    from { left: -80px; }
+    to { left: 105%; }
+  }
+  @keyframes fly-left {
+    from { left: 105%; }
+    to { left: -80px; }
+  }
+  #speech-bubble {
+    position: absolute;
+    top: 118px;
+    left: 40px;
+    max-width: 220px;
+    background: #fff;
+    color: #221133;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  #speech-bubble::after {
+    content: "";
+    position: absolute;
+    top: -8px;
+    left: 26px;
+    border-width: 0 8px 8px 8px;
+    border-style: solid;
+    border-color: transparent transparent #fff transparent;
+  }
+  #speech-bubble.show { opacity: 1; }
+
+  /* ---------- screens ---------- */
+  .screen {
+    min-height: 100vh;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 100px 20px 40px;
+  }
+  .screen.active { display: flex; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    backdrop-filter: blur(10px);
+    border-radius: 22px;
+    padding: 32px 28px;
+    width: 100%;
+    max-width: 440px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+  }
+
+  /* setup screen */
+  #setup-screen p.tagline {
+    text-align: center;
+    color: var(--text-dim);
+    margin: 0 0 22px;
+    line-height: 1.5;
+  }
+  #phone-input {
+    width: 100%;
+    padding: 16px;
+    font-size: 22px;
+    letter-spacing: 2px;
+    text-align: center;
+    border-radius: 14px;
+    border: 2px solid var(--panel-border);
+    background: rgba(0,0,0,0.25);
+    color: var(--text);
+    outline: none;
+    margin-bottom: 10px;
+  }
+  #phone-input:focus { border-color: var(--cyan); }
+  .hint { text-align: center; font-size: 12.5px; color: var(--text-dim); margin-bottom: 20px; }
+  .primary-btn {
+    width: 100%;
+    padding: 15px;
+    font-size: 17px;
+    font-weight: 700;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(90deg, var(--cyan), var(--purple));
+    color: #08111a;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    box-shadow: 0 8px 20px rgba(0,229,255,0.2);
+  }
+  .primary-btn:hover { transform: translateY(-2px); }
+  .primary-btn:active { transform: translateY(0); }
+  .primary-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* game screen */
+  #game-screen { padding-top: 90px; }
+  #progress-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 440px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  #digit-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 18px;
+    max-width: 440px;
+  }
+  .slot {
+    width: 36px;
+    height: 50px;
+    border-radius: 10px;
+    background: rgba(0,0,0,0.3);
+    border: 2px solid var(--panel-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-dim);
+    position: relative;
+    transition: all 0.2s ease;
+  }
+  .slot.active {
+    border-color: var(--cyan);
+    box-shadow: 0 0 14px rgba(0,229,255,0.5);
+    color: var(--cyan);
+    animation: slot-blink 1.2s ease-in-out infinite;
+  }
+  @keyframes slot-blink {
+    0%, 100% { box-shadow: 0 0 8px rgba(0,229,255,0.35); }
+    50% { box-shadow: 0 0 18px rgba(0,229,255,0.7); }
+  }
+  .slot.solved-math {
+    background: rgba(6,214,160,0.18);
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .slot.solved-wand {
+    background: rgba(155,93,229,0.2);
+    border-color: var(--purple);
+    color: var(--purple);
+  }
+  .slot .wand-tag {
+    position: absolute;
+    bottom: -8px;
+    right: -6px;
+    font-size: 11px;
+  }
+  .slot.wrong-shake { animation: shake 0.4s ease; }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+
+  #expr-display {
+    width: 100%;
+    max-width: 440px;
+    background: rgba(0,0,0,0.3);
+    border: 2px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    text-align: right;
+    margin-bottom: 14px;
+    min-height: 66px;
+  }
+  #expr-text {
+    font-size: 26px;
+    letter-spacing: 1px;
+    min-height: 32px;
+    word-break: break-all;
+  }
+  #expr-text .cursor-blink {
+    display: inline-block;
+    width: 2px;
+    background: var(--cyan);
+    margin-left: 2px;
+    animation: blink 1s step-start infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  #expr-preview {
+    font-size: 13px;
+    color: var(--text-dim);
+    min-height: 16px;
+  }
+  #expr-msg {
+    font-size: 13px;
+    min-height: 16px;
+    color: var(--yellow);
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  #keypad {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    width: 100%;
+    max-width: 440px;
+  }
+  .key {
+    padding: 16px 0;
+    font-size: 19px;
+    font-weight: 700;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    color: var(--text);
+    background: rgba(255,255,255,0.08);
+    transition: transform 0.1s ease, background 0.1s ease;
+  }
+  .key:hover { background: rgba(255,255,255,0.16); }
+  .key:active { transform: scale(0.94); }
+  .key.op { background: rgba(0,229,255,0.14); color: var(--cyan); }
+  .key.op:hover { background: rgba(0,229,255,0.24); }
+  .key.clear { background: rgba(239,71,111,0.16); color: var(--red); }
+  .key.clear:hover { background: rgba(239,71,111,0.28); }
+  .key.back { background: rgba(255,210,63,0.16); color: var(--yellow); }
+  .key.back:hover { background: rgba(255,210,63,0.28); }
+  .key.equals { background: linear-gradient(90deg, var(--green), #04b389); color: #04241a; grid-column: span 1; }
+  .key.zero { grid-column: span 2; }
+
+  /* modal (wand picker) */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(5,5,15,0.72);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-card {
+    background: #1c1836;
+    border: 1px solid var(--panel-border);
+    border-radius: 20px;
+    padding: 26px;
+    width: 90%;
+    max-width: 360px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+  .modal-card h3 { margin: 0 0 6px; color: var(--purple); }
+  .modal-card p { margin: 0 0 18px; color: var(--text-dim); font-size: 14px; }
+  #wand-digit-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .wand-digit-btn {
+    padding: 14px 0;
+    font-size: 18px;
+    font-weight: 700;
+    border-radius: 10px;
+    border: none;
+    background: rgba(155,93,229,0.2);
+    color: var(--purple);
+    cursor: pointer;
+  }
+  .wand-digit-btn:hover { background: rgba(155,93,229,0.35); }
+  .modal-cancel {
+    background: none;
+    border: 1px solid var(--panel-border);
+    color: var(--text-dim);
+    padding: 8px 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+
+  /* victory overlay */
+  #win-overlay {
+    position: fixed; inset: 0;
+    background: rgba(5,5,15,0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 60;
+    text-align: center;
+    padding: 20px;
+  }
+  #win-overlay.show { display: flex; }
+  #win-overlay .card { max-width: 420px; }
+  #win-overlay h2 {
+    font-size: 30px;
+    margin: 0 0 8px;
+    background: linear-gradient(90deg, var(--yellow), var(--pink));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  #win-number {
+    font-size: 26px;
+    letter-spacing: 2px;
+    margin: 14px 0;
+    color: var(--cyan);
+    font-weight: 700;
+  }
+  #win-stats {
+    color: var(--text-dim);
+    font-size: 14px;
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 480px) {
+    #wand-btn { width: 52px; height: 52px; font-size: 22px; left: 10px; }
+    .slot { width: 30px; height: 44px; font-size: 17px; }
+    #expr-text { font-size: 21px; }
+    .key { font-size: 16px; padding: 13px 0; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <h1>📞 Dial It In: Math Edition</h1>
+    <div class="top-controls">
+      <button class="icon-btn" id="mute-btn" title="Mute sound">🔊</button>
+      <button class="icon-btn" id="restart-btn" title="New number" style="display:none;">🔄</button>
+    </div>
+  </div>
+
+  <button id="wand-btn" title="Magic help: reveal one digit free">
+    🪄
+    <span class="charge-badge" id="wand-charge">3</span>
+  </button>
+
+  <div id="chicken-layer">
+    <div id="chicken">🐔</div>
+    <div id="speech-bubble"></div>
+  </div>
+
+  <!-- SETUP SCREEN -->
+  <div class="screen active" id="setup-screen">
+    <div class="card">
+      <p class="tagline">Type your phone number below. Then, on the next screen, you'll have to <strong>re-enter every digit using math</strong> — no easy typing allowed! A mocking chicken will judge your every move. 🐔</p>
+      <input type="tel" id="phone-input" placeholder="e.g. 555 123 4567" maxlength="20" inputmode="numeric" />
+      <div class="hint">Digits only matter — spaces &amp; dashes are fine. Nothing is saved or sent anywhere.</div>
+      <button class="primary-btn" id="start-btn" disabled>Start Dialing</button>
+    </div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div class="screen" id="game-screen">
+    <div id="progress-row">
+      <span id="progress-text">0 / 0 digits</span>
+      <span id="mistake-text">Mistakes: 0</span>
+    </div>
+    <div id="digit-slots"></div>
+
+    <div id="expr-display">
+      <div id="expr-text"><span class="cursor-blink">&nbsp;</span></div>
+      <div id="expr-preview">&nbsp;</div>
+    </div>
+    <div id="expr-msg">&nbsp;</div>
+
+    <div id="keypad">
+      <button class="key op" data-val="(">(</button>
+      <button class="key op" data-val=")">)</button>
+      <button class="key clear" data-action="clear">C</button>
+      <button class="key back" data-action="back">⌫</button>
+
+      <button class="key" data-val="7">7</button>
+      <button class="key" data-val="8">8</button>
+      <button class="key" data-val="9">9</button>
+      <button class="key op" data-val="÷">÷</button>
+
+      <button class="key" data-val="4">4</button>
+      <button class="key" data-val="5">5</button>
+      <button class="key" data-val="6">6</button>
+      <button class="key op" data-val="×">×</button>
+
+      <button class="key" data-val="1">1</button>
+      <button class="key" data-val="2">2</button>
+      <button class="key" data-val="3">3</button>
+      <button class="key op" data-val="−">−</button>
+
+      <button class="key zero" data-val="0">0</button>
+      <button class="key equals" data-action="submit">=</button>
+      <button class="key op" data-val="+">+</button>
+    </div>
+  </div>
+
+  <!-- WAND MODAL -->
+  <div class="modal-overlay" id="wand-modal">
+    <div class="modal-card">
+      <h3>🪄 Magic Digit</h3>
+      <p>Pick the correct digit for slot <strong id="wand-slot-label">#1</strong>. It'll be locked in instantly — no math needed, but no take-backs either.</p>
+      <div id="wand-digit-grid"></div>
+      <button class="modal-cancel" id="wand-cancel">Never mind</button>
+    </div>
+  </div>
+
+  <!-- WIN OVERLAY -->
+  <div id="win-overlay">
+    <div class="card">
+      <h2>🎉 Cracked It! 🎉</h2>
+      <div id="win-number"></div>
+      <div id="win-stats"></div>
+      <button class="primary-btn" id="play-again-btn">Play Again</button>
+    </div>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- state ----------
+  let digits = [];
+  let solvedType = [];   // null | 'math' | 'wand'
+  let currentIndex = 0;
+  let expression = "";
+  let mistakes = 0;
+  let wandCharges = 3;
+  const WAND_START_CHARGES = 3;
+  let muted = false;
+
+  const CHICKEN_LINES = [
+    "Is that a phone number or a cry for help?",
+    "My grandma calculates faster, and she's a chicken.",
+    "Beep boop... nope, still wrong!",
+    "Buk buk BAWK! Try again, genius.",
+    "I've seen eggs solve math better than that.",
+    "Tick tock, dial it in already!",
+    "Are you even trying? Bawk!",
+    "That's not how numbers work, champ.",
+    "I could peck that answer out faster.",
+    "Wow. Just... wow. Try harder."
+  ];
+  let lastLineIndex = -1;
+
+  // ---------- elements ----------
+  const setupScreen = document.getElementById('setup-screen');
+  const gameScreen = document.getElementById('game-screen');
+  const phoneInput = document.getElementById('phone-input');
+  const startBtn = document.getElementById('start-btn');
+  const restartBtn = document.getElementById('restart-btn');
+  const muteBtn = document.getElementById('mute-btn');
+
+  const digitSlotsEl = document.getElementById('digit-slots');
+  const progressText = document.getElementById('progress-text');
+  const mistakeText = document.getElementById('mistake-text');
+  const exprText = document.getElementById('expr-text');
+  const exprPreview = document.getElementById('expr-preview');
+  const exprMsg = document.getElementById('expr-msg');
+  const keypad = document.getElementById('keypad');
+
+  const wandBtn = document.getElementById('wand-btn');
+  const wandCharge = document.getElementById('wand-charge');
+  const wandModal = document.getElementById('wand-modal');
+  const wandSlotLabel = document.getElementById('wand-slot-label');
+  const wandDigitGrid = document.getElementById('wand-digit-grid');
+  const wandCancel = document.getElementById('wand-cancel');
+
+  const winOverlay = document.getElementById('win-overlay');
+  const winNumber = document.getElementById('win-number');
+  const winStats = document.getElementById('win-stats');
+  const playAgainBtn = document.getElementById('play-again-btn');
+
+  const chicken = document.getElementById('chicken');
+  const speechBubble = document.getElementById('speech-bubble');
+
+  // ---------- audio (tiny synthesized beeps, no files) ----------
+  let audioCtx = null;
+  function beep(freq, duration, type) {
+    if (muted) return;
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    } catch (e) { /* audio unsupported, ignore */ }
+  }
+  const sfx = {
+    correct: () => { beep(660, 0.12); setTimeout(() => beep(880, 0.16), 100); },
+    wrong: () => beep(160, 0.25, 'sawtooth'),
+    wand: () => { beep(500, 0.1); setTimeout(() => beep(750, 0.1), 80); setTimeout(() => beep(1000, 0.15), 160); },
+    win: () => { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, 0.2), i * 120)); }
+  };
+
+  muteBtn.addEventListener('click', () => {
+    muted = !muted;
+    muteBtn.textContent = muted ? '🔇' : '🔊';
+  });
+
+  // ---------- setup ----------
+  phoneInput.addEventListener('input', () => {
+    const cleaned = phoneInput.value.replace(/\D/g, '');
+    startBtn.disabled = cleaned.length < 4;
+  });
+
+  startBtn.addEventListener('click', () => startGame());
+  phoneInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !startBtn.disabled) startGame();
+  });
+
+  function startGame() {
+    const cleaned = phoneInput.value.replace(/\D/g, '');
+    if (cleaned.length < 4) return;
+    digits = cleaned.slice(0, 15).split('');
+    solvedType = digits.map(() => null);
+    currentIndex = 0;
+    expression = "";
+    mistakes = 0;
+    wandCharges = WAND_START_CHARGES;
+
+    setupScreen.classList.remove('active');
+    gameScreen.classList.add('active');
+    restartBtn.style.display = 'flex';
+    wandBtn.classList.add('show');
+
+    renderSlots();
+    renderExpression();
+    updateWandUI();
+    scheduleChickenFlyby(2200);
+  }
+
+  function resetToSetup() {
+    gameScreen.classList.remove('active');
+    winOverlay.classList.remove('show');
+    setupScreen.classList.add('active');
+    restartBtn.style.display = 'none';
+    wandBtn.classList.remove('show');
+    phoneInput.value = "";
+    startBtn.disabled = true;
+    phoneInput.focus();
+  }
+  restartBtn.addEventListener('click', () => {
+    if (confirm("Start over with a new number?")) resetToSetup();
+  });
+  playAgainBtn.addEventListener('click', resetToSetup);
+
+  // ---------- rendering ----------
+  function renderSlots() {
+    digitSlotsEl.innerHTML = "";
+    digits.forEach((d, i) => {
+      const el = document.createElement('div');
+      el.className = 'slot';
+      if (solvedType[i] === 'math') {
+        el.classList.add('solved-math');
+        el.textContent = d;
+      } else if (solvedType[i] === 'wand') {
+        el.classList.add('solved-wand');
+        el.textContent = d;
+        const tag = document.createElement('span');
+        tag.className = 'wand-tag';
+        tag.textContent = '🪄';
+        el.appendChild(tag);
+      } else {
+        el.textContent = '_';
+        if (i === currentIndex) el.classList.add('active');
+      }
+      el.dataset.index = i;
+      digitSlotsEl.appendChild(el);
+    });
+    const solvedCount = solvedType.filter(Boolean).length;
+    progressText.textContent = `${solvedCount} / ${digits.length} digits`;
+    mistakeText.textContent = `Mistakes: ${mistakes}`;
+  }
+
+  function renderExpression() {
+    exprText.innerHTML = (expression || "") + '<span class="cursor-blink">&nbsp;</span>';
+    const result = safeEval(expression);
+    if (expression.length === 0) {
+      exprPreview.innerHTML = "&nbsp;";
+    } else if (result === null) {
+      exprPreview.textContent = "…";
+    } else {
+      exprPreview.textContent = `= ${formatNum(result)}`;
+    }
+  }
+
+  function formatNum(n) {
+    return Math.round(n * 1e9) / 1e9;
+  }
+
+  function setMsg(text, color) {
+    exprMsg.textContent = text || "";
+    exprMsg.style.color = color || "var(--yellow)";
+  }
+
+  // ---------- keypad ----------
+  keypad.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    if (btn.dataset.val !== undefined) {
+      appendToExpr(btn.dataset.val);
+    } else if (btn.dataset.action === 'clear') {
+      expression = "";
+      setMsg("");
+      renderExpression();
+    } else if (btn.dataset.action === 'back') {
+      expression = expression.slice(0, -1);
+      setMsg("");
+      renderExpression();
+    } else if (btn.dataset.action === 'submit') {
+      submitExpression();
+    }
+  });
+
+  function appendToExpr(val) {
+    if (isGameOver()) return;
+    expression += val;
+    setMsg("");
+    renderExpression();
+  }
+
+  function isGameOver() {
+    return solvedType.every(Boolean);
+  }
+
+  function safeEval(expr) {
+    if (!expr) return null;
+    const jsExpr = expr.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
+    if (!/^[0-9+\-*/().\s]+$/.test(jsExpr)) return null;
+    try {
+      // eslint-disable-next-line no-new-func
+      const result = Function('"use strict"; return (' + jsExpr + ')')();
+      if (typeof result !== 'number' || !isFinite(result)) return null;
+      return result;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function submitExpression() {
+    if (isGameOver()) return;
+    if (!expression.trim()) {
+      setMsg("Type something first!", "var(--yellow)");
+      return;
+    }
+    const hasOperator = /[+\-×÷]/.test(expression.replace(/^-/, ''));
+    if (!hasOperator) {
+      setMsg("Use some math — an operator, not just a digit!", "var(--yellow)");
+      shakeCurrentSlot();
+      return;
+    }
+    const result = safeEval(expression);
+    if (result === null) {
+      setMsg("That's not a valid expression.", "var(--yellow)");
+      return;
+    }
+    const target = Number(digits[currentIndex]);
+    if (Math.abs(result - target) < 1e-9) {
+      // correct
+      solvedType[currentIndex] = 'math';
+      sfx.correct();
+      advanceSlot();
+    } else {
+      mistakes++;
+      sfx.wrong();
+      setMsg(`Nope, that's ${formatNum(result)}. Try again.`, "var(--red)");
+      shakeCurrentSlot();
+      triggerChickenTaunt();
+    }
+  }
+
+  function shakeCurrentSlot() {
+    const el = digitSlotsEl.querySelector(`[data-index="${currentIndex}"]`);
+    if (!el) return;
+    el.classList.remove('wrong-shake');
+    void el.offsetWidth;
+    el.classList.add('wrong-shake');
+  }
+
+  function advanceSlot() {
+    expression = "";
+    let next = currentIndex + 1;
+    while (next < digits.length && solvedType[next]) next++;
+    currentIndex = next;
+    renderSlots();
+    renderExpression();
+    setMsg("");
+    if (isGameOver()) {
+      setTimeout(showWin, 350);
+    }
+  }
+
+  // ---------- wand ----------
+  function updateWandUI() {
+    wandCharge.textContent = wandCharges;
+    wandBtn.disabled = wandCharges <= 0 || isGameOver();
+  }
+
+  wandBtn.addEventListener('click', () => {
+    if (wandCharges <= 0 || isGameOver()) return;
+    wandSlotLabel.textContent = `#${currentIndex + 1}`;
+    wandDigitGrid.innerHTML = "";
+    for (let d = 0; d <= 9; d++) {
+      const b = document.createElement('button');
+      b.className = 'wand-digit-btn';
+      b.textContent = d;
+      b.addEventListener('click', () => applyWand(d));
+      wandDigitGrid.appendChild(b);
+    }
+    wandModal.classList.add('show');
+  });
+  wandCancel.addEventListener('click', () => wandModal.classList.remove('show'));
+
+  function applyWand(chosenDigit) {
+    wandModal.classList.remove('show');
+    digits[currentIndex] = String(chosenDigit);
+    solvedType[currentIndex] = 'wand';
+    wandCharges--;
+    sfx.wand();
+    updateWandUI();
+    advanceSlot();
+  }
+
+  // ---------- win ----------
+  function showWin() {
+    const solvedCount = solvedType.length;
+    const mathCount = solvedType.filter(t => t === 'math').length;
+    const wandCount = solvedType.filter(t => t === 'wand').length;
+    winNumber.textContent = digits.join('');
+    winStats.innerHTML = `Solved with math: <strong>${mathCount}</strong> · Wand-revealed: <strong>${wandCount}</strong><br/>Mistakes: <strong>${mistakes}</strong>`;
+    winOverlay.classList.add('show');
+    sfx.win();
+  }
+
+  // ---------- keyboard support ----------
+  document.addEventListener('keydown', (e) => {
+    if (!gameScreen.classList.contains('active')) return;
+    if (wandModal.classList.contains('show')) return;
+    const key = e.key;
+    if (/^[0-9]$/.test(key)) { appendToExpr(key); return; }
+    if (['+', '-', '*', '/', '(', ')'].includes(key)) {
+      const map = { '-': '−', '*': '×', '/': '÷' };
+      appendToExpr(map[key] || key);
+      return;
+    }
+    if (key === 'Enter' || key === '=') { submitExpression(); return; }
+    if (key === 'Backspace') { expression = expression.slice(0, -1); renderExpression(); return; }
+    if (key === 'Escape') { expression = ""; setMsg(""); renderExpression(); return; }
+  });
+
+  // ---------- chicken ----------
+  function pickLine() {
+    let idx;
+    do { idx = Math.floor(Math.random() * CHICKEN_LINES.length); } while (idx === lastLineIndex && CHICKEN_LINES.length > 1);
+    lastLineIndex = idx;
+    return CHICKEN_LINES[idx];
+  }
+
+  let chickenTimer = null;
+  let chickenBusy = false;
+
+  function scheduleChickenFlyby(firstDelay) {
+    clearTimeout(chickenTimer);
+    const delay = firstDelay !== undefined ? firstDelay : (7000 + Math.random() * 6000);
+    chickenTimer = setTimeout(() => {
+      flyChickenBy();
+      scheduleChickenFlyby();
+    }, delay);
+  }
+
+  function flyChickenBy(sayNow) {
+    if (chickenBusy || !gameScreen.classList.contains('active')) return;
+    chickenBusy = true;
+    const goingRight = Math.random() > 0.5;
+    chicken.classList.remove('flying-right', 'flying-left');
+    void chicken.offsetWidth;
+    chicken.classList.add(goingRight ? 'flying-right' : 'flying-left');
+
+    const line = pickLine();
+    setTimeout(() => {
+      speechBubble.textContent = line;
+      speechBubble.classList.add('show');
+    }, 900);
+    setTimeout(() => {
+      speechBubble.classList.remove('show');
+    }, 4200);
+    setTimeout(() => {
+      chicken.classList.remove('flying-right', 'flying-left');
+      chickenBusy = false;
+    }, 6600);
+  }
+
+  function triggerChickenTaunt() {
+    // interrupt idle timer and taunt immediately on a wrong answer
+    if (chickenBusy) return;
+    scheduleChickenFlyby(50);
+  }
+
+})();
+</script>
+</body>
+</html>

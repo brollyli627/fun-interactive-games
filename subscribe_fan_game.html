@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catch the Subscribe Button</title>
+<style>
+  :root {
+    --bg1: #1b1029;
+    --bg2: #0d0716;
+    --accent: #ff3b5c;
+    --accent2: #ffcc00;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    background: radial-gradient(circle at 30% 20%, var(--bg1), var(--bg2) 70%);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #fff;
+    user-select: none;
+  }
+
+  #game {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  header {
+    position: absolute;
+    top: 18px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: clamp(20px, 3.5vw, 34px);
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+  }
+
+  header p {
+    margin: 6px 0 0;
+    opacity: 0.75;
+    font-size: 14px;
+  }
+
+  #stats {
+    position: absolute;
+    top: 18px;
+    right: 20px;
+    z-index: 5;
+    text-align: right;
+    font-size: 14px;
+    background: rgba(0,0,0,0.35);
+    padding: 8px 14px;
+    border-radius: 10px;
+    backdrop-filter: blur(4px);
+  }
+
+  #stats div { margin: 2px 0; }
+  #stats span { font-weight: 700; color: var(--accent2); }
+
+  /* --- FAN --- */
+  #fan {
+    position: absolute;
+    left: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 160px;
+    height: 160px;
+    z-index: 4;
+  }
+
+  #fan-cage {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 10px solid #555;
+    background: radial-gradient(circle, #2a2a2a 0%, #111 80%);
+    position: relative;
+    box-shadow: 0 0 25px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,0,0,0.8);
+  }
+
+  #fan-cage::before {
+    content: "";
+    position: absolute;
+    inset: -10px;
+    border-radius: 50%;
+    border: 3px solid #777;
+    pointer-events: none;
+  }
+
+  #blades {
+    position: absolute;
+    inset: 14px;
+    border-radius: 50%;
+    background:
+      conic-gradient(
+        #ccc 0deg 20deg, transparent 20deg 90deg,
+        #ccc 90deg 110deg, transparent 110deg 180deg,
+        #ccc 180deg 200deg, transparent 200deg 270deg,
+        #ccc 270deg 290deg, transparent 290deg 360deg
+      );
+    animation: spin 0.12s linear infinite;
+  }
+
+  #blades.slow { animation-duration: 0.22s; }
+  #blades.fast { animation-duration: 0.045s; }
+
+  #fan-hub {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 22px;
+    height: 22px;
+    background: #888;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 6px #000;
+  }
+
+  #fan-stand {
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    width: 12px;
+    height: 60px;
+    background: linear-gradient(#444, #222);
+    transform: translateX(-50%);
+    border-radius: 3px;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* --- WIND --- */
+  .wind-line {
+    position: absolute;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.55), rgba(255,255,255,0));
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 3;
+    animation: blow linear infinite;
+  }
+
+  @keyframes blow {
+    from { transform: translateX(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    to { transform: translateX(140vw); opacity: 0; }
+  }
+
+  /* --- BUTTON --- */
+  #subBtn {
+    position: absolute;
+    padding: 18px 34px;
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+    background: linear-gradient(180deg, #ff4b64, var(--accent));
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 8px 0 #a10021, 0 10px 18px rgba(0,0,0,0.5);
+    z-index: 6;
+    white-space: nowrap;
+    transition: box-shadow 0.05s;
+    will-change: transform, left, top;
+  }
+
+  #subBtn:active {
+    box-shadow: 0 3px 0 #a10021, 0 5px 10px rgba(0,0,0,0.5);
+  }
+
+  #subBtn .bell {
+    display: inline-block;
+    margin-left: 6px;
+  }
+
+  /* --- OVERLAY --- */
+  #overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(5, 2, 10, 0.88);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    z-index: 20;
+    text-align: center;
+    padding: 20px;
+  }
+
+  #overlay.show { display: flex; }
+
+  #overlay h2 {
+    font-size: clamp(28px, 5vw, 48px);
+    margin: 0 0 10px;
+    color: var(--accent2);
+    text-shadow: 0 0 20px rgba(255,204,0,0.5);
+  }
+
+  #overlay p {
+    font-size: 18px;
+    opacity: 0.85;
+    margin: 4px 0;
+  }
+
+  #playAgain {
+    margin-top: 26px;
+    padding: 14px 30px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1b1029;
+    background: var(--accent2);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #b38f00;
+  }
+
+  #playAgain:active {
+    box-shadow: 0 2px 0 #b38f00;
+    transform: translateY(4px);
+  }
+
+  .confetti {
+    position: absolute;
+    top: -10px;
+    width: 10px;
+    height: 16px;
+    opacity: 0.9;
+    animation: fall linear forwards;
+  }
+
+  @keyframes fall {
+    to { transform: translateY(110vh) rotate(540deg); opacity: 0.3; }
+  }
+
+  footer {
+    position: absolute;
+    bottom: 10px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 12px;
+    opacity: 0.4;
+    z-index: 5;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="game">
+  <header>
+    <h1>🌀 Catch the Subscribe Button 🌀</h1>
+    <p>The fan won't let you subscribe that easily. Chase it down!</p>
+  </header>
+
+  <div id="stats">
+    <div>⏱️ Time: <span id="timeVal">0.0s</span></div>
+    <div>🌬️ Near Misses: <span id="missVal">0</span></div>
+  </div>
+
+  <div id="fan">
+    <div id="fan-cage">
+      <div id="blades" class="slow"></div>
+      <div id="fan-hub"></div>
+    </div>
+    <div id="fan-stand"></div>
+  </div>
+
+  <button id="subBtn">Subscribe <span class="bell">🔔</span></button>
+
+  <div id="overlay">
+    <h2>🎉 You actually subscribed?! 🎉</h2>
+    <p id="finalTime"></p>
+    <p id="finalMiss"></p>
+    <button id="playAgain">Play Again</button>
+  </div>
+
+  <footer>it's just a silly game, no real subscribing happens 🙂</footer>
+</div>
+
+<script>
+(function() {
+  const game = document.getElementById('game');
+  const btn = document.getElementById('subBtn');
+  const fan = document.getElementById('fan');
+  const blades = document.getElementById('blades');
+  const overlay = document.getElementById('overlay');
+  const playAgainBtn = document.getElementById('playAgain');
+  const timeVal = document.getElementById('timeVal');
+  const missVal = document.getElementById('missVal');
+  const finalTime = document.getElementById('finalTime');
+  const finalMiss = document.getElementById('finalMiss');
+
+  let mouse = { x: -9999, y: -9999 };
+  let pos = { x: 0, y: 0 };
+  let vel = { x: 0, y: 0 };
+  let running = true;
+  let startTime = performance.now();
+  let elapsed = 0;
+  let nearMisses = 0;
+  let wasNear = false;
+  let gustPhase = Math.random() * 1000;
+  let rafId = null;
+  let timerId = null;
+  let windLineTimer = null;
+
+  const FLEE_RADIUS = 230;
+  const FLEE_STRENGTH = 6400;
+  const FRICTION = 0.93;
+  const MAX_SPEED = 1500;
+
+  function fanCenter() {
+    const r = fan.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+
+  function resetPosition() {
+    const { w, h } = getViewport();
+    pos.x = w * 0.65 + (Math.random() - 0.5) * 60;
+    pos.y = h * 0.5 + (Math.random() - 0.5) * 60;
+    vel.x = 0;
+    vel.y = 0;
+    applyPos();
+  }
+
+  function getViewport() {
+    const w = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth || 800;
+    const h = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight || 600;
+    return { w, h };
+  }
+
+  function applyPos() {
+    const bw = btn.offsetWidth || 160;
+    const bh = btn.offsetHeight || 60;
+    const { w, h } = getViewport();
+    pos.x = Math.max(10, Math.min(w - bw - 10, pos.x));
+    pos.y = Math.max(70, Math.min(h - bh - 40, pos.y));
+    btn.style.left = pos.x + 'px';
+    btn.style.top = pos.y + 'px';
+  }
+
+  function spawnWindLine() {
+    const line = document.createElement('div');
+    line.className = 'wind-line';
+    const fc = fanCenter();
+    const yOffset = (Math.random() - 0.5) * 140;
+    line.style.left = (fc.x + 30) + 'px';
+    line.style.top = (fc.y + yOffset) + 'px';
+    line.style.width = (60 + Math.random() * 80) + 'px';
+    const dur = 0.9 + Math.random() * 0.6;
+    line.style.animationDuration = dur + 's';
+    game.appendChild(line);
+    setTimeout(() => line.remove(), dur * 1000 + 100);
+  }
+
+  function tick(now) {
+    if (!running) return;
+
+    elapsed = (now - startTime) / 1000;
+    timeVal.textContent = elapsed.toFixed(1) + 's';
+
+    const btnRect = btn.getBoundingClientRect();
+    const bcx = btnRect.left + btnRect.width / 2;
+    const bcy = btnRect.top + btnRect.height / 2;
+
+    const dx = bcx - mouse.x;
+    const dy = bcy - mouse.y;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 0.001;
+
+    const isNear = dist < FLEE_RADIUS;
+    if (isNear && !wasNear) {
+      nearMisses++;
+      missVal.textContent = nearMisses;
+    }
+    wasNear = isNear;
+
+    if (isNear) {
+      const proximity = 1 - dist / FLEE_RADIUS; // 0 far edge .. 1 right on top of it
+      const strength = FLEE_STRENGTH * proximity;
+      // frantic jitter: the closer you get, the more it panics and zigzags
+      // instead of fleeing in a clean straight line
+      const jitter = (Math.random() - 0.5) * Math.PI * 1.1 * proximity;
+      const fleeAngle = Math.atan2(dy, dx) + jitter;
+      vel.x += Math.cos(fleeAngle) * strength * 0.016;
+      vel.y += Math.sin(fleeAngle) * strength * 0.016;
+      blades.className = 'fast';
+    } else {
+      blades.className = 'slow';
+    }
+
+    // fan gust: constant push rightward/away from fan, oscillating vertically
+    gustPhase += 0.028;
+    const fc = fanCenter();
+    const awayX = pos.x + btn.offsetWidth / 2 - fc.x;
+    const awayY = pos.y + btn.offsetHeight / 2 - fc.y;
+    const awayDist = Math.sqrt(awayX * awayX + awayY * awayY) || 1;
+    const gustStrength = 420 + Math.sin(gustPhase * 0.7) * 240;
+    if (awayDist < 600) {
+      vel.x += (awayX / awayDist) * gustStrength * 0.016;
+      vel.y += (awayY / awayDist) * gustStrength * 0.016 + Math.sin(gustPhase) * 10;
+    }
+
+    vel.x *= FRICTION;
+    vel.y *= FRICTION;
+
+    const speed = Math.hypot(vel.x, vel.y);
+    if (speed > MAX_SPEED) {
+      vel.x = (vel.x / speed) * MAX_SPEED;
+      vel.y = (vel.y / speed) * MAX_SPEED;
+    }
+
+    pos.x += vel.x * 0.016;
+    pos.y += vel.y * 0.016;
+
+    // bounce off walls
+    const { w, h } = getViewport();
+    const bw = btn.offsetWidth;
+    const bh = btn.offsetHeight;
+    if (pos.x < 10) { pos.x = 10; vel.x *= -0.62; }
+    if (pos.x > w - bw - 10) { pos.x = w - bw - 10; vel.x *= -0.62; }
+    if (pos.y < 70) { pos.y = 70; vel.y *= -0.62; }
+    if (pos.y > h - bh - 40) { pos.y = h - bh - 40; vel.y *= -0.62; }
+
+    applyPos();
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function handleMouseMove(e) {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+  }
+
+  function handleTouchMove(e) {
+    if (e.touches && e.touches[0]) {
+      mouse.x = e.touches[0].clientX;
+      mouse.y = e.touches[0].clientY;
+    }
+  }
+
+  function launchConfetti() {
+    const colors = ['#ff3b5c', '#ffcc00', '#4bd0ff', '#7dff4b', '#ff8e3b'];
+    for (let i = 0; i < 80; i++) {
+      const c = document.createElement('div');
+      c.className = 'confetti';
+      c.style.left = Math.random() * 100 + 'vw';
+      c.style.background = colors[Math.floor(Math.random() * colors.length)];
+      c.style.animationDuration = (2 + Math.random() * 2) + 's';
+      c.style.animationDelay = (Math.random() * 0.5) + 's';
+      overlay.appendChild(c);
+      setTimeout(() => c.remove(), 5000);
+    }
+  }
+
+  function win() {
+    running = false;
+    cancelAnimationFrame(rafId);
+    clearInterval(windLineTimer);
+    finalTime.textContent = `You survived ${elapsed.toFixed(1)} seconds of wind.`;
+    finalMiss.textContent = `Near misses before catching it: ${nearMisses}`;
+    overlay.classList.add('show');
+    launchConfetti();
+  }
+
+  function startGame() {
+    overlay.classList.remove('show');
+    overlay.querySelectorAll('.confetti').forEach(c => c.remove());
+    running = true;
+    startTime = performance.now();
+    elapsed = 0;
+    nearMisses = 0;
+    wasNear = false;
+    missVal.textContent = '0';
+    timeVal.textContent = '0.0s';
+    resetPosition();
+    cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(tick);
+    clearInterval(windLineTimer);
+    windLineTimer = setInterval(spawnWindLine, 55);
+  }
+
+  btn.addEventListener('click', win);
+  playAgainBtn.addEventListener('click', startGame);
+  window.addEventListener('mousemove', handleMouseMove);
+  window.addEventListener('touchmove', handleTouchMove, { passive: true });
+  window.addEventListener('resize', () => {
+    // if the viewport was unreliable (0) at startup and only now reports
+    // real dimensions, re-center instead of leaving the button pinned in the corner
+    const { w } = getViewport();
+    if (w > 200 && pos.x <= 10) {
+      resetPosition();
+    } else {
+      applyPos();
+    }
+  });
+
+  startGame();
+})();
+</script>
+
+</body>
+</html>
