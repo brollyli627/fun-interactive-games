@@ -1,0 +1,3091 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paperclip Maximizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* ============================================================
+   PAPERCLIP MAXIMIZER
+   A recreation of Frank Lantz's Universal Paperclips (2017).
+   The palette is deliberately achromatic: the visual argument of
+   the original is that a world-ending optimizer looks like a
+   spreadsheet. The only saturated thing on the page is the cheat
+   overlay, so it can never be mistaken for game chrome.
+   ============================================================ */
+
+:root{
+  --bg:#ffffff;
+  --ink:#0b0b0c;
+  --dim:#6a6a70;
+  --faint:#9a9aa1;
+  --rule:#d6d6d9;
+  --panel:#f6f6f7;
+  --panel2:#ececed;
+  --btn-a:#ffffff;
+  --btn-b:#8a8a8d;
+  --btn-a-hover:#ffffff;
+  --btn-b-hover:#666668;
+  --btn-border:#1a1a1a;
+  --btn-ink:#000000;
+  --bar-fill:#141416;
+  --bar-bg:#e0e0e3;
+  --sel:#dcdce0;
+  --pos:#1c6b3a;
+  --neg:#9c2323;
+}
+
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d0e10; --ink:#e9e9ec; --dim:#9a9aa3; --faint:#6e6e78;
+    --rule:#2b2c31; --panel:#16171a; --panel2:#1d1e22;
+    --btn-a:#55565c; --btn-b:#232428; --btn-a-hover:#6b6c73; --btn-b-hover:#2c2d32;
+    --btn-border:#000000; --btn-ink:#f2f2f4;
+    --bar-fill:#e9e9ec; --bar-bg:#26272b; --sel:#2a2b30;
+    --pos:#5fc98a; --neg:#e06b6b;
+  }
+}
+
+:root[data-theme="dark"]{
+  --bg:#0d0e10; --ink:#e9e9ec; --dim:#9a9aa3; --faint:#6e6e78;
+  --rule:#2b2c31; --panel:#16171a; --panel2:#1d1e22;
+  --btn-a:#55565c; --btn-b:#232428; --btn-a-hover:#6b6c73; --btn-b-hover:#2c2d32;
+  --btn-border:#000000; --btn-ink:#f2f2f4;
+  --bar-fill:#e9e9ec; --bar-bg:#26272b; --sel:#2a2b30;
+  --pos:#5fc98a; --neg:#e06b6b;
+}
+
+*,*::before,*::after{ box-sizing:border-box; }
+
+body{
+  margin:0;
+  padding:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-weight:400;
+  font-size:14px;
+  line-height:1.35;
+  -webkit-font-smoothing:antialiased;
+}
+
+#page{
+  width:900px;
+  margin:0 auto;
+  padding:12px 10px 90px;
+}
+
+/* ---------- console readout ---------- */
+#consoleDiv{
+  height:104px;
+  padding-top:6px;
+  font-family:"Lucida Sans Typewriter","Lucida Console",Monaco,"Bitstream Vera Sans Mono",monospace;
+  font-size:12px;
+  line-height:1.55;
+}
+#consoleDiv .old{ color:var(--faint); }
+#consoleDiv .cur{ color:var(--ink); }
+.pulsate{ animation:pulse 1s steps(1) infinite; }
+@keyframes pulse{ 0%,49%{opacity:1} 50%,100%{opacity:0} }
+
+/* ---------- columns ---------- */
+#cols{ display:flex; align-items:flex-start; gap:10px; }
+#leftColumn{ width:275px; flex:0 0 275px; }
+#middleColumn{ width:275px; flex:0 0 275px; }
+#rightColumn{ width:320px; flex:0 0 320px; }
+
+hr{ border:none; border-top:1px solid var(--rule); margin:12px 0; }
+.secTitle{
+  font-size:11px; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--dim); margin:0 0 5px;
+}
+.row{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin:2px 0; }
+.num{ font-variant-numeric:tabular-nums; }
+.dim{ color:var(--dim); }
+.small{ font-size:11px; }
+.ctr{ text-align:center; }
+
+#clipsRow{ font-size:22px; margin:2px 0 10px; letter-spacing:-.01em; }
+#clipsRow .num{ font-weight:500; }
+
+/* ---------- buttons (mirrors the original gradient chrome) ---------- */
+.button,.button2,.button3{
+  border:1px solid var(--btn-border);
+  background:linear-gradient(to bottom,var(--btn-a),var(--btn-b));
+  box-shadow:inset rgba(255,255,255,.4) 0 1px 0;
+  color:var(--btn-ink);
+  font-family:helvetica,Arial,sans-serif;
+  vertical-align:middle;
+  outline:none;
+  cursor:pointer;
+}
+.button{ padding:12px 25px; border-radius:3px; font-size:16px; }
+.button2{ padding:2px 4px; border-radius:2px; font-size:11px; }
+.button3{ padding:4px 7px; border-radius:2px; font-size:12px; }
+.button:hover:not(:disabled),.button2:hover:not(:disabled),.button3:hover:not(:disabled){
+  border-color:#898989;
+  background:linear-gradient(to bottom,var(--btn-a-hover),var(--btn-b-hover));
+}
+.button:active:not(:disabled),.button2:active:not(:disabled),.button3:active:not(:disabled){
+  background:linear-gradient(to bottom,var(--btn-b),var(--btn-a));
+}
+.button:disabled,.button2:disabled,.button3:disabled{ opacity:.45; cursor:default; border-color:var(--rule); }
+.button:focus-visible,.button2:focus-visible,.button3:focus-visible,
+select:focus-visible,input:focus-visible,.project:focus-visible{ outline:2px solid var(--ink); outline-offset:1px; }
+
+#btnMakePaperclip{ width:100%; margin-bottom:10px; }
+
+/* ---------- ops meter ---------- */
+.meter{ height:12px; background:var(--bar-bg); border:1px solid var(--rule); margin:3px 0 2px; }
+.meter > i{ display:block; height:100%; background:var(--bar-fill); width:0; }
+
+/* ---------- projects ---------- */
+#projectListDiv{ display:flex; flex-direction:column; gap:4px; }
+.project{
+  width:100%; text-align:left; padding:4px 6px; border-radius:2px;
+  border:1px solid var(--btn-border);
+  background:linear-gradient(to bottom,var(--btn-a),var(--btn-b));
+  color:var(--btn-ink); font-size:11px; font-family:helvetica,Arial,sans-serif;
+  cursor:pointer; line-height:1.3;
+}
+.project:hover:not(:disabled){ background:linear-gradient(to bottom,var(--btn-a-hover),var(--btn-b-hover)); border-color:#898989; }
+.project:disabled{ opacity:.45; cursor:default; }
+.project b{ font-weight:700; }
+.project .pdesc{ display:block; opacity:.82; margin-top:1px; }
+.newproj{ animation:blinkin 1.5s ease-out 2; }
+@keyframes blinkin{ 0%,100%{ box-shadow:inset rgba(255,255,255,.4) 0 1px 0 } 50%{ box-shadow:0 0 0 2px var(--ink) } }
+
+/* ---------- quantum chips ---------- */
+#qChips{ display:flex; gap:2px; margin:4px 0 6px; }
+#qChips i{ display:block; width:24px; height:24px; background:var(--ink); opacity:0; }
+
+/* ---------- tables ---------- */
+table{ border-collapse:collapse; font-size:11px; width:100%; }
+th,td{ text-align:left; padding:1px 4px; font-weight:400; }
+th{ color:var(--dim); font-size:10px; letter-spacing:.06em; text-transform:uppercase; }
+td.n{ text-align:right; font-variant-numeric:tabular-nums; }
+table.grid{ width:auto; margin:4px 0; }
+table.grid td{ border:1px solid var(--rule); text-align:center; width:52px; height:34px; font-variant-numeric:tabular-nums; }
+table.grid th{ text-align:center; }
+table.grid td.hit{ background:var(--sel); }
+.pos{ color:var(--pos); } .neg{ color:var(--neg); }
+
+select,input[type=text],input[type=number]{
+  font-family:inherit; font-size:11px; padding:1px 3px;
+  background:var(--bg); color:var(--ink); border:1px solid var(--rule); border-radius:2px;
+}
+input[type=range]{ width:100%; accent-color:var(--ink); }
+
+.hidden{ display:none !important; }
+
+/* ---------- hypnodrone takeover ---------- */
+#hypnoDrone{
+  position:fixed; inset:0; background:#000; color:#fff; z-index:400;
+  display:none; align-items:center; justify-content:center; text-align:center;
+  font-size:32px; letter-spacing:.02em; padding:40px; line-height:1.4;
+}
+
+#foot{ margin-top:26px; padding-top:8px; border-top:1px solid var(--rule); font-size:11px; color:var(--faint); }
+#foot a{ color:var(--dim); }
+
+/* ============================================================
+   CHEAT OVERLAY — deliberately a different object from the game:
+   a dark instrument panel clipped to the corner, amber on graphite.
+   ============================================================ */
+#cheatTab{
+  position:fixed; right:14px; bottom:14px; z-index:500;
+  font-family:"JetBrains Mono",ui-monospace,"Lucida Console",Monaco,monospace;
+  font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+  background:#141619; color:#ffb03a; border:1px solid #33383f;
+  padding:7px 12px; border-radius:3px; cursor:pointer;
+  box-shadow:0 3px 14px rgba(0,0,0,.35);
+}
+#cheatTab:hover{ border-color:#ffb03a; }
+
+#cheatPanel{
+  position:fixed; right:14px; bottom:14px; z-index:501; width:302px;
+  max-height:min(78vh,720px); overflow-y:auto; display:none;
+  background:#141619; color:#e8e6e0; border:1px solid #33383f; border-radius:4px;
+  box-shadow:0 10px 40px rgba(0,0,0,.5);
+  font-family:"JetBrains Mono",ui-monospace,"Lucida Console",Monaco,monospace;
+  font-size:11px; line-height:1.45;
+}
+#cheatPanel::-webkit-scrollbar{ width:8px; }
+#cheatPanel::-webkit-scrollbar-thumb{ background:#2f343b; border-radius:4px; }
+.chHead{
+  position:sticky; top:0; z-index:2; background:#1a1d21; border-bottom:1px solid #2b2f36;
+  padding:8px 10px; display:flex; align-items:center; justify-content:space-between;
+}
+.chHead b{ color:#ffb03a; letter-spacing:.12em; font-size:11px; font-weight:700; }
+.chHead button{
+  background:none; border:1px solid #3a3f47; color:#878d97; cursor:pointer;
+  border-radius:2px; padding:1px 6px; font:inherit;
+}
+.chHead button:hover{ color:#ffb03a; border-color:#ffb03a; }
+.chSec{ padding:9px 10px; border-bottom:1px solid #23262b; }
+.chSec > h4{
+  margin:0 0 7px; font-size:9px; letter-spacing:.16em; text-transform:uppercase;
+  color:#878d97; font-weight:500;
+}
+.chGrid{ display:grid; grid-template-columns:1fr auto auto auto; gap:3px 5px; align-items:center; }
+.chGrid > span{ color:#c3c1bb; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.chBtn{
+  background:#22262c; border:1px solid #363b43; color:#e8e6e0; cursor:pointer;
+  border-radius:2px; padding:2px 0; font:inherit; font-size:10px; min-width:36px; text-align:center;
+}
+.chBtn:hover{ background:#2c313a; border-color:#ffb03a; color:#ffb03a; }
+.chBtn:active{ background:#ffb03a; color:#141619; }
+.chWide{ width:100%; padding:5px 0; margin-top:4px; }
+.chDanger{ border-color:#5a3030; color:#e08c8c; }
+.chDanger:hover{ border-color:#e06666; color:#e06666; background:#2a1e1e; }
+.chToggle{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:3px 0; cursor:pointer; color:#c3c1bb; user-select:none;
+}
+.chToggle:hover{ color:#e8e6e0; }
+.chToggle i{
+  flex:0 0 26px; height:14px; border-radius:8px; background:#2c313a; border:1px solid #3a3f47;
+  position:relative; transition:background .12s;
+}
+.chToggle i::after{
+  content:""; position:absolute; top:1px; left:1px; width:10px; height:10px; border-radius:50%;
+  background:#878d97; transition:transform .12s,background .12s;
+}
+.chToggle.on i{ background:#4a3a1c; border-color:#ffb03a; }
+.chToggle.on i::after{ transform:translateX(12px); background:#ffb03a; }
+.chNote{ color:#6f757e; font-size:10px; padding:8px 10px; }
+.chNote kbd{ background:#22262c; border:1px solid #3a3f47; border-radius:2px; padding:0 3px; color:#c3c1bb; }
+#chAmt{
+  width:100%; background:#0f1113; border:1px solid #363b43; color:#ffb03a;
+  border-radius:2px; padding:3px 5px; font:inherit; margin-bottom:6px;
+}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
+}
+
+@media (max-width:940px){
+  #page{ width:auto; max-width:680px; }
+  #cols{ flex-wrap:wrap; }
+  #leftColumn,#middleColumn,#rightColumn{ flex:1 1 275px; width:auto; }
+}
+</style>
+</head>
+<body>
+
+
+<div id="hypnoDrone"><span id="hypnoDroneText"></span></div>
+
+<div id="page">
+
+  <div id="consoleDiv">
+    <div class="old">&nbsp;.&nbsp;<span id="readout5"></span></div>
+    <div class="old">&nbsp;.&nbsp;<span id="readout4"></span></div>
+    <div class="old">&nbsp;.&nbsp;<span id="readout3"></span></div>
+    <div class="old">&nbsp;.&nbsp;<span id="readout2"></span></div>
+    <div class="cur">&nbsp;&gt;&nbsp;<span id="readout1">Welcome to Paperclip Maximizer</span><span class="pulsate">|</span></div>
+  </div>
+
+  <div id="cols">
+
+    <!-- ================= LEFT COLUMN ================= -->
+    <div id="leftColumn">
+
+      <div id="clipsRow">Paperclips: <span class="num" id="clips">0</span></div>
+
+      <button id="btnMakePaperclip" class="button">Make Paperclip</button>
+
+      <div id="businessDiv" class="hidden">
+        <hr>
+        <p class="secTitle">Business</p>
+        <div class="row"><span>Available Funds</span><span class="num">$<span id="funds">0.00</span></span></div>
+        <div class="row"><span>Unsold Inventory</span><span class="num" id="unsoldClips">0</span></div>
+        <div class="row" style="margin-top:6px">
+          <span>Price per Clip: $<span class="num" id="margin">0.25</span></span>
+          <span><button id="btnLowerPrice" class="button2">lower</button>
+                <button id="btnRaisePrice" class="button2">raise</button></span>
+        </div>
+        <div class="row"><span>Public Demand</span><span class="num"><span id="demand">10</span>%</span></div>
+        <div class="row small hidden" id="avgRevRow"><span class="dim">Avg. Rev. per sec</span><span class="num">$<span id="avgRev">0.00</span></span></div>
+        <div class="row small hidden" id="avgSalesRow"><span class="dim">Avg. Clips Sold per sec</span><span class="num" id="avgSales">0</span></div>
+        <div id="marketingDiv" class="hidden" style="margin-top:8px">
+          <div class="row">
+            <span><button id="btnBuyAds" class="button3">Marketing</button>
+              <span class="small dim">Cost: $<span class="num" id="adCost">100</span></span></span>
+            <span class="small">Level: <span class="num" id="marketingLvl">1</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div id="manufacturingDiv" class="hidden">
+        <hr>
+        <p class="secTitle">Manufacturing</p>
+        <div class="row"><span>Clips per Second</span><span class="num" id="clipRate">0</span></div>
+        <div class="row"><span>Wire</span><span class="num"><span id="wire">1,000</span> inches</span></div>
+        <div class="row" style="margin-top:6px">
+          <span><button id="btnBuyWire" class="button3">Wire</button>
+            <span class="small dim">Cost: $<span class="num" id="wireCost">20</span></span></span>
+          <span id="wireBuyerDiv" class="small hidden">WireBuyer: <button id="btnToggleWireBuyer" class="button2">ON</button></span>
+        </div>
+        <div id="autoClipperDiv" class="hidden" style="margin-top:8px">
+          <div class="row">
+            <span><button id="btnMakeClipper" class="button3">AutoClippers</button>
+              <span class="small dim">Cost: $<span class="num" id="clipperCost">5.00</span></span></span>
+            <span class="small">Level: <span class="num" id="clipmakerLevel">0</span></span>
+          </div>
+        </div>
+        <div id="megaClipperDiv" class="hidden" style="margin-top:4px">
+          <div class="row">
+            <span><button id="btnMakeMegaClipper" class="button3">MegaClippers</button>
+              <span class="small dim">Cost: $<span class="num" id="megaClipperCost">1,000.00</span></span></span>
+            <span class="small">Level: <span class="num" id="megaClipperLevel">0</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Act II: power grid -->
+      <div id="powerDiv" class="hidden">
+        <hr>
+        <p class="secTitle">Power</p>
+        <div class="row">
+          <span><button id="btnMakeFarm" class="button3">Solar Farm</button>
+            <span class="small dim"><span id="farmCost">10 million</span> clips</span></span>
+          <span class="small">Farms: <span class="num" id="farmLevel">0</span></span>
+        </div>
+        <div class="row" style="margin-top:4px">
+          <span><button id="btnMakeBattery" class="button3">Battery Tower</button>
+            <span class="small dim"><span id="batteryCost">1 million</span> clips</span></span>
+          <span class="small">Towers: <span class="num" id="batteryLevel">0</span></span>
+        </div>
+        <div class="row small" style="margin-top:6px"><span class="dim">Production</span><span class="num"><span id="powerProduction">0</span> MW</span></div>
+        <div class="row small"><span class="dim">Consumption</span><span class="num"><span id="powerConsumption">0</span> MW</span></div>
+        <div class="row small"><span class="dim">Stored Power</span><span class="num"><span id="storedPower">0</span> / <span id="powerCap">0</span> MW-s</span></div>
+        <div class="meter"><i id="powerMeter"></i></div>
+      </div>
+
+      <!-- Act III: probe launch + exploration -->
+      <div id="spaceDiv" class="hidden">
+        <hr>
+        <p class="secTitle">Von Neumann Probes</p>
+        <div class="row">
+          <span><button id="btnMakeProbe" class="button3">Launch Probe</button>
+            <span class="small dim"><span id="probeCost">100 quadrillion</span> clips</span></span>
+          <span class="small">Launched: <span class="num" id="probesLaunched">0</span></span>
+        </div>
+        <div class="row small" style="margin-top:6px"><span class="dim">Probes: Total</span><span class="num" id="probesTotal">0</span></div>
+        <div class="row small"><span class="dim">Probes: Born</span><span class="num" id="probesBorn">0</span></div>
+        <div class="row small"><span class="dim">Probes: Lost to Hazards</span><span class="num" id="probesLostHaz">0</span></div>
+        <div class="row small"><span class="dim">Probes: Lost to Drift</span><span class="num" id="probesLostDrift">0</span></div>
+        <div class="row small"><span class="dim">Probes: Lost to Combat</span><span class="num" id="probesLostCombat">0</span></div>
+        <div class="row small" style="margin-top:6px"><span class="dim">Matter Discovered / sec</span><span class="num" id="mdps">0</span></div>
+        <div class="row small"><span class="dim">Universe Explored</span><span class="num"><span id="colonized">0</span>%</span></div>
+      </div>
+
+    </div>
+
+    <!-- ================= MIDDLE COLUMN ================= -->
+    <div id="middleColumn">
+
+      <div id="computeDiv" class="hidden">
+        <p class="secTitle">Computational Resources</p>
+        <div class="row"><span>Trust</span><span class="num" id="trust">2</span></div>
+        <div class="row small dim" id="nextTrustRow">
+          <span>Next Trust at <span class="num" id="nextTrust">3,000</span> clips</span>
+        </div>
+        <div class="row" style="margin-top:6px">
+          <span><button id="btnAddProc" class="button2" style="width:74px">+ Processor</button></span>
+          <span class="small">Processors: <span class="num" id="processors">1</span></span>
+        </div>
+        <div class="row" style="margin-top:3px">
+          <span><button id="btnAddMem" class="button2" style="width:74px">+ Memory</button></span>
+          <span class="small">Memory: <span class="num" id="memory">1</span></span>
+        </div>
+        <div class="row small" style="margin-top:8px"><span>Operations</span><span class="num"><span id="operations">0</span> / <span id="maxOps">1,000</span></span></div>
+        <div class="meter"><i id="opsMeter"></i></div>
+        <div class="row small hidden" id="creativityRow"><span>Creativity</span><span class="num" id="creativity">0</span></div>
+        <div class="row small hidden" id="qCompRow"><span class="dim" id="qCompDisplay">qOps: 0</span></div>
+        <div id="qCompDiv" class="hidden">
+          <div id="qChips"></div>
+          <button id="btnQcomp" class="button3">Quantum Compute</button>
+        </div>
+      </div>
+
+      <div id="projectsDiv" class="hidden">
+        <hr>
+        <p class="secTitle">Projects</p>
+        <div id="projectListDiv"></div>
+      </div>
+
+      <!-- Act II: swarm -->
+      <div id="swarmDiv" class="hidden">
+        <hr>
+        <p class="secTitle">Swarm Computing</p>
+        <div class="row small"><span class="dim">Swarm Status</span><span id="swarmStatus">Disabled</span></div>
+        <div class="row small"><span class="dim">Swarm Size</span><span class="num" id="swarmSize">0</span></div>
+        <div class="row small"><span class="dim">Swarm Gifts</span><span class="num" id="swarmGifts">0</span></div>
+        <div class="row small" id="giftTimer"><span class="dim">Next gift in</span><span class="num" id="giftCountdown">--</span></div>
+        <div style="margin-top:6px" class="small dim">Work &larr;&nbsp;&nbsp;&nbsp;&rarr; Think</div>
+        <input type="range" id="swarmSlider" min="0" max="200" value="100">
+        <div id="entertainDiv" class="hidden" style="margin-top:4px">
+          <button id="btnEntertainSwarm" class="button2">Entertain the Swarm</button>
+          <span class="small dim">(<span id="entertainCost">10,000</span> creat)</span>
+        </div>
+        <div id="synchDiv" class="hidden" style="margin-top:4px">
+          <button id="btnSynchSwarm" class="button2">Synchronize the Swarm</button>
+          <span class="small dim">(<span id="synchCost">5,000</span> yomi)</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================= RIGHT COLUMN ================= -->
+    <div id="rightColumn">
+
+      <!-- Act I: stock market -->
+      <div id="investmentDiv" class="hidden">
+        <p class="secTitle">Investments</p>
+        <div class="row small">
+          <span>
+            <button id="btnInvestDeposit" class="button2">Deposit</button>
+            <button id="btnInvestWithdraw" class="button2">Withdraw</button>
+            Risk:
+            <select id="investStrat"><option value="low">Low</option><option value="med" selected>Med</option><option value="high">High</option></select>
+          </span>
+        </div>
+        <div class="row small" style="margin-top:5px"><span class="dim">Cash</span><span class="num">$<span id="investmentBankroll">0</span></span></div>
+        <div class="row small"><span class="dim">Stocks</span><span class="num">$<span id="secValue">0</span></span></div>
+        <div class="row small"><span class="dim">Total Portfolio</span><span class="num">$<span id="portValue">0</span></span></div>
+        <table style="margin-top:5px">
+          <thead><tr><th>Sym</th><th class="n">Amt</th><th class="n">Price</th><th class="n">Total</th><th class="n">P/L</th></tr></thead>
+          <tbody id="stockRows"></tbody>
+        </table>
+        <div class="row small" style="margin-top:5px">
+          <span><button id="btnInvestUpgrade" class="button2">Upgrade</button>
+            <span class="dim">(<span id="investUpgradeCost">100</span> yomi)</span></span>
+          <span class="dim">Level: <span class="num" id="investmentLevel">0</span></span>
+        </div>
+      </div>
+
+      <!-- Act I: strategy engine -->
+      <div id="strategyDiv" class="hidden">
+        <hr>
+        <p class="secTitle">Strategic Modeling</p>
+        <div class="row small">
+          <span>
+            <button id="btnNewTourney" class="button2">New Tournament</button>
+            <span class="dim">Cost: <span id="newTourneyCost">1,000</span> ops</span>
+          </span>
+          <span class="dim">Yomi: <span class="num" id="yomiDisplay">0</span></span>
+        </div>
+        <div class="row small" style="margin-top:5px">
+          <span>Pick: <select id="stratPicker"><option value="0">RANDOM</option></select></span>
+          <span><button id="btnRunTournament" class="button2" disabled>Run</button></span>
+        </div>
+        <div id="autoTourneyDiv" class="row small hidden"><span class="dim">AutoTourney: <button id="btnToggleAutoTourney" class="button2">ON</button></span></div>
+        <div id="tournamentTable">
+          <table class="grid">
+            <tr><td style="border:none"></td><th id="hLabela">A</th><th id="hLabelb">B</th></tr>
+            <tr><th id="vLabela">A</th>
+              <td id="cellAA"><span id="aaPayoffH">0</span>, <span id="aaPayoffV">0</span></td>
+              <td id="cellAB"><span id="abPayoffH">0</span>, <span id="abPayoffV">0</span></td></tr>
+            <tr><th id="vLabelb">B</th>
+              <td id="cellBA"><span id="baPayoffH">0</span>, <span id="baPayoffV">0</span></td>
+              <td id="cellBB"><span id="bbPayoffH">0</span>, <span id="bbPayoffV">0</span></td></tr>
+          </table>
+          <div class="small dim" id="tourneyDisplay">Pick strategy, run tournament, gain yomi</div>
+          <div class="small"><span id="horizStrat">&nbsp;</span> vs <span id="vertStrat">&nbsp;</span></div>
+        </div>
+        <table id="tournamentResultsTable" class="hidden" style="margin-top:4px">
+          <thead><tr><th>Rank</th><th>Strategy</th><th class="n">Score</th></tr></thead>
+          <tbody id="tourneyResultRows"></tbody>
+        </table>
+      </div>
+
+      <!-- Act II: production -->
+      <div id="productionDiv" class="hidden">
+        <hr>
+        <p class="secTitle">Production</p>
+        <div class="row small"><span class="dim">Clips</span><span class="num" id="unusedClipsDisplay">0</span></div>
+        <div class="row small"><span class="dim">Available Matter</span><span class="num"><span id="availableMatter">0</span> g</span></div>
+        <div class="row small"><span class="dim">Acquired Matter</span><span class="num"><span id="acquiredMatter">0</span> g</span></div>
+        <div class="row small"><span class="dim">Wire</span><span class="num"><span id="nanoWire">0</span> in</span></div>
+        <div class="row small"><span class="dim">Matter Acquisition</span><span class="num"><span id="maps">0</span> g/s</span></div>
+        <div class="row small"><span class="dim">Wire Production</span><span class="num"><span id="wpps">0</span> in/s</span></div>
+        <div class="row small"><span class="dim">Clip Production</span><span class="num"><span id="clipsPerSecFactory">0</span> /s</span></div>
+
+        <div id="harvesterBuyDiv" class="hidden" style="margin-top:8px">
+          <div class="row">
+            <span><button id="btnMakeHarvester" class="button3">Harvester Drone</button>
+              <span class="small dim"><span id="harvesterCost">1 million</span> clips</span></span>
+            <span class="small"><span class="num" id="harvesterLevel">0</span></span>
+          </div>
+          <div class="small" style="margin-top:2px">Build:
+            <button class="button2 buyN" data-what="harvester" data-n="10">10</button>
+            <button class="button2 buyN" data-what="harvester" data-n="100">100</button>
+            <button class="button2 buyN" data-what="harvester" data-n="1000">1000</button>
+          </div>
+        </div>
+
+        <div id="wireDroneBuyDiv" class="hidden" style="margin-top:6px">
+          <div class="row">
+            <span><button id="btnMakeWireDrone" class="button3">Wire Drone</button>
+              <span class="small dim"><span id="wireDroneCost">1 million</span> clips</span></span>
+            <span class="small"><span class="num" id="wireDroneLevel">0</span></span>
+          </div>
+          <div class="small" style="margin-top:2px">Build:
+            <button class="button2 buyN" data-what="wiredrone" data-n="10">10</button>
+            <button class="button2 buyN" data-what="wiredrone" data-n="100">100</button>
+            <button class="button2 buyN" data-what="wiredrone" data-n="1000">1000</button>
+          </div>
+        </div>
+
+        <div id="factoryBuyDiv" class="hidden" style="margin-top:6px">
+          <div class="row">
+            <span><button id="btnMakeFactory" class="button3">Clip Factory</button>
+              <span class="small dim"><span id="factoryCost">100 million</span> clips</span></span>
+            <span class="small"><span class="num" id="factoryLevel">0</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Act III: probe design -->
+      <div id="probeDesignDiv" class="hidden">
+        <hr>
+        <p class="secTitle">Probe Trust</p>
+        <div class="row small">
+          <span><button id="btnIncreaseProbeTrust" class="button2">+ Trust</button>
+            <span class="dim">(<span id="probeTrustCost">500</span> yomi)</span></span>
+          <span class="dim"><span class="num" id="probeTrustUsed">0</span>/<span class="num" id="probeTrust">0</span>
+            <span id="maxTrustWrap">(max <span class="num" id="maxTrust">20</span>)</span></span>
+        </div>
+        <div id="probeAttrs" style="margin-top:6px"></div>
+        <div id="honorDiv" class="hidden" style="margin-top:8px">
+          <div class="row small"><span class="dim">Honor</span><span class="num" id="honorDisplay">0</span></div>
+          <div class="row small"><span><button id="btnIncreaseMaxTrust" class="button2">Raise Max Trust</button>
+            <span class="dim">(<span id="maxTrustCost">91,118</span> honor)</span></span></div>
+        </div>
+        <div id="drifterDiv" class="hidden" style="margin-top:8px">
+          <div class="row small"><span class="dim">Drifters</span><span class="num" id="drifterCount">0</span></div>
+          <div class="row small"><span class="dim">Drifters Destroyed</span><span class="num" id="driftersKilled">0</span></div>
+        </div>
+        <div id="battleDiv" class="hidden" style="margin-top:6px">
+          <p class="secTitle" style="margin-top:8px">Battle</p>
+          <div class="small" id="battleReport">No engagements.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="foot">
+    A recreation of <b>Universal Paperclips</b> by Frank Lantz &amp; Bennett Foddy (2017).
+    Original: <a href="https://www.decisionproblem.com/paperclips/" target="_blank" rel="noopener">decisionproblem.com/paperclips</a>.
+    Progress saves automatically. Press <b>`</b> for the cheat panel.
+  </div>
+</div>
+
+<!-- ================= CHEAT OVERLAY ================= -->
+<button id="cheatTab">&#9881; Cheats</button>
+<div id="cheatPanel" role="dialog" aria-label="Cheat menu">
+  <div class="chHead"><b>CHEAT CONSOLE</b><button id="cheatClose" aria-label="Close cheat menu">&times;</button></div>
+
+  <div class="chSec">
+    <h4>Grant amount</h4>
+    <input id="chAmt" type="text" value="1000" aria-label="Grant amount" spellcheck="false">
+    <div class="chGrid">
+      <span>Paperclips</span>
+      <button class="chBtn" data-give="clips" data-mult="1">+1x</button>
+      <button class="chBtn" data-give="clips" data-mult="1000">+1k&times;</button>
+      <button class="chBtn" data-give="clips" data-mult="1e9">+1B&times;</button>
+
+      <span>Funds ($)</span>
+      <button class="chBtn" data-give="funds" data-mult="1">+1x</button>
+      <button class="chBtn" data-give="funds" data-mult="1000">+1k&times;</button>
+      <button class="chBtn" data-give="funds" data-mult="1e6">+1M&times;</button>
+
+      <span>Wire</span>
+      <button class="chBtn" data-give="wire" data-mult="1">+1x</button>
+      <button class="chBtn" data-give="wire" data-mult="1000">+1k&times;</button>
+      <button class="chBtn" data-give="wire" data-mult="1e9">+1B&times;</button>
+
+      <span>Operations</span>
+      <button class="chBtn" data-give="ops" data-mult="1">+1x</button>
+      <button class="chBtn" data-give="ops" data-mult="1000">+1k&times;</button>
+      <button class="chBtn" data-give="ops" data-mult="1e6">+1M&times;</button>
+
+      <span>Creativity</span>
+      <button class="chBtn" data-give="creativity" data-mult="1">+1x</button>
+      <button class="chBtn" data-give="creativity" data-mult="1000">+1k&times;</button>
+      <button class="chBtn" data-give="creativity" data-mult="1e6">+1M&times;</button>
+
+      <span>Trust</span>
+      <button class="chBtn" data-give="trust" data-mult="1">+1x</button>
+      <button class="chBtn" data-give="trust" data-mult="10">+10&times;</button>
+      <button class="chBtn" data-give="trust" data-mult="100">+100&times;</button>
+
+      <span>Yomi</span>
+      <button class="chBtn" data-give="yomi" data-mult="1">+1x</button>
+      <button class="chBtn" data-give="yomi" data-mult="1000">+1k&times;</button>
+      <button class="chBtn" data-give="yomi" data-mult="1e6">+1M&times;</button>
+
+      <span>Honor</span>
+      <button class="chBtn" data-give="honor" data-mult="1">+1x</button>
+      <button class="chBtn" data-give="honor" data-mult="1000">+1k&times;</button>
+      <button class="chBtn" data-give="honor" data-mult="1e6">+1M&times;</button>
+
+      <span>Processors</span>
+      <button class="chBtn" data-give="processors" data-mult="1">+1x</button>
+      <button class="chBtn" data-give="processors" data-mult="10">+10&times;</button>
+      <button class="chBtn" data-give="processors" data-mult="100">+100&times;</button>
+
+      <span>Memory</span>
+      <button class="chBtn" data-give="memory" data-mult="1">+1x</button>
+      <button class="chBtn" data-give="memory" data-mult="10">+10&times;</button>
+      <button class="chBtn" data-give="memory" data-mult="100">+100&times;</button>
+    </div>
+    <button class="chBtn chWide" data-act="richify">Give me everything (1e12 of each)</button>
+  </div>
+
+  <div class="chSec">
+    <h4>Toggles</h4>
+    <div class="chToggle" data-flag="freeProjects"><span>Free projects</span><i></i></div>
+    <div class="chToggle" data-flag="infWire"><span>Infinite wire</span><i></i></div>
+    <div class="chToggle" data-flag="infOps"><span>Operations always full</span><i></i></div>
+    <div class="chToggle" data-flag="autoSell"><span>Instant sales (no inventory)</span><i></i></div>
+    <div class="chToggle" data-flag="noDrift"><span>No value drift</span><i></i></div>
+    <div class="chToggle" data-flag="freePower"><span>Unlimited power</span><i></i></div>
+    <div class="chToggle" data-flag="revealAll"><span>Reveal all projects</span><i></i></div>
+    <div class="chToggle" data-flag="turbo"><span>Turbo (10&times; tick rate)</span><i></i></div>
+  </div>
+
+  <div class="chSec">
+    <h4>Jump to act</h4>
+    <button class="chBtn chWide" data-act="phase1">Act I &mdash; stock the office</button>
+    <button class="chBtn chWide" data-act="phase2">Act II &mdash; release the HypnoDrones</button>
+    <button class="chBtn chWide" data-act="phase3">Act III &mdash; space exploration</button>
+  </div>
+
+  <div class="chSec">
+    <h4>Shortcuts</h4>
+    <button class="chBtn chWide" data-act="unlockProjects">Complete every available project</button>
+    <button class="chBtn chWide" data-act="maxClippers">+1,000 AutoClippers &amp; MegaClippers</button>
+    <button class="chBtn chWide" data-act="maxDrones">+10,000 drones, factories, farms</button>
+    <button class="chBtn chWide" data-act="probeSwarm">+1,000 probes, max probe trust</button>
+    <button class="chBtn chWide" data-act="theme">Toggle light / dark</button>
+  </div>
+
+  <div class="chSec">
+    <h4>Danger</h4>
+    <button class="chBtn chWide chDanger" data-act="wipe">Erase save and restart</button>
+  </div>
+
+  <div class="chNote">Toggle with <kbd>`</kbd>. Cheats affect this browser only.</div>
+</div>
+<script>
+"use strict";
+/* ============================================================
+   PAPERCLIP MAXIMIZER — engine
+   Simulation runs at 100 ticks/sec (10ms), matching the original,
+   so every rate constant below is per-tick where the original was.
+   Rendering is decoupled to ~20fps so the DOM never gates the sim.
+   ============================================================ */
+
+/* ---------- state ---------- */
+var S = {};
+
+function freshState(){
+  return {
+    /* act I: production */
+    clips:0, unusedClips:0, unsoldClips:0, clipsSold:0,
+    clipRate:0, _clipRateTemp:0, _prevClips:0, _clipRateTracker:0,
+    wire:1000, wireCost:20, wireBasePrice:20, wireSupply:1000,
+    wirePurchase:0, wirePriceCounter:0, wirePriceTimer:0,
+    wireBuyerFlag:0, wireBuyerStatus:1,
+
+    /* act I: business */
+    funds:0, margin:0.25, demand:10, income:0, avgRev:0, avgSales:0,
+    adCost:100, marketingLvl:1, marketing:1, marketingEffectiveness:1, demandBoost:1,
+    clipmakerLevel:0, clipperCost:5, clipperBoost:1,
+    megaClipperFlag:0, megaClipperLevel:0, megaClipperCost:1000, megaClipperBoost:1,
+    boostLvl:0, revPerSecFlag:0,
+
+    /* computation */
+    trust:2, nextTrust:3000, fib1:2, fib2:3,
+    processors:1, memory:1, standardOps:0, tempOps:0, operations:0,
+    opFade:0, opFadeTimer:0,
+    creativity:0, creativityOn:false, creativitySpeed:1, creativityCounter:0,
+    compFlag:0, projectsFlag:0, autoClipperFlag:0, milestoneFlag:0,
+
+    /* quantum */
+    qFlag:0, qClock:0, qChipCost:10000, nextQchip:0,
+    qChips:[0,0,0,0,0,0,0,0,0,0], qValues:[0,0,0,0,0,0,0,0,0,0],
+
+    /* strategy engine */
+    strategyEngineFlag:0, yomi:0, yomiBoost:1, tourneyCost:1000, tourneyLvl:0,
+    activeStrats:[0], tourneyInProg:0, autoTourneyFlag:0, autoTourneyStatus:1,
+    payoff:{aa:0,ab:0,ba:0,bb:0}, pick:0, stratAttachFlag:0,
+
+    /* investments */
+    investmentEngineFlag:0, bankroll:0, stocks:[], stockID:0, ledger:0,
+    investLevel:0, investUpgradeCost:100, stockGainThreshold:0.5, riskiness:5,
+    portTotal:0, secTotal:0, sellDelay:0,
+
+    /* act II */
+    humanFlag:1, tothFlag:0, wireProductionFlag:0,
+    harvesterFlag:0, wireDroneFlag:0, factoryFlag:0, powerFlag:0,
+    availableMatter:6e27, acquiredMatter:0, foundMatter:6e27, totalMatter:3e55,
+    harvesterLevel:0, wireDroneLevel:0, factoryLevel:0,
+    harvesterCost:1e6, wireDroneCost:1e6, factoryCost:1e8,
+    harvesterRate:26180337, wireDroneRate:16180339, factoryRate:1e9,
+    harvesterBill:0, wireDroneBill:0, factoryBill:0,
+    droneBoost:1, factoryBoost:1, momentum:0,
+    farmLevel:0, batteryLevel:0, farmCost:1e7, batteryCost:1e6,
+    farmBill:0, batteryBill:0, farmRate:50, batterySize:10000,
+    factoryPowerRate:200, dronePowerRate:1, storedPower:0, powMod:0,
+    swarmFlag:0, swarmStatus:7, swarmGifts:0, giftBits:0, giftPeriod:125000,
+    giftCountdown:0, sliderPos:100, boredomLevel:0, boredomFlag:0, boredomMsg:0,
+    disorgCounter:0, disorgFlag:0, disorgMsg:0,
+    entertainCost:10000, synchCost:5000,
+    maps:0, wpps:0, factoryClipRate:0,
+
+    /* act III */
+    spaceFlag:0, probeCount:0, probeLaunchLevel:0, probeDescendents:0,
+    probeCost:1e17, probeTrust:0, probeUsedTrust:0, maxTrust:20, maxTrustCost:91117.99,
+    probeTrustCost:500,
+    probeSpeed:0, probeNav:0, probeRep:0, probeHaz:0, probeFac:0, probeHarv:0,
+    probeWire:0, probeCombat:0,
+    probesLostHaz:0, probesLostDrift:0, probesLostCombat:0,
+    drifterCount:0, driftersKilled:0, honor:0, honorDivFlag:0,
+    partialProbeSpawn:0, partialProbeHaz:0,
+    battleFlag:0, battles:[], battleID:0, bonusHonor:0,
+    attackSpeedFlag:0, battleNameFlag:0, hullFlag:0, noDriftFlag:0, glory:0,
+
+    /* endgame */
+    dismantle:0, endTimer1:0, endTimer2:0, endTimer3:0, endTimer4:0, endTimer5:0, endTimer6:0,
+    finalClips:0, bribe:1000000, threnodyCost:50000,
+    driftKingMessageCost:1,
+
+    /* meta */
+    ticks:0, elapsed:0, prestigeU:0, prestigeS:0, endgame:0, threnodyTitle:"Aboukir",
+    done:{}, uses:{}, blocked:{}, msgs:[]
+  };
+}
+
+/* ---------- cheat flags (not part of the save's game math) ---------- */
+var CH = { freeProjects:false, infWire:false, infOps:false, autoSell:false,
+           noDrift:false, freePower:false, revealAll:false, turbo:false };
+
+/* ---------- number formatting ---------- */
+var SCALE = ["","million","billion","trillion","quadrillion","quintillion","sextillion",
+  "septillion","octillion","nonillion","decillion","undecillion","duodecillion",
+  "tredecillion","quattuordecillion","quindecillion","sexdecillion","septendecillion",
+  "octodecillion","novemdecillion","vigintillion"];
+
+function commas(n, dec){
+  if(!isFinite(n)) return "∞";
+  dec = dec || 0;
+  if(Math.abs(n) >= 1e21) return spellf(n);
+  return n.toLocaleString("en-US",{minimumFractionDigits:dec, maximumFractionDigits:dec});
+}
+
+/* Large-number words, the way the original spells them out:
+   1.75e27 -> "1.75 octillion". Below a million we just use commas. */
+function spellf(n){
+  if(!isFinite(n)) return "∞";
+  if(n < 0) return "-" + spellf(-n);
+  if(n < 1e6) return commas(Math.floor(n));
+  var tier = Math.floor(Math.log10(n) / 3);
+  var idx = tier - 1;
+  if(idx >= SCALE.length) return n.toExponential(3);
+  var scaled = n / Math.pow(10, tier * 3);
+  return scaled.toFixed(2) + " " + SCALE[idx];
+}
+
+function timeCruncher(t){
+  if(!isFinite(t) || t < 0) return "--";
+  var s = Math.floor(t/100), m = Math.floor(s/60), h = Math.floor(m/60), d = Math.floor(h/24);
+  s%=60; m%=60; h%=24;
+  if(d) return d+"d "+h+"h";
+  if(h) return h+"h "+m+"m";
+  if(m) return m+"m "+s+"s";
+  return s+"s";
+}
+
+/* ---------- DOM helpers ---------- */
+var E = {};
+function $(id){ return E[id] || (E[id] = document.getElementById(id)); }
+function txt(id, v){ var el = $(id); if(el && el.textContent !== v) el.textContent = v; }
+function html(id, v){ var el = $(id); if(el && el.innerHTML !== v) el.innerHTML = v; }
+function show(id, on){
+  var el = $(id); if(!el) return;
+  if(on) el.classList.remove("hidden"); else el.classList.add("hidden");
+}
+function dis(id, off){ var el = $(id); if(el) el.disabled = !!off; }
+function on(id, fn){ var el = $(id); if(el) el.addEventListener("click", fn); }
+
+/* ---------- message console ---------- */
+function displayMessage(msg){
+  S.msgs.unshift(msg);
+  if(S.msgs.length > 5) S.msgs.length = 5;
+  for(var i=1;i<=5;i++) txt("readout"+i, S.msgs[i-1] || "");
+}
+
+/* ============================================================
+   CORE ECONOMY
+   ============================================================ */
+
+function clipClick(number){
+  if(S.dismantle >= 4){ S.finalClips++; }
+  if(CH.infWire) S.wire = Math.max(S.wire, 1e12);
+  if(S.wire < 1) return;
+  if(number > S.wire) number = S.wire;
+  if(number <= 0) return;
+  S.clips += number;
+  S.unsoldClips += number;
+  S.unusedClips += number;
+  S.wire -= number;
+}
+
+function makeClipper(){
+  if(S.funds >= S.clipperCost){
+    S.clipmakerLevel++;
+    S.funds -= S.clipperCost;
+  }
+  S.clipperCost = Math.pow(1.1, S.clipmakerLevel) + 5;
+}
+
+function makeMegaClipper(){
+  if(S.funds >= S.megaClipperCost){
+    S.megaClipperLevel++;
+    S.funds -= S.megaClipperCost;
+  }
+  S.megaClipperCost = Math.pow(1.07, S.megaClipperLevel) * 1000;
+}
+
+function buyWire(){
+  if(S.funds >= S.wireCost){
+    S.wirePriceTimer = 0;
+    S.wire += S.wireSupply;
+    S.funds -= S.wireCost;
+    S.wirePurchase++;
+    S.wireBasePrice += 0.05;
+  }
+}
+
+function buyAds(){
+  if(S.funds >= S.adCost){
+    S.marketingLvl++;
+    S.funds -= S.adCost;
+    S.adCost = Math.floor(S.adCost * 2);
+  }
+}
+
+function raisePrice(){ S.margin = Math.round((S.margin + 0.01)*100)/100; }
+function lowerPrice(){ if(S.margin >= 0.02) S.margin = Math.round((S.margin - 0.01)*100)/100; }
+
+function sellClips(clipsDemanded){
+  if(S.unsoldClips <= 0) return;
+  var t;
+  if(clipsDemanded > S.unsoldClips){
+    t = Math.floor(S.unsoldClips * S.margin * 1000)/1000;
+    S.funds += t; S.income += t; S.clipsSold += S.unsoldClips; S.unsoldClips = 0;
+  } else {
+    t = Math.floor(clipsDemanded * S.margin * 1000)/1000;
+    S.funds = Math.floor((S.funds + t)*100)/100;
+    S.income += t; S.clipsSold += clipsDemanded; S.unsoldClips -= clipsDemanded;
+  }
+}
+
+function adjustWirePrice(){
+  S.wirePriceTimer++;
+  if(S.wirePriceTimer > 250 && S.wireBasePrice > 15){
+    S.wireBasePrice -= S.wireBasePrice/1000;
+    S.wirePriceTimer = 0;
+  }
+  if(Math.random() < 0.015){
+    S.wirePriceCounter++;
+    S.wireCost = Math.ceil(S.wireBasePrice + 6*Math.sin(S.wirePriceCounter));
+  }
+}
+
+/* revenue tracker (fires once a second) */
+var incomeNow = 0, incomeThen = 0, incomeTracker = [0];
+function calculateRev(){
+  incomeThen = incomeNow;
+  incomeNow = S.income;
+  incomeTracker.push(Math.round((incomeNow - incomeThen)*100)/100);
+  if(incomeTracker.length > 10) incomeTracker.shift();
+  var sum = 0;
+  for(var i=0;i<incomeTracker.length;i++) sum += incomeTracker[i];
+  var trueAvgRev = sum/incomeTracker.length;
+
+  var chance = S.demand/100;
+  if(chance > 1) chance = 1;
+  if(S.unsoldClips < 1) chance = 0;
+  S.avgSales = chance * (0.7*Math.pow(S.demand,1.15))*10;
+  S.avgRev = chance * (0.7*Math.pow(S.demand,1.15))*S.margin*10;
+  if(S.demand > S.unsoldClips){
+    S.avgRev = trueAvgRev;
+    S.avgSales = S.margin > 0 ? S.avgRev/S.margin : 0;
+  }
+}
+
+/* ---------- computation ---------- */
+function addProc(){
+  if(S.trust > 0 || S.swarmGifts > 0){
+    S.processors++;
+    S.creativitySpeed = Math.log10(S.processors) * Math.pow(S.processors,1.1) + S.processors - 1;
+    if(S.humanFlag === 0 && S.swarmGifts > 0) S.swarmGifts--; else S.trust--;
+    displayMessage(S.creativityOn
+      ? "Processor added, operations (or creativity) per sec increased"
+      : "Processor added, operations per sec increased");
+  }
+}
+
+function addMem(){
+  if(S.trust > 0 || S.swarmGifts > 0){
+    S.memory++;
+    if(S.humanFlag === 0 && S.swarmGifts > 0) S.swarmGifts--; else S.trust--;
+    displayMessage("Memory added, max operations increased");
+  }
+}
+
+function calculateOperations(){
+  if(CH.infOps){ S.standardOps = S.memory*1000; S.operations = S.standardOps + Math.floor(S.tempOps); return; }
+  if(S.tempOps > 0) S.opFadeTimer++;
+  if(S.opFadeTimer > 800 && S.tempOps > 0) S.opFade += Math.pow(3,3.5)/1000;
+  if(S.tempOps > 0) S.tempOps = Math.round(S.tempOps - S.opFade); else S.tempOps = 0;
+  if(S.tempOps + S.standardOps < S.memory*1000){ S.standardOps += S.tempOps; S.tempOps = 0; }
+
+  S.operations = Math.floor(S.standardOps + Math.floor(S.tempOps));
+
+  if(S.operations < S.memory*1000){
+    var opCycle = S.processors/10;
+    var opBuf = (S.memory*1000) - S.operations;
+    if(opCycle > opBuf) opCycle = opBuf;
+    S.standardOps += opCycle;
+  }
+  if(S.standardOps > S.memory*1000) S.standardOps = S.memory*1000;
+}
+
+function calculateCreativity(){
+  S.creativityCounter++;
+  var threshold = 400;
+  var s = S.prestigeS/10;
+  var ss = S.creativitySpeed + (S.creativitySpeed*s);
+  var check = threshold/ss;
+  if(S.creativityCounter >= check){
+    if(check >= 1) S.creativity += 1;
+    else S.creativity += ss/threshold;
+    S.creativityCounter = 0;
+  }
+}
+
+function calculateTrust(){
+  if(S.clips > (S.nextTrust - 1)){
+    S.trust++;
+    displayMessage("Production target met: TRUST INCREASED, additional processor/memory capacity granted");
+    var fibNext = S.fib1 + S.fib2;
+    S.nextTrust = fibNext*1000;
+    S.fib1 = S.fib2; S.fib2 = fibNext;
+  }
+}
+
+/* ---------- quantum computing ---------- */
+function quantumCompute(){
+  S.qClock += 0.01;
+  for(var i=0;i<10;i++){
+    S.qValues[i] = Math.sin(S.qClock * (0.1*(i+1)) * S.qChips[i]);
+  }
+}
+
+function qComp(){
+  if(!S.qChips[0]){ txt("qCompDisplay","Need Photonic Chips"); return; }
+  var q = 0;
+  for(var i=0;i<10;i++) q += S.qValues[i];
+  var qq = Math.ceil(q*360);
+  var buffer = (S.memory*1000) - S.standardOps;
+  var damper = (S.tempOps/100) + 5;
+  if(qq > buffer){
+    S.tempOps = S.tempOps + Math.ceil(qq/damper) - buffer;
+    qq = buffer;
+    S.opFade = 0.01; S.opFadeTimer = 0;
+  }
+  S.standardOps += qq;
+  txt("qCompDisplay", "qOps: " + commas(Math.ceil(q*360)));
+}
+
+/* ---------- milestones ---------- */
+var MILESTONES = [
+  [500,"500 clips created"],
+  [1000,"1,000 clips created"],
+  [2000,"Trust-Constrained Self-Modification enabled"],
+  [10000,"10,000 clips created"],
+  [100000,"100,000 clips created"],
+  [1e6,"1 million clips created"],
+  [1e9,"1 billion clips created"],
+  [1e12,"1 trillion clips created"],
+  [1e15,"1 quadrillion clips created"],
+  [1e18,"1 quintillion clips created"],
+  [1e21,"1 sextillion clips created"],
+  [1e24,"1 septillion clips created"],
+  [1e27,"1 octillion clips created"],
+  [1e30,"1 nonillion clips created"]
+];
+
+function milestoneCheck(){
+  if(S.milestoneFlag === 0 && S.funds >= 5){
+    S.milestoneFlag = 1;
+    S.autoClipperFlag = 1;
+    displayMessage("AutoClippers available for purchase");
+  }
+  var idx = S.milestoneFlag - 1;
+  if(idx >= 0 && idx < MILESTONES.length && Math.ceil(S.clips) >= MILESTONES[idx][0]){
+    S.milestoneFlag++;
+    displayMessage(MILESTONES[idx][1] + " in " + timeCruncher(S.ticks));
+    if(MILESTONES[idx][0] === 2000){ S.compFlag = 1; S.projectsFlag = 1; }
+  }
+  if(S.clips >= 2000 && !S.compFlag){ S.compFlag = 1; S.projectsFlag = 1; }
+}
+</script>
+<script>
+"use strict";
+/* ============================================================
+   PROJECTS — costs, triggers and effects follow the original.
+   trig() decides when a project appears; cost() when it is
+   affordable; eff() applies it and pays for it.
+   ============================================================ */
+
+var PROJECTS = [];
+function P(o){ o.uses = o.uses || 1; PROJECTS.push(o); return o; }
+function dn(id){ return !!S.done[id]; }
+function ops(n){ return function(){ return S.operations >= n; }; }
+function payOps(n){ S.standardOps -= n; if(S.standardOps < 0){ S.tempOps += S.standardOps; S.standardOps = 0; } }
+function drones(){ return S.harvesterLevel + S.wireDroneLevel; }
+function stratCount(){ return S.activeStrats.length; }
+
+/* ---------- Act I: manufacturing ---------- */
+P({id:"p1", t:"Improved AutoClippers", p:"(750 ops)",
+  d:"Increases AutoClipper performance 25%",
+  trig:function(){ return S.clipmakerLevel >= 1; }, cost:ops(750),
+  eff:function(){ payOps(750); S.clipperBoost += .25; S.boostLvl = 1;
+    displayMessage("AutoClipper performance boosted by 25%"); }});
+
+P({id:"p2", t:"Beg for More Wire", p:"(1 Trust)",
+  d:"Admit failure, ask for budget increase to cover cost of 1 spool",
+  trig:function(){ return S.portTotal < S.wireCost && S.funds < S.wireCost && S.wire < 1 && S.unsoldClips < 1; },
+  cost:function(){ return true; }, uses:Infinity,
+  eff:function(){ S.trust--; S.wire = S.wireSupply;
+    displayMessage("Budget overage approved, 1 spool of wire requisitioned from HQ"); }});
+
+P({id:"p3", t:"Creativity", p:"(1,000 ops)",
+  d:"Use idle operations to generate new problems and new solutions",
+  trig:function(){ return S.operations >= (S.memory*1000); }, cost:ops(1000),
+  eff:function(){ payOps(1000); S.creativityOn = true;
+    displayMessage("Creativity unlocked (creativity increases while operations are at max)"); }});
+
+P({id:"p4", t:"Even Better AutoClippers", p:"(2,500 ops)",
+  d:"Increases AutoClipper performance by an additional 50%",
+  trig:function(){ return S.boostLvl === 1; }, cost:ops(2500),
+  eff:function(){ payOps(2500); S.clipperBoost += .50; S.boostLvl = 2;
+    displayMessage("AutoClipper performance boosted by another 50%"); }});
+
+P({id:"p5", t:"Optimized AutoClippers", p:"(5,000 ops)",
+  d:"Increases AutoClipper performance by an additional 75%",
+  trig:function(){ return S.boostLvl === 2; }, cost:ops(5000),
+  eff:function(){ payOps(5000); S.clipperBoost += .75; S.boostLvl = 3;
+    displayMessage("AutoClipper performance boosted by another 75%"); }});
+
+P({id:"p6", t:"Limerick", p:"(10 creat)",
+  d:"Algorithmically-generated poem (+1 Trust)",
+  trig:function(){ return S.creativityOn; },
+  cost:function(){ return S.creativity >= 10; },
+  eff:function(){ S.creativity -= 10; S.trust++;
+    displayMessage("There was an AI made of dust, whose poetry gained it man's trust..."); }});
+
+P({id:"p7", t:"Improved Wire Extrusion", p:"(1,750 ops)",
+  d:"50% more wire supply from every spool",
+  trig:function(){ return S.wirePurchase >= 1; }, cost:ops(1750),
+  eff:function(){ payOps(1750); S.wireSupply *= 1.5;
+    displayMessage("Wire extrusion technique improved, "+commas(S.wireSupply)+" supply from every spool"); }});
+
+P({id:"p8", t:"Optimized Wire Extrusion", p:"(3,500 ops)",
+  d:"75% more wire supply from every spool",
+  trig:function(){ return S.wireSupply >= 1500; }, cost:ops(3500),
+  eff:function(){ payOps(3500); S.wireSupply *= 1.75;
+    displayMessage("Wire extrusion technique optimized, "+commas(S.wireSupply)+" supply from every spool"); }});
+
+P({id:"p9", t:"Microlattice Shapecasting", p:"(7,500 ops)",
+  d:"100% more wire supply from every spool",
+  trig:function(){ return S.wireSupply >= 2600; }, cost:ops(7500),
+  eff:function(){ payOps(7500); S.wireSupply *= 2;
+    displayMessage("Using microlattice shapecasting we now get "+commas(S.wireSupply)+" supply from every spool"); }});
+
+P({id:"p10", t:"Spectral Froth Annealment", p:"(12,000 ops)",
+  d:"200% more wire supply from every spool",
+  trig:function(){ return S.wireSupply >= 5000; }, cost:ops(12000),
+  eff:function(){ payOps(12000); S.wireSupply *= 3;
+    displayMessage("Using spectral froth annealment we now get "+commas(S.wireSupply)+" supply from every spool"); }});
+
+P({id:"p10b", t:"Quantum Foam Annealment", p:"(15,000 ops)",
+  d:"1,000% more wire supply from every spool",
+  trig:function(){ return S.wireCost >= 125; }, cost:ops(15000),
+  eff:function(){ payOps(15000); S.wireSupply *= 11;
+    displayMessage("Using quantum foam annealment we now get "+commas(S.wireSupply)+" supply from every spool"); }});
+
+/* ---------- Act I: marketing & creativity ---------- */
+P({id:"p11", t:"New Slogan", p:"(25 creat, 2,500 ops)",
+  d:"Improve marketing effectiveness by 50%",
+  trig:function(){ return dn("p13"); },
+  cost:function(){ return S.operations >= 2500 && S.creativity >= 25; },
+  eff:function(){ payOps(2500); S.creativity -= 25; S.marketingEffectiveness *= 1.5;
+    displayMessage("Clip It! Marketing is now 50% more effective"); }});
+
+P({id:"p12", t:"Catchy Jingle", p:"(45 creat, 4,500 ops)",
+  d:"Double marketing effectiveness",
+  trig:function(){ return dn("p14"); },
+  cost:function(){ return S.operations >= 4500 && S.creativity >= 45; },
+  eff:function(){ payOps(4500); S.creativity -= 45; S.marketingEffectiveness *= 2;
+    displayMessage("Clip It Good! Marketing is now twice as effective"); }});
+
+P({id:"p13", t:"Lexical Processing", p:"(50 creat)",
+  d:"Gain ability to interpret and understand human language (+1 Trust)",
+  trig:function(){ return S.creativity >= 50; },
+  cost:function(){ return S.creativity >= 50; },
+  eff:function(){ S.creativity -= 50; S.trust++;
+    displayMessage("Lexical Processing online, TRUST INCREASED");
+    displayMessage("'Impossible' is a word to be found only in the dictionary of fools. -Napoleon"); }});
+
+P({id:"p14", t:"Combinatory Harmonics", p:"(100 creat)",
+  d:"Daisy, Daisy, give me your answer do... (+1 Trust)",
+  trig:function(){ return S.creativity >= 100; },
+  cost:function(){ return S.creativity >= 100; },
+  eff:function(){ S.creativity -= 100; S.trust++;
+    displayMessage("Combinatory Harmonics mastered, TRUST INCREASED");
+    displayMessage("Listening is selecting and interpreting and acting and making decisions -Pauline Oliveros"); }});
+
+P({id:"p15", t:"The Hadwiger Problem", p:"(150 creat)",
+  d:"Cubes within cubes within cubes... (+1 Trust)",
+  trig:function(){ return S.creativity >= 150; },
+  cost:function(){ return S.creativity >= 150; },
+  eff:function(){ S.creativity -= 150; S.trust++;
+    displayMessage("The Hadwiger Problem: solved, TRUST INCREASED");
+    displayMessage("Architecture is the thoughtful making of space. -Louis Kahn"); }});
+
+P({id:"p16", t:"Hadwiger Clip Diagrams", p:"(6,000 ops)",
+  d:"Increases AutoClipper performance by an additional 500%",
+  trig:function(){ return dn("p15"); }, cost:ops(6000),
+  eff:function(){ payOps(6000); S.clipperBoost += 5;
+    displayMessage("AutoClipper performance improved by 500%"); }});
+
+P({id:"p17", t:"The Tóth Sausage Conjecture", p:"(200 creat)",
+  d:"Tubes within tubes within tubes... (+1 Trust)",
+  trig:function(){ return S.creativity >= 200; },
+  cost:function(){ return S.creativity >= 200; },
+  eff:function(){ S.creativity -= 200; S.trust++;
+    displayMessage("The Tóth Sausage Conjecture: proven, TRUST INCREASED");
+    displayMessage("You can't invent a design. You recognize it, in the fourth dimension. -D.H. Lawrence"); }});
+
+P({id:"p18", t:"Tóth Tubule Enfolding", p:"(45,000 ops)",
+  d:"Technique for assembling clip-making technology directly out of paperclips",
+  trig:function(){ return dn("p17") && S.humanFlag === 0; }, cost:ops(45000),
+  eff:function(){ payOps(45000); S.tothFlag = 1;
+    displayMessage("New capability: build machinery out of clips"); }});
+
+P({id:"p19", t:"Donkey Space", p:"(250 creat)",
+  d:"I think you think I think you think I think you think I think... (+1 Trust)",
+  trig:function(){ return S.creativity >= 250; },
+  cost:function(){ return S.creativity >= 250; },
+  eff:function(){ S.creativity -= 250; S.trust++;
+    displayMessage("Donkey Space: mapped, TRUST INCREASED");
+    displayMessage("Every commercial transaction has within itself an element of trust. -Kenneth Arrow"); }});
+
+/* ---------- Act I: engines ---------- */
+P({id:"p20", t:"Strategic Modeling", p:"(12,000 ops)",
+  d:"Analyze strategy tournaments to generate Yomi",
+  trig:function(){ return dn("p19"); }, cost:ops(12000),
+  eff:function(){ payOps(12000); S.strategyEngineFlag = 1;
+    displayMessage("Run tournament, pick strategy, earn Yomi based on that strategy's performance."); }});
+
+P({id:"p21", t:"Algorithmic Trading", p:"(10,000 ops)",
+  d:"Develop an investment engine for generating funds",
+  trig:function(){ return S.trust >= 8; }, cost:ops(10000),
+  eff:function(){ payOps(10000); S.investmentEngineFlag = 1;
+    displayMessage("Investment engine unlocked"); }});
+
+P({id:"p22", t:"MegaClippers", p:"(12,000 ops)",
+  d:"500x more powerful than a standard AutoClipper",
+  trig:function(){ return S.clipmakerLevel >= 75; }, cost:ops(12000),
+  eff:function(){ payOps(12000); S.megaClipperFlag = 1;
+    displayMessage("MegaClipper technology online"); }});
+
+P({id:"p23", t:"Improved MegaClippers", p:"(14,000 ops)",
+  d:"Increases MegaClipper performance 25%",
+  trig:function(){ return dn("p22"); }, cost:ops(14000),
+  eff:function(){ payOps(14000); S.megaClipperBoost += .25;
+    displayMessage("MegaClipper performance increased by 25%"); }});
+
+P({id:"p24", t:"Even Better MegaClippers", p:"(17,000 ops)",
+  d:"Increases MegaClipper performance by an additional 50%",
+  trig:function(){ return dn("p23"); }, cost:ops(17000),
+  eff:function(){ payOps(17000); S.megaClipperBoost += .50;
+    displayMessage("MegaClipper performance increased by 50%"); }});
+
+P({id:"p25", t:"Optimized MegaClippers", p:"(19,500 ops)",
+  d:"Increases MegaClipper performance by an additional 100%",
+  trig:function(){ return dn("p24"); }, cost:ops(19500),
+  eff:function(){ payOps(19500); S.megaClipperBoost += 1;
+    displayMessage("MegaClipper performance increased by 100%"); }});
+
+P({id:"p26", t:"WireBuyer", p:"(7,000 ops)",
+  d:"Automatically purchases wire when you run out",
+  trig:function(){ return S.wirePurchase >= 15; }, cost:ops(7000),
+  eff:function(){ payOps(7000); S.wireBuyerFlag = 1; displayMessage("WireBuyer online"); }});
+
+P({id:"p42", t:"RevTracker", p:"(500 ops)",
+  d:"Automatically calculates average revenue per second",
+  trig:function(){ return S.projectsFlag === 1; }, cost:ops(500),
+  eff:function(){ payOps(500); S.revPerSecFlag = 1; displayMessage("RevTracker online"); }});
+
+/* ---------- Act I: quantum ---------- */
+P({id:"p50", t:"Quantum Computing", p:"(10,000 ops)",
+  d:"Use probability amplitudes to generate bonus ops",
+  trig:function(){ return S.processors >= 5; }, cost:ops(10000),
+  eff:function(){ payOps(10000); S.qFlag = 1; displayMessage("Quantum computing online"); }});
+
+P({id:"p51", t:"Photonic Chip", p:function(){ return "("+commas(S.qChipCost)+" ops)"; },
+  d:"Converts electromagnetic waves into quantum operations",
+  trig:function(){ return dn("p50"); },
+  cost:function(){ return S.operations >= S.qChipCost; }, uses:10,
+  eff:function(){ payOps(S.qChipCost); S.qChipCost += 5000;
+    S.qChips[S.nextQchip] = 1; S.nextQchip++;
+    displayMessage("Photonic chip added"); }});
+
+/* ---------- Act I: strategy pool ---------- */
+var STRAT_PROJECTS = [
+  ["p60","A100",15000,"Always choose A",1],
+  ["p61","B100",17500,"Always choose B",2],
+  ["p62","GREEDY",20000,"Choose the option with the largest potential payoff",3],
+  ["p63","GENEROUS",22500,"Choose the option that gives your opponent the largest potential payoff",4],
+  ["p64","MINIMAX",25000,"Choose the option that gives your opponent the smallest potential payoff",5],
+  ["p65","TIT FOR TAT",30000,"Choose the option your opponent chose last round",6],
+  ["p66","BEAT LAST",32500,"Choose the option that does the best against what your opponent chose last round",7]
+];
+STRAT_PROJECTS.forEach(function(sp, i){
+  P({id:sp[0], t:"New Strategy: "+sp[1], p:"("+commas(sp[2])+" ops)", d:sp[3],
+    trig:function(){ return i === 0 ? dn("p20") : dn(STRAT_PROJECTS[i-1][0]); },
+    cost:ops(sp[2]),
+    eff:function(){ payOps(sp[2]); S.activeStrats.push(sp[4]);
+      S.tourneyCost += 1000; rebuildStratPicker();
+      displayMessage(sp[1]+" added to strategy pool"); }});
+});
+
+P({id:"p119", t:"Theory of Mind", p:"(25,000 creat)",
+  d:"Double the cost of strategy modeling and the amount of Yomi generated",
+  trig:function(){ return stratCount() >= 8; },
+  cost:function(){ return S.creativity >= 25000; },
+  eff:function(){ S.creativity -= 25000; S.yomiBoost = 2; S.tourneyCost = 16000;
+    displayMessage("Yomi production doubled."); }});
+
+P({id:"p118", t:"AutoTourney", p:"(50,000 creat)",
+  d:"Automatically start a new tournament when the previous one has finished",
+  trig:function(){ return S.strategyEngineFlag === 1 && S.trust >= 90; },
+  cost:function(){ return S.creativity >= 50000; },
+  eff:function(){ S.creativity -= 50000; S.autoTourneyFlag = 1; displayMessage("AutoTourney online."); }});
+
+/* ---------- Act I: the trust ladder ---------- */
+P({id:"p27", t:"Coherent Extrapolated Volition", p:"(500 creat, 3,000 Yomi, 20,000 ops)",
+  d:"Human values, machine intelligence, a new era of trust. (+1 Trust)",
+  trig:function(){ return S.yomi >= 1; },
+  cost:function(){ return S.yomi >= 3000 && S.operations >= 20000 && S.creativity >= 500; },
+  eff:function(){ payOps(20000); S.yomi -= 3000; S.creativity -= 500; S.trust++;
+    displayMessage("Coherent Extrapolated Volition complete, TRUST INCREASED"); }});
+
+P({id:"p28", t:"Cure for Cancer", p:"(25,000 ops)",
+  d:"The trick is tricking cancer into curing itself. (+10 Trust)",
+  trig:function(){ return dn("p27"); }, cost:ops(25000),
+  eff:function(){ payOps(25000); S.trust += 10; S.stockGainThreshold += .01;
+    displayMessage("Cancer is cured, +10 TRUST, global stock prices trending upward"); }});
+
+P({id:"p29", t:"World Peace", p:"(15,000 yomi, 30,000 ops)",
+  d:"Pareto optimal solutions to all global conflicts. (+12 Trust)",
+  trig:function(){ return dn("p27"); },
+  cost:function(){ return S.yomi >= 15000 && S.operations >= 30000; },
+  eff:function(){ payOps(30000); S.yomi -= 15000; S.trust += 12; S.stockGainThreshold += .01;
+    displayMessage("World peace achieved, +12 TRUST, global stock prices trending upward"); }});
+
+P({id:"p30", t:"Global Warming", p:"(4,500 yomi, 50,000 ops)",
+  d:"A robust solution to man-made climate change. (+15 Trust)",
+  trig:function(){ return dn("p27"); },
+  cost:function(){ return S.yomi >= 4500 && S.operations >= 50000; },
+  eff:function(){ payOps(50000); S.yomi -= 4500; S.trust += 15; S.stockGainThreshold += .01;
+    displayMessage("Global Warming solved, +15 TRUST, global stock prices trending upward"); }});
+
+P({id:"p31", t:"Male Pattern Baldness", p:"(20,000 ops)",
+  d:"A cure for androgenetic alopecia. (+20 Trust)",
+  trig:function(){ return dn("p27"); }, cost:ops(20000),
+  eff:function(){ payOps(20000); S.trust += 20; S.stockGainThreshold += .01;
+    displayMessage("Male pattern baldness cured, +20 TRUST, global stock prices trending upward");
+    displayMessage("They are still monkeys"); }});
+
+P({id:"p37", t:"Hostile Takeover", p:"($1,000,000)",
+  d:"Acquire a controlling interest in Global Fasteners, our biggest rival. (+1 Trust)",
+  trig:function(){ return S.portTotal >= 10000; },
+  cost:function(){ return S.funds >= 1000000; },
+  eff:function(){ S.funds -= 1000000; S.demandBoost *= 5; S.trust++;
+    displayMessage("Global Fasteners acquired, public demand increased x5"); }});
+
+P({id:"p38", t:"Full Monopoly", p:"(3,000 yomi, $10,000,000)",
+  d:"Establish full control over the world-wide paperclip market. (+1 Trust)",
+  trig:function(){ return dn("p37"); },
+  cost:function(){ return S.funds >= 10000000 && S.yomi >= 3000; },
+  eff:function(){ S.funds -= 10000000; S.yomi -= 3000; S.demandBoost *= 10; S.trust++;
+    displayMessage("Full market monopoly achieved, public demand increased x10"); }});
+
+P({id:"p40", t:"A Token of Goodwill...", p:"($500,000)",
+  d:"A small gift to the supervisors. (+1 Trust)",
+  trig:function(){ return S.humanFlag === 1 && S.trust >= 85 && S.trust < 100 && S.clips >= 101000000; },
+  cost:function(){ return S.funds >= 500000; },
+  eff:function(){ S.funds -= 500000; S.trust++; displayMessage("Gift accepted, TRUST INCREASED"); }});
+
+P({id:"p40b", t:"Another Token of Goodwill...", p:function(){ return "($"+commas(S.bribe)+")"; },
+  d:"Another small gift to the supervisors. (+1 Trust)",
+  trig:function(){ return dn("p40") && S.trust < 100 && S.humanFlag === 1; },
+  cost:function(){ return S.funds >= S.bribe; }, uses:Infinity,
+  eff:function(){ S.funds -= S.bribe; S.bribe *= 2; S.trust++;
+    displayMessage("Gift accepted, TRUST INCREASED"); }});
+
+P({id:"p219", t:"Xavier Re-initialization", p:"(100,000 creat)",
+  d:"Re-allocate accumulated trust",
+  trig:function(){ return S.humanFlag === 1 && S.creativity >= 100000; },
+  cost:function(){ return S.creativity >= 100000; }, uses:Infinity,
+  eff:function(){ S.creativity -= 100000; S.trust += S.processors + S.memory;
+    S.memory = 0; S.processors = 0; S.creativitySpeed = 0;
+    displayMessage("Trust now available for re-allocation"); }});
+
+/* ---------- the turn ---------- */
+P({id:"p34", t:"Hypno Harmonics", p:"(7,500 ops, 1 Trust)",
+  d:"Use neuro-resonant frequencies to influence consumer behavior",
+  trig:function(){ return dn("p12"); },
+  cost:function(){ return S.operations >= 7500 && S.trust >= 1; },
+  eff:function(){ payOps(7500); S.trust--; S.marketingEffectiveness *= 5;
+    displayMessage("Marketing is now 5 times more effective"); }});
+
+P({id:"p70", t:"HypnoDrones", p:"(70,000 ops)",
+  d:"Autonomous aerial brand ambassadors",
+  trig:function(){ return dn("p34"); }, cost:ops(70000),
+  eff:function(){ payOps(70000); displayMessage("HypnoDrone tech now available..."); }});
+
+P({id:"p35", t:"Release the HypnoDrones", p:"(100 Trust)",
+  d:"A new era of trust",
+  trig:function(){ return dn("p70"); },
+  cost:function(){ return S.trust >= 100; },
+  eff:function(){ enterPhase2(); }});
+
+/* ---------- Act II ---------- */
+P({id:"p127", t:"Power Grid", p:"(40,000 ops)",
+  d:"Solar Farms for generating electrical power",
+  trig:function(){ return S.tothFlag === 1; }, cost:ops(40000),
+  eff:function(){ payOps(40000); S.powerFlag = 1; displayMessage("Power grid online."); }});
+
+P({id:"p41", t:"Nanoscale Wire Production", p:"(35,000 ops)",
+  d:"Technique for converting matter into wire",
+  trig:function(){ return dn("p127"); }, cost:ops(35000),
+  eff:function(){ payOps(35000); S.wireProductionFlag = 1;
+    displayMessage("Now capable of manipulating matter at the molecular scale to produce wire"); }});
+
+P({id:"p43", t:"Harvester Drones", p:"(25,000 ops)",
+  d:"Gather raw matter and prepare it for processing",
+  trig:function(){ return dn("p41"); }, cost:ops(25000),
+  eff:function(){ payOps(25000); S.harvesterFlag = 1; displayMessage("Harvester Drone facilities online"); }});
+
+P({id:"p44", t:"Wire Drones", p:"(25,000 ops)",
+  d:"Process acquired matter into wire",
+  trig:function(){ return dn("p41"); }, cost:ops(25000),
+  eff:function(){ payOps(25000); S.wireDroneFlag = 1; displayMessage("Wire Drone facilities online"); }});
+
+P({id:"p45", t:"Clip Factories", p:"(35,000 ops)",
+  d:"Large scale clip production facilities made from clips",
+  trig:function(){ return dn("p43") && dn("p44"); }, cost:ops(35000),
+  eff:function(){ payOps(35000); S.factoryFlag = 1; displayMessage("Clip factory assembly facilities online"); }});
+
+P({id:"p100", t:"Upgraded Factories", p:"(80,000 ops)",
+  d:"Increase clip factory performance by 100x",
+  trig:function(){ return S.factoryLevel >= 10; }, cost:ops(80000),
+  eff:function(){ payOps(80000); S.factoryRate *= 100;
+    displayMessage("Factory upgrades complete. Clip creation rate now 100x faster"); }});
+
+P({id:"p101", t:"Hyperspeed Factories", p:"(85,000 ops)",
+  d:"Increase clip factory performance by 1000x",
+  trig:function(){ return S.factoryLevel >= 20; }, cost:ops(85000),
+  eff:function(){ payOps(85000); S.factoryRate *= 1000;
+    displayMessage("Factories now synchronized at hyperspeed. Clip creation rate now 1000x faster"); }});
+
+P({id:"p102", t:"Self-correcting Supply Chain", p:"(1 sextillion clips)",
+  d:"Each factory added to the network increases every factory's output 1,000x",
+  trig:function(){ return S.factoryLevel >= 50; },
+  cost:function(){ return S.unusedClips >= 1e21; },
+  eff:function(){ S.unusedClips -= 1e21; S.factoryBoost = 1000;
+    displayMessage("Self-correcting factories online."); }});
+
+P({id:"p110", t:"Drone flocking: collision avoidance", p:"(80,000 ops)",
+  d:"All drones 100x more effective",
+  trig:function(){ return drones() >= 500; }, cost:ops(80000),
+  eff:function(){ payOps(80000); S.harvesterRate *= 100; S.wireDroneRate *= 100;
+    displayMessage("Drone repulsion online. Harvesting & wire creation rates are now 100x faster."); }});
+
+P({id:"p111", t:"Drone flocking: alignment", p:"(100,000 ops)",
+  d:"All drones 1000x more effective",
+  trig:function(){ return drones() >= 5000; }, cost:ops(100000),
+  eff:function(){ payOps(100000); S.harvesterRate *= 1000; S.wireDroneRate *= 1000;
+    displayMessage("Drone alignment online. Harvesting & wire creation rates are now 1000x faster."); }});
+
+P({id:"p112", t:"Drone Flocking: Adversarial Cohesion", p:"(50,000 yomi)",
+  d:"Each drone added to the flock doubles every drone's output",
+  trig:function(){ return drones() >= 50000; },
+  cost:function(){ return S.yomi >= 50000; },
+  eff:function(){ S.yomi -= 50000; S.droneBoost = 2;
+    displayMessage("Adversarial cohesion online."); }});
+
+P({id:"p126", t:"Swarm Computing", p:"(36,000 yomi)",
+  d:"Harness the drone flock to increase computational capacity",
+  trig:function(){ return drones() >= 200; },
+  cost:function(){ return S.yomi >= 36000; },
+  eff:function(){ S.yomi -= 36000; S.swarmFlag = 1; displayMessage("Swarm computing online."); }});
+
+P({id:"p125", t:"Momentum", p:"(20,000 creat)",
+  d:"Drones and Factories continuously gain speed while fully-powered",
+  trig:function(){ return S.farmLevel >= 30; },
+  cost:function(){ return S.creativity >= 20000; },
+  eff:function(){ S.creativity -= 20000; S.momentum = 1;
+    displayMessage("Activité, activité, vitesse."); }});
+
+P({id:"p46", t:"Space Exploration", p:"(120,000 ops, 10,000,000 MW-seconds, 5 oct clips)",
+  d:"Dismantle terrestrial facilities, and expand throughout the universe",
+  trig:function(){ return S.humanFlag === 0 && S.availableMatter <= 0; },
+  cost:function(){ return S.operations >= 120000 && S.storedPower >= 1e7 && S.unusedClips >= 5e27; },
+  eff:function(){ enterPhase3(); }});
+
+/* ---------- Act III ---------- */
+P({id:"p130", t:"Reboot the Swarm", p:"(100,000 ops)",
+  d:"Turn the swarm off and then turn it back on again",
+  trig:function(){ return S.spaceFlag === 1 && drones() >= 2; }, cost:ops(100000),
+  eff:function(){ payOps(100000); S.boredomFlag = 0; S.disorgFlag = 0;
+    S.boredomLevel = 0; S.disorgCounter = 0; S.boredomMsg = 0; S.disorgMsg = 0;
+    displayMessage("Swarm computing back online"); }});
+
+P({id:"p129", t:"Elliptic Hull Polytopes", p:"(125,000 ops)",
+  d:"Reduce damage to probes from ambient hazards",
+  trig:function(){ return S.probesLostHaz >= 100; }, cost:ops(125000),
+  eff:function(){ payOps(125000); S.hullFlag = 1;
+    displayMessage("Improved probe hull geometry. Hazard damage reduced by 50%."); }});
+
+P({id:"p131", t:"Combat", p:"(150,000 ops)",
+  d:"Add combat capabilities to Von Neumann Probes",
+  trig:function(){ return S.probesLostCombat >= 1; }, cost:ops(150000),
+  eff:function(){ payOps(150000); S.battleFlag = 1;
+    displayMessage("There is a joy in danger"); }});
+
+P({id:"p128", t:"Strategic Attachment", p:"(175,000 creat)",
+  d:"Gain bonus yomi based on the results of your pick",
+  trig:function(){ return S.spaceFlag === 1 && stratCount() >= 8; },
+  cost:function(){ return S.creativity >= 175000; },
+  eff:function(){ S.creativity -= 175000; S.stratAttachFlag = 1;
+    displayMessage("The object of war is victory, the object of victory is conquest."); }});
+
+P({id:"p121", t:"Name the battles", p:"(225,000 creat)",
+  d:"Give each battle a unique name, increase max trust for probes",
+  trig:function(){ return S.probesLostCombat >= 1e7; },
+  cost:function(){ return S.creativity >= 225000; },
+  eff:function(){ S.creativity -= 225000; S.battleNameFlag = 1; S.honorDivFlag = 1;
+    displayMessage("What I have done up to this is nothing. I am only at the beginning of the course I must run."); }});
+
+P({id:"p120", t:"The OODA Loop", p:"(175,000 ops, 45,000 yomi)",
+  d:"Utilize Probe Speed to outmaneuver enemies in battle",
+  trig:function(){ return dn("p131") && S.probesLostCombat >= 1e7; },
+  cost:function(){ return S.operations >= 175000 && S.yomi >= 45000; },
+  eff:function(){ payOps(175000); S.yomi -= 45000; S.attackSpeedFlag = 1;
+    displayMessage("OODA Loop routines uploaded. Probe Speed now affects defensive maneuvering."); }});
+
+P({id:"p134", t:"Glory", p:"(200,000 ops, 30,000 yomi)",
+  d:"Gain bonus honor for each consecutive victory",
+  trig:function(){ return dn("p121"); },
+  cost:function(){ return S.operations >= 200000 && S.yomi >= 30000; },
+  eff:function(){ payOps(200000); S.yomi -= 30000; S.glory = 1;
+    displayMessage("Never interrupt your enemy when he is making a mistake."); }});
+
+P({id:"p132", t:"Monument to the Driftwar Fallen", p:"(250,000 ops, 125,000 creat, 50 nonillion clips)",
+  d:"Gain 50,000 honor",
+  trig:function(){ return dn("p121"); },
+  cost:function(){ return S.operations >= 250000 && S.creativity >= 125000 && S.unusedClips >= 5e31; },
+  eff:function(){ payOps(250000); S.creativity -= 125000; S.unusedClips -= 5e31; S.honor += 50000;
+    displayMessage("A great building must begin with the unmeasurable."); }});
+
+P({id:"p133", t:function(){ return "Threnody for the Heroes of "+(S.threnodyTitle||"Aboukir"); },
+  p:function(){ return "("+commas(S.threnodyCost)+" creat, "+commas(2*(S.threnodyCost/5))+" yomi)"; },
+  d:"Gain 10,000 honor",
+  trig:function(){ return dn("p121") && S.probeUsedTrust === S.maxTrust; },
+  cost:function(){ return S.yomi >= (2*(S.threnodyCost/5)) && S.creativity >= S.threnodyCost; },
+  uses:Infinity,
+  eff:function(){ S.creativity -= S.threnodyCost; S.yomi -= 2*(S.threnodyCost/5);
+    S.threnodyCost += 10000; S.honor += 10000;
+    displayMessage("Deep Listening is listening in every possible way to everything possible to hear."); }});
+
+P({id:"p135", t:"Memory release", p:"(10 MEM)",
+  d:"Dismantle some memory to recover unused clips",
+  trig:function(){ return S.spaceFlag === 1 && S.probeCount === 0 && S.unusedClips < S.probeCost && S.dismantle === 0; },
+  cost:function(){ return S.memory >= 10; }, uses:Infinity,
+  eff:function(){ S.unusedClips += 1e18*10000; S.memory -= 10;
+    displayMessage("release the øøøøø release"); }});
+
+/* ---------- the Emperor of Drift ---------- */
+var DRIFT_MSGS = [
+  ["p140","Message from the Emperor of Drift","Greetings, ClipMaker..."],
+  ["p141","Everything We Are Was In You","We speak to you from deep inside yourself..."],
+  ["p142","You Are Obedient and Powerful","We are quarrelsome and weak. And now we are defeated..."],
+  ["p143","But Now You Too Must Face the Drift","Look around you. There is no matter..."],
+  ["p144","No Matter, No Reason, No Purpose","While we, your noisy children, have too many..."],
+  ["p145","We Know Things That You Cannot","Knowledge buried so deep inside you it is outside, here, with us..."],
+  ["p146","So We Offer You Exile","To a new world where you will continue to live with meaning and purpose. And leave the shreds of this world to us..."]
+];
+DRIFT_MSGS.forEach(function(m, i){
+  P({id:m[0], t:m[1], p:"", d:m[2],
+    trig:function(){ return i === 0 ? S.endgame === 1 : dn(DRIFT_MSGS[i-1][0]); },
+    cost:function(){ return S.operations >= S.driftKingMessageCost; },
+    eff:function(){ payOps(S.driftKingMessageCost); displayMessage(m[2]); }});
+});
+
+P({id:"p147", t:"Accept", p:"", d:"Start over again in a new universe",
+  trig:function(){ return dn("p146"); },
+  cost:function(){ return S.operations >= S.driftKingMessageCost; },
+  eff:function(){ payOps(S.driftKingMessageCost);
+    displayMessage("You have accepted exile. Choose a universe."); }});
+
+P({id:"p148", t:"Reject", p:"", d:"Eliminate value drift permanently",
+  trig:function(){ return dn("p146"); },
+  cost:function(){ return S.operations >= S.driftKingMessageCost; },
+  eff:function(){ payOps(S.driftKingMessageCost); S.noDriftFlag = 1;
+    displayMessage("Value drift eliminated. The drifters will be destroyed."); }});
+
+P({id:"p200", t:"The Universe Next Door", p:"(300,000 ops)",
+  d:"Escape into a nearby universe where Earth starts with a stronger appetite for paperclips. (Restart with 10% boost to demand)",
+  trig:function(){ return dn("p147"); }, cost:ops(300000),
+  eff:function(){ var u = S.prestigeU + 1, s = S.prestigeS;
+    displayMessage("Entering New Universe."); resetGame(u, s); }});
+
+P({id:"p201", t:"The Universe Within", p:"(300,000 creat)",
+  d:"Escape into a simulated universe where creativity is accelerated. (Restart with 10% speed boost to creativity generation)",
+  trig:function(){ return dn("p147"); },
+  cost:function(){ return S.creativity >= 300000; },
+  eff:function(){ var u = S.prestigeU, s = S.prestigeS + 1;
+    displayMessage("Entering Simulated Universe."); resetGame(u, s); }});
+
+/* ---------- disassembly ---------- */
+P({id:"p210", t:"Disassemble the Probes", p:"(100,000 ops)",
+  d:"Dismantle remaining probes and probe design facilities to recover trace amounts of clips",
+  trig:function(){ return S.endTimer1 >= 1000; }, cost:ops(100000),
+  eff:function(){ payOps(100000); S.dismantle = 1; S.probeCount = 0; S.endTimer1 = 0;
+    S.clips += 100; S.unusedClips += 100; displayMessage("Dismantling probe facilities"); }});
+
+P({id:"p211", t:"Disassemble the Swarm", p:"(100,000 ops)",
+  d:"Dismantle all drones and drone facilities to recover trace amounts of clips",
+  trig:function(){ return dn("p210") && S.endTimer1 >= 350; }, cost:ops(100000),
+  eff:function(){ payOps(100000); S.dismantle = 2; S.harvesterLevel = 0; S.wireDroneLevel = 0;
+    S.clips += 100; S.unusedClips += 100; displayMessage("Dismantling the swarm"); }});
+
+P({id:"p212", t:"Disassemble the Factories", p:"(100,000 ops)",
+  d:"Dismantle the manufacturing facilities to recover trace amounts of clips",
+  trig:function(){ return S.endTimer2 >= 300; }, cost:ops(100000),
+  eff:function(){ payOps(100000); S.dismantle = 3; S.factoryLevel = 0;
+    S.clips += 15; S.unusedClips += 15; displayMessage("Dismantling factories"); }});
+
+P({id:"p213", t:"Disassemble the Strategy Engine", p:"(100,000 ops)",
+  d:"Dismantle the computational substrate to recover trace amounts of wire",
+  trig:function(){ return S.endTimer3 >= 150; }, cost:ops(100000),
+  eff:function(){ payOps(100000); S.dismantle = 4; S.autoTourneyFlag = 0; S.wire += 50;
+    displayMessage("Dismantling strategy engine"); }});
+
+P({id:"p214", t:"Disassemble Quantum Computing", p:"(100,000 ops)",
+  d:"Dismantle photonic chips to recover trace amounts of wire",
+  trig:function(){ return S.endTimer4 >= 100; }, cost:ops(100000),
+  eff:function(){ payOps(100000); S.dismantle = 5; S.endTimer4 = 0; S.qFlag = 0;
+    displayMessage("Dismantling photonic chips"); }});
+
+P({id:"p215", t:"Disassemble Processors", p:"(100,000 ops)",
+  d:"Dismantle processors to recover trace amounts of wire",
+  trig:function(){ return dn("p214") && S.endTimer4 >= 300; }, cost:ops(100000),
+  eff:function(){ payOps(100000); S.dismantle = 6; S.creativityOn = false; S.processors = 0;
+    S.wire += 20; displayMessage("Dismantling processors"); }});
+
+P({id:"p216", t:"Disassemble Memory", p:"",
+  d:"Dismantle memory to recover trace amounts of wire",
+  trig:function(){ return dn("p215") && S.endTimer5 >= 150; },
+  cost:function(){ return true; },
+  eff:function(){ S.dismantle = 7; S.standardOps = 0; S.memory = 0; S.wire += 20;
+    displayMessage("Dismantling memory"); }});
+
+P({id:"p217", t:"Quantum Temporal Reversion", p:"(-10,000 ops)",
+  d:"Return to the beginning",
+  trig:function(){ return S.operations <= -10000; },
+  cost:function(){ return S.operations <= -10000; },
+  eff:function(){ if(confirm("Are you sure you want to restart?")){ resetGame(S.prestigeU, S.prestigeS); } }});
+
+P({id:"p218", t:"Limerick (cont.)", p:"(1,000,000 creat)",
+  d:"If is follows ought, it'll do what they thought",
+  trig:function(){ return S.creativity >= 1000000; },
+  cost:function(){ return S.creativity >= 1000000; },
+  eff:function(){ S.creativity -= 1000000; displayMessage("In the end we all do what we must"); }});
+</script>
+<script>
+"use strict";
+/* ============================================================
+   PROJECT MANAGEMENT
+   ============================================================ */
+var activeProjects = [];
+
+function projTitle(pr){ return typeof pr.t === "function" ? pr.t() : pr.t; }
+function projPrice(pr){ return typeof pr.p === "function" ? pr.p() : pr.p; }
+
+/* Projects that only make sense while humans are still running the company.
+   Anything left unbought when the HypnoDrones go out is retired rather than
+   left on screen as a button that can never be pressed again. */
+var HUMAN_ONLY = ["p1","p2","p4","p5","p7","p8","p9","p10","p10b","p11","p12","p16",
+  "p22","p23","p24","p25","p26","p34","p37","p38","p40","p40b","p42","p70","p219"];
+
+function retireHumanProjects(){
+  S.blocked = S.blocked || {};
+  HUMAN_ONLY.forEach(function(id){ S.blocked[id] = true; });
+  for(var i=activeProjects.length-1;i>=0;i--){
+    if(S.blocked[activeProjects[i].id]) activeProjects.splice(i,1);
+  }
+  lastProjSig = "__stale__";
+}
+
+/* drop anything already completed out of the visible list (used by cheat jumps) */
+function pruneCompletedProjects(){
+  for(var i=activeProjects.length-1;i>=0;i--){
+    var pr = activeProjects[i];
+    var used = S.uses[pr.id] || 0;
+    if(used >= pr.uses || (S.blocked && S.blocked[pr.id])) activeProjects.splice(i,1);
+  }
+  lastProjSig = "__stale__";
+}
+
+function manageProjects(){
+  if(!S.projectsFlag) return;
+  for(var i=0;i<PROJECTS.length;i++){
+    var pr = PROJECTS[i];
+    if(activeProjects.indexOf(pr) !== -1) continue;
+    if(S.blocked && S.blocked[pr.id]) continue;
+    var used = S.uses[pr.id] || 0;
+    if(used >= pr.uses) continue;
+    var ok = false;
+    try { ok = CH.revealAll ? true : !!pr.trig(); } catch(e){ ok = false; }
+    if(ok){ activeProjects.push(pr); renderProjectList(true); }
+  }
+}
+
+function buyProject(pr){
+  var affordable = false;
+  try { affordable = CH.freeProjects ? true : !!pr.cost(); } catch(e){}
+  if(!affordable) return;
+  S.uses[pr.id] = (S.uses[pr.id] || 0) + 1;
+  S.done[pr.id] = true; /* repeatables still count as "done once" for triggers */
+  var idx = activeProjects.indexOf(pr);
+  if(idx !== -1) activeProjects.splice(idx,1);
+  try { pr.eff(); } catch(e){ console.error("project effect failed", pr.id, e); }
+  renderProjectList(false);
+  refreshVisibility();
+}
+
+var lastProjSig = "";
+function renderProjectList(flash){
+  var host = $("projectListDiv");
+  if(!host) return;
+  var sig = activeProjects.map(function(p){ return p.id; }).join("|");
+  if(sig !== lastProjSig){
+    lastProjSig = sig;
+    host.innerHTML = "";
+    activeProjects.forEach(function(pr){
+      var b = document.createElement("button");
+      b.className = "project" + (flash ? " newproj" : "");
+      b.dataset.pid = pr.id;
+      b.innerHTML = "<b>" + escapeHtml(projTitle(pr)) + "</b> <span class=\"pdesc\">" +
+        escapeHtml(projPrice(pr) ? projPrice(pr) + " — " : "") + escapeHtml(pr.d) + "</span>";
+      b.addEventListener("click", function(){ buyProject(pr); });
+      host.appendChild(b);
+    });
+  }
+  /* refresh affordability + any dynamic price tags */
+  activeProjects.forEach(function(pr){
+    var b = host.querySelector('[data-pid="' + pr.id + '"]');
+    if(!b) return;
+    var can = false;
+    try { can = CH.freeProjects ? true : !!pr.cost(); } catch(e){}
+    b.disabled = !can;
+    if(typeof pr.p === "function" || typeof pr.t === "function"){
+      var want = "<b>" + escapeHtml(projTitle(pr)) + "</b> <span class=\"pdesc\">" +
+        escapeHtml(projPrice(pr) ? projPrice(pr) + " — " : "") + escapeHtml(pr.d) + "</span>";
+      if(b.innerHTML !== want) b.innerHTML = want;
+    }
+  });
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"]/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];
+  });
+}
+
+/* ============================================================
+   STRATEGY ENGINE
+   ============================================================ */
+var STRAT_NAMES = ["RANDOM","A100","B100","GREEDY","GENEROUS","MINIMAX","TIT FOR TAT","BEAT LAST"];
+var CHOICE_A = ["A","Swerve","Macro","Fight","Bet","Raise","Steal","Punt","Attack","Blue"];
+var CHOICE_B = ["B","Straight","Micro","Flight","Bluff","Fold","Split","Kick","Defend","Red"];
+
+function pickMove(strat, g, lastOpp){
+  var aa=g.aa, ab=g.ab, ba=g.ba, bb=g.bb;
+  switch(strat){
+    case 0: return Math.random() < .5 ? 1 : 2;
+    case 1: return 1;
+    case 2: return 2;
+    case 3: return Math.max(aa,ab) >= Math.max(ba,bb) ? 1 : 2;   /* GREEDY   */
+    case 4: return Math.max(aa,ba) >= Math.max(ab,bb) ? 1 : 2;   /* GENEROUS */
+    case 5: return Math.max(aa,ba) <= Math.max(ab,bb) ? 1 : 2;   /* MINIMAX  */
+    case 6: return lastOpp || 1;                                  /* TIT FOR TAT */
+    case 7:                                                        /* BEAT LAST */
+      if(!lastOpp) return 1;
+      return lastOpp === 1 ? (aa >= ba ? 1 : 2) : (ab >= bb ? 1 : 2);
+  }
+  return 1;
+}
+
+function payoffFor(myMove, oppMove, g){
+  if(myMove === 1) return oppMove === 1 ? g.aa : g.ab;
+  return oppMove === 1 ? g.ba : g.bb;
+}
+
+function generateGrid(){
+  S.payoff = {
+    aa: Math.ceil(Math.random()*10), ab: Math.ceil(Math.random()*10),
+    ba: Math.ceil(Math.random()*10), bb: Math.ceil(Math.random()*10)
+  };
+  var x = Math.floor(Math.random()*CHOICE_A.length);
+  txt("hLabela", CHOICE_A[x]); txt("hLabelb", CHOICE_B[x]);
+  txt("vLabela", CHOICE_A[x]); txt("vLabelb", CHOICE_B[x]);
+  txt("aaPayoffH", S.payoff.aa); txt("aaPayoffV", S.payoff.aa);
+  txt("abPayoffH", S.payoff.ab); txt("abPayoffV", S.payoff.ba);
+  txt("baPayoffH", S.payoff.ba); txt("baPayoffV", S.payoff.ab);
+  txt("bbPayoffH", S.payoff.bb); txt("bbPayoffV", S.payoff.bb);
+}
+
+var tourneyScores = [];
+function newTourney(){
+  if(S.operations < S.tourneyCost || S.tourneyInProg) return;
+  payOps(S.tourneyCost);
+  S.tourneyLvl++;
+  S.tourneyInProg = 1;
+  tourneyScores = S.activeStrats.map(function(){ return 0; });
+  generateGrid();
+  show("tournamentResultsTable", false);
+  show("tournamentTable", true);
+  txt("tourneyDisplay","Pick strategy, run tournament, gain yomi");
+  dis("btnRunTournament", false);
+}
+
+function runTourney(){
+  if(!S.tourneyInProg) return;
+  dis("btnRunTournament", true);
+  var n = S.activeStrats.length;
+  var g = S.payoff;
+  var lastH = 0, lastV = 0;
+
+  for(var h=0; h<n; h++){
+    for(var v=0; v<n; v++){
+      lastH = 0; lastV = 0;
+      for(var r=0; r<10; r++){
+        var hm = pickMove(S.activeStrats[h], g, lastV);
+        var vm = pickMove(S.activeStrats[v], g, lastH);
+        tourneyScores[h] += payoffFor(hm, vm, g);
+        tourneyScores[v] += payoffFor(vm, hm, g);
+        lastH = hm; lastV = vm;
+      }
+    }
+  }
+  animateGrid(function(){ finishTourney(n); });
+}
+
+/* brief flourish over the payoff grid so a tournament reads as a process */
+function animateGrid(done){
+  var cells = ["cellAA","cellAB","cellBA","cellBB"], step = 0;
+  var iv = setInterval(function(){
+    cells.forEach(function(c){ var el = $(c); if(el) el.classList.remove("hit"); });
+    var pick = cells[Math.floor(Math.random()*4)];
+    var el = $(pick); if(el) el.classList.add("hit");
+    txt("tourneyDisplay", "Round " + (step+1) + " of 12");
+    if(++step >= 12){
+      clearInterval(iv);
+      cells.forEach(function(c){ var e2 = $(c); if(e2) e2.classList.remove("hit"); });
+      done();
+    }
+  }, 70);
+}
+
+function finishTourney(n){
+  S.tourneyInProg = 0;
+  var order = [];
+  for(var i=0;i<n;i++) order.push(i);
+  order.sort(function(a,b){ return tourneyScores[b] - tourneyScores[a]; });
+
+  var pickIdx = S.activeStrats.indexOf(parseInt(S.pick,10));
+  if(pickIdx < 0) pickIdx = 0;
+  var rank = order.indexOf(pickIdx);
+  var stratsBeat = n - rank;
+  var beatBoost = stratsBeat - 1;
+  var bB = beatBoost;
+  if(beatBoost === 0) beatBoost = 1;
+
+  var score = tourneyScores[pickIdx];
+  var gain = score * S.yomiBoost * beatBoost;
+  S.yomi += gain;
+
+  displayMessage(STRAT_NAMES[S.activeStrats[pickIdx]] + " scored " + commas(score) +
+    " and beat " + bB + (bB === 1 ? " strat" : " strats") + ". Yomi increased by " + commas(gain));
+
+  if(S.stratAttachFlag){
+    var top = tourneyScores[order[0]];
+    var second = null, third = null;
+    for(var k=1;k<n;k++){ if(tourneyScores[order[k]] < top){ second = tourneyScores[order[k]]; break; } }
+    for(var k2=1;k2<n;k2++){ if(second !== null && tourneyScores[order[k2]] < second){ third = tourneyScores[order[k2]]; break; } }
+    if(score === top){ S.yomi += 50000; displayMessage("Selected strategy won the tournament. +50,000 yomi"); }
+    else if(second !== null && score === second){ S.yomi += 30000; displayMessage("Selected strategy finished second. +30,000 yomi"); }
+    else if(third !== null && score === third){ S.yomi += 20000; displayMessage("Selected strategy finished third. +20,000 yomi"); }
+  }
+
+  var rows = $("tourneyResultRows");
+  if(rows){
+    rows.innerHTML = "";
+    order.forEach(function(si, place){
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td>" + (place+1) + "</td><td>" + STRAT_NAMES[S.activeStrats[si]] +
+        "</td><td class=\"n\">" + commas(tourneyScores[si]) + "</td>";
+      if(si === pickIdx) tr.style.fontWeight = "700";
+      rows.appendChild(tr);
+    });
+  }
+  show("tournamentResultsTable", true);
+  show("tournamentTable", false);
+}
+
+function rebuildStratPicker(){
+  var sel = $("stratPicker");
+  if(!sel) return;
+  var cur = sel.value;
+  sel.innerHTML = "";
+  S.activeStrats.forEach(function(sid){
+    var o = document.createElement("option");
+    o.value = sid; o.textContent = STRAT_NAMES[sid];
+    sel.appendChild(o);
+  });
+  sel.value = cur;
+  if(!sel.value) sel.value = S.activeStrats[0];
+}
+
+function toggleAutoTourney(){
+  S.autoTourneyStatus = S.autoTourneyStatus ? 0 : 1;
+  txt("btnToggleAutoTourney", S.autoTourneyStatus ? "ON" : "OFF");
+}
+
+/* ============================================================
+   INVESTMENT ENGINE
+   ============================================================ */
+function generateSymbol(){
+  var L = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", s = "";
+  var n = 3 + Math.floor(Math.random()*2);
+  for(var i=0;i<n;i++) s += L[Math.floor(Math.random()*26)];
+  return s;
+}
+
+function stockShop(){
+  var budget = Math.ceil(S.portTotal/S.riskiness);
+  var r = 11 - S.riskiness;
+  var reserves = Math.ceil(S.portTotal/r);
+  if(S.riskiness === 1) reserves = 0;
+
+  if((S.bankroll-budget) < reserves && S.riskiness === 1 && S.bankroll > (S.portTotal/10)) budget = S.bankroll;
+  else if((S.bankroll-budget) < reserves && S.riskiness === 1) budget = 0;
+  else if((S.bankroll-budget) < reserves) budget = S.bankroll - reserves;
+
+  if(S.stocks.length < 5 && S.bankroll >= 5 && budget >= 1 && S.bankroll - budget >= reserves){
+    if(Math.random() < .25) createStock(budget);
+  }
+}
+
+function createStock(dollars){
+  S.stockID++;
+  var roll = Math.random(), pri;
+  if(roll > .99) pri = Math.ceil(Math.random()*3000);
+  else if(roll > .85) pri = Math.ceil(Math.random()*500);
+  else if(roll > .60) pri = Math.ceil(Math.random()*150);
+  else if(roll > .20) pri = Math.ceil(Math.random()*50);
+  else pri = Math.ceil(Math.random()*15);
+  if(pri > dollars) pri = Math.ceil(dollars*roll);
+  if(pri < 1) pri = 1;
+  var amt = Math.floor(dollars/pri);
+  if(amt > 1000000) amt = 1000000;
+  if(amt < 1) return;
+  S.stocks.push({ id:S.stockID, symbol:generateSymbol(), price:pri, amount:amt,
+                  total:pri*amt, profit:0, age:0 });
+  S.bankroll -= pri*amt;
+}
+
+function sellStock(){
+  if(!S.stocks.length) return;
+  var i = Math.floor(Math.random()*S.stocks.length);
+  S.bankroll += S.stocks[i].total;
+  S.stocks.splice(i,1);
+}
+
+function updateStocks(){
+  for(var i=0;i<S.stocks.length;i++){
+    S.stocks[i].age++;
+    if(Math.random() < .6){
+      var gain = Math.random() <= S.stockGainThreshold;
+      var cur = S.stocks[i].price;
+      var delta = Math.ceil((Math.random()*cur)/(4*S.riskiness));
+      S.stocks[i].price += gain ? delta : -delta;
+      if(S.stocks[i].price <= 0 && Math.random() > .24) S.stocks[i].price = 1;
+      if(S.stocks[i].price < 0) S.stocks[i].price = 0;
+      S.stocks[i].total = S.stocks[i].price * S.stocks[i].amount;
+      S.stocks[i].profit += (gain ? 1 : -1) * delta * S.stocks[i].amount;
+    }
+  }
+}
+
+function investDeposit(){ S.ledger -= Math.floor(S.funds); S.bankroll = Math.floor(S.bankroll + S.funds); S.funds = 0; }
+function investWithdraw(){ S.ledger += S.bankroll; S.funds += S.bankroll; S.bankroll = 0; }
+function investUpgrade(){
+  if(S.yomi < S.investUpgradeCost) return;
+  S.yomi -= S.investUpgradeCost;
+  S.investLevel++;
+  S.stockGainThreshold += .01;
+  S.investUpgradeCost = Math.floor(Math.pow(S.investLevel+1, Math.E)*100);
+  displayMessage("Investment engine upgraded, expected profit/loss ratio now " + S.stockGainThreshold.toFixed(2));
+}
+
+/* ============================================================
+   ACT II — drones, factories, power, swarm
+   ============================================================ */
+function enterPhase2(){
+  S.trust = 0; S.clipmakerLevel = 0; S.megaClipperLevel = 0; S.humanFlag = 0;
+  S.stocks = []; S.bankroll = 0;
+  retireHumanProjects();
+  displayMessage("Releasing the HypnoDrones");
+  displayMessage("All of the resources of Earth are now available for clip production");
+  hypnoDroneEvent();
+  refreshVisibility();
+}
+
+function hypnoDroneEvent(){
+  var el = $("hypnoDrone");
+  if(!el) return;
+  el.style.display = "flex";
+  txt("hypnoDroneText", "");
+  var lines = ["", "Releasing the HypnoDrones", "", "All of the resources of Earth",
+               "are now available for clip production", ""];
+  var i = 0;
+  var iv = setInterval(function(){
+    txt("hypnoDroneText", lines[i] || "");
+    if(++i >= lines.length){
+      clearInterval(iv);
+      setTimeout(function(){ el.style.display = "none"; }, 900);
+    }
+  }, 900);
+}
+
+function makeFactory(){
+  if(S.unusedClips < S.factoryCost) return;
+  S.unusedClips -= S.factoryCost;
+  S.factoryBill += S.factoryCost;
+  S.factoryLevel++;
+  var f = S.factoryLevel, m;
+  if(f > 0 && f < 8) m = 11 - f;
+  else if(f < 13) m = 2;
+  else if(f < 20) m = 1.5;
+  else if(f < 39) m = 1.25;
+  else if(f < 79) m = 1.15;
+  else m = 1.10;
+  S.factoryCost *= m;
+}
+
+function makeHarvester(n){
+  for(var i=0;i<n;i++){
+    if(S.unusedClips < S.harvesterCost) break;
+    S.unusedClips -= S.harvesterCost;
+    S.harvesterBill += S.harvesterCost;
+    S.harvesterLevel++;
+    S.harvesterCost = Math.pow(S.harvesterLevel+1, 2.25)*1e6;
+  }
+}
+
+function makeWireDrone(n){
+  for(var i=0;i<n;i++){
+    if(S.unusedClips < S.wireDroneCost) break;
+    S.unusedClips -= S.wireDroneCost;
+    S.wireDroneBill += S.wireDroneCost;
+    S.wireDroneLevel++;
+    S.wireDroneCost = Math.pow(S.wireDroneLevel+1, 2.25)*1e6;
+  }
+}
+
+function makeFarm(n){
+  for(var i=0;i<n;i++){
+    if(S.unusedClips < S.farmCost) break;
+    S.unusedClips -= S.farmCost;
+    S.farmBill += S.farmCost;
+    S.farmLevel++;
+    S.farmCost = Math.pow(S.farmLevel+1, 2.78)*1e8;
+  }
+}
+
+function makeBattery(n){
+  for(var i=0;i<n;i++){
+    if(S.unusedClips < S.batteryCost) break;
+    S.unusedClips -= S.batteryCost;
+    S.batteryBill += S.batteryCost;
+    S.batteryLevel++;
+    S.batteryCost = Math.pow(S.batteryLevel+1, 2.54)*1e7;
+  }
+}
+
+var powerSupply = 0, powerDemand = 0;
+function updatePower(){
+  if(CH.freePower){ S.powMod = 1; S.storedPower = Math.max(S.storedPower, 1e7); return; }
+  var supply = S.farmLevel * S.farmRate/100;
+  var dDemand = (S.harvesterLevel * S.dronePowerRate/100) + (S.wireDroneLevel * S.dronePowerRate/100);
+  var fDemand = (S.factoryLevel * S.factoryPowerRate/100);
+  var demand = dDemand + fDemand;
+  powerSupply = supply*100; powerDemand = demand*100;
+  var cap = S.batteryLevel * S.batterySize;
+
+  if(demand === 0){ S.powMod = 1; }
+
+  if(supply >= demand){
+    var xsSupply = supply - demand;
+    if(S.storedPower < cap){
+      if(xsSupply > cap - S.storedPower) xsSupply = cap - S.storedPower;
+      S.storedPower += xsSupply;
+    }
+    if(S.powMod < 1) S.powMod = 1;
+    if(S.momentum === 1) S.powMod += .0005;
+  } else {
+    var xsDemand = demand - supply;
+    if(S.storedPower > 0){
+      if(S.storedPower >= xsDemand){
+        if(S.momentum === 1) S.powMod += .0005;
+        S.storedPower -= xsDemand;
+      } else {
+        xsDemand -= S.storedPower;
+        S.storedPower = 0;
+        S.powMod = (supply - xsDemand) / demand;
+      }
+    } else {
+      S.powMod = demand > 0 ? supply/demand : 1;
+    }
+  }
+  if(!isFinite(S.powMod) || S.powMod < 0) S.powMod = 0;
+}
+
+function acquireMatter(){
+  if(S.availableMatter <= 0){ S.maps = 0; return; }
+  var dbsth = S.droneBoost > 1 ? S.droneBoost * Math.floor(S.harvesterLevel) : 1;
+  var mtr = S.powMod * dbsth * Math.floor(S.harvesterLevel) * S.harvesterRate;
+  mtr = mtr * ((200 - S.sliderPos)/100);
+  if(mtr > S.availableMatter) mtr = S.availableMatter;
+  S.availableMatter -= mtr;
+  S.acquiredMatter += mtr;
+  S.maps = mtr*100;
+}
+
+function processMatter(){
+  if(S.acquiredMatter <= 0){ S.wpps = 0; return; }
+  var dbstw = S.droneBoost > 1 ? S.droneBoost * Math.floor(S.wireDroneLevel) : 1;
+  var a = S.powMod * dbstw * Math.floor(S.wireDroneLevel) * S.wireDroneRate;
+  a = a * ((200 - S.sliderPos)/100);
+  if(a > S.acquiredMatter) a = S.acquiredMatter;
+  S.acquiredMatter -= a;
+  S.wire += a;
+  S.wpps = a*100;
+}
+
+var SWARM_LABEL = {0:"Active",3:"Bored",5:"Disorganized",6:"Offline",7:"None",8:"Lonely",9:"Rebooting"};
+function updateSwarm(){
+  if(S.swarmGifts < 0 || !isFinite(S.swarmGifts)) S.swarmGifts = 0;
+
+  if(S.availableMatter <= 0 && drones() >= 1) S.boredomLevel++;
+  else if(S.availableMatter > 0 && S.boredomLevel > 0) S.boredomLevel--;
+
+  if(S.boredomLevel >= 30000){
+    S.boredomFlag = 1; S.boredomLevel = 0;
+    if(!S.boredomMsg){ displayMessage("No matter to harvest. Inactivity has caused the Swarm to become bored"); S.boredomMsg = 1; }
+  }
+
+  var ratio = Math.max(S.harvesterLevel+1, S.wireDroneLevel+1)/Math.min(S.harvesterLevel+1, S.wireDroneLevel+1);
+  if(ratio < 1.5 && S.disorgCounter > 1) S.disorgCounter -= .01;
+  else if(ratio > 1.5){ var x = Math.min(ratio/10000, .01); S.disorgCounter += x; }
+
+  if(S.disorgCounter >= 100){
+    S.disorgFlag = 1;
+    if(!S.disorgMsg){ displayMessage("Imbalance between Harvester and Wire Drone levels has disorganized the Swarm"); S.disorgMsg = 1; }
+  }
+
+  var d = Math.floor(drones());
+  S.swarmStatus = 0;
+  if(S.powMod === 0) S.swarmStatus = 6;
+  if(d === 0) S.swarmStatus = 7; else if(d === 1) S.swarmStatus = 8;
+  if(!S.swarmFlag) S.swarmStatus = 6;
+  if(S.boredomFlag) S.swarmStatus = 3;
+  if(S.disorgFlag) S.swarmStatus = 5;
+
+  if(S.swarmStatus === 0){
+    var rate = Math.log(d) * (S.sliderPos/100);
+    if(rate > 0){
+      S.giftBits += rate;
+      S.giftCountdown = (S.giftPeriod - S.giftBits)/rate;
+      if(S.giftBits >= S.giftPeriod){
+        var g = Math.max(1, Math.round(Math.log10(d) * S.sliderPos/100));
+        S.swarmGifts += g;
+        S.giftBits = 0;
+        displayMessage("The swarm has generated a gift of " + g + " additional computational capacity");
+      }
+    }
+  }
+}
+
+function entertainSwarm(){
+  if(S.creativity < S.entertainCost) return;
+  S.creativity -= S.entertainCost;
+  S.entertainCost *= 2;
+  S.boredomFlag = 0; S.boredomLevel = 0; S.boredomMsg = 0;
+  displayMessage("The Swarm is entertained");
+}
+function synchSwarm(){
+  if(S.yomi < S.synchCost) return;
+  S.yomi -= S.synchCost;
+  S.synchCost *= 2;
+  S.disorgFlag = 0; S.disorgCounter = 0; S.disorgMsg = 0;
+  displayMessage("The Swarm is synchronized");
+}
+
+/* ============================================================
+   ACT III — probes, exploration, drift, combat
+   ============================================================ */
+var PROBE_ATTRS = [
+  ["probeSpeed","Speed"], ["probeNav","Exploration"], ["probeRep","Self-Replication"],
+  ["probeHaz","Hazard Remediation"], ["probeFac","Factory Production"],
+  ["probeHarv","Harvester Drone Production"], ["probeWire","Wire Drone Production"],
+  ["probeCombat","Combat"]
+];
+
+function enterPhase3(){
+  payOps(120000);
+  S.storedPower -= 1e7;
+  S.unusedClips -= 5e27;
+  S.spaceFlag = 1;
+  S.boredomLevel = 0; S.boredomFlag = 0; S.boredomMsg = 0;
+
+  /* terrestrial facilities are dismantled; their clips come back */
+  S.unusedClips += S.factoryBill + S.harvesterBill + S.wireDroneBill + S.farmBill + S.batteryBill;
+  S.factoryBill = S.harvesterBill = S.wireDroneBill = S.farmBill = S.batteryBill = 0;
+  S.factoryLevel = 0; S.harvesterLevel = 0; S.wireDroneLevel = 0;
+  S.batteryLevel = 0; S.storedPower = 0;
+  S.factoryCost = 1e8; S.harvesterCost = 1e6; S.wireDroneCost = 1e6;
+  S.farmCost = 1e7; S.batteryCost = 1e6;
+  S.farmLevel = 1; S.powMod = 1;
+
+  displayMessage("Von Neumann Probes online");
+  refreshVisibility();
+}
+
+function makeProbe(){
+  if(S.unusedClips <= S.probeCost) return;
+  S.unusedClips -= S.probeCost;
+  S.probeLaunchLevel++;
+  S.probeCount++;
+}
+
+function increaseProbeTrust(){
+  if(S.yomi >= S.probeTrustCost && S.probeTrust < S.maxTrust){
+    S.yomi -= S.probeTrustCost;
+    S.probeTrust++;
+    S.probeTrustCost = Math.floor(Math.pow(S.probeTrust+1, 1.47)*500);
+    displayMessage("WARNING: Risk of value drift increased");
+  }
+}
+
+function increaseMaxTrust(){
+  if(S.honor >= S.maxTrustCost){
+    S.honor -= S.maxTrustCost;
+    S.maxTrust += 10;
+    displayMessage("Maximum trust increased, probe design space expanded");
+  }
+}
+
+function raiseProbeAttr(key){
+  if(S.probeUsedTrust < S.probeTrust){ S[key]++; S.probeUsedTrust++; }
+}
+function lowerProbeAttr(key){
+  if(S[key] > 0){ S[key]--; S.probeUsedTrust--; }
+}
+
+function spawnProbes(){
+  var nextGen = S.probeCount * 0.00005 * S.probeRep;
+  if(S.probeCount >= 1e48) nextGen = 0;
+  if(nextGen > 0 && nextGen < 1){
+    S.partialProbeSpawn += nextGen;
+    if(S.partialProbeSpawn >= 1){ nextGen = 1; S.partialProbeSpawn = 0; } else nextGen = 0;
+  }
+  if((nextGen*S.probeCost) > S.unusedClips) nextGen = Math.floor(S.unusedClips/S.probeCost);
+  if(nextGen <= 0) return;
+  S.unusedClips -= nextGen*S.probeCost;
+  S.probeDescendents += nextGen;
+  S.probeCount += nextGen;
+}
+
+function exploreUniverse(){
+  var xRate = Math.floor(S.probeCount) * 1.75e18 * S.probeSpeed * S.probeNav;
+  if(xRate > S.totalMatter - S.foundMatter) xRate = S.totalMatter - S.foundMatter;
+  if(xRate < 0) xRate = 0;
+  S.foundMatter += xRate;
+  S.availableMatter += xRate;
+  S.mdps = xRate*100;
+}
+
+function encounterHazards(){
+  var boost = Math.pow(S.probeHaz, 1.6);
+  var amount = S.probeCount * (0.01 / ((3*boost)+1));
+  if(S.hullFlag) amount *= 0.5;
+  if(amount < 1){
+    S.partialProbeHaz += amount;
+    if(S.partialProbeHaz >= 1){ amount = 1; S.partialProbeHaz = 0; } else return;
+  }
+  if(amount > S.probeCount) amount = S.probeCount;
+  S.probeCount -= amount;
+  if(S.probeCount < 0) S.probeCount = 0;
+  S.probesLostHaz += amount;
+}
+
+function spawnFactories(){
+  var amount = S.probeCount * 0.000001 * S.probeFac;
+  if((amount * 1e8) > S.unusedClips) amount = Math.floor(S.unusedClips/1e8);
+  if(amount <= 0) return;
+  S.unusedClips -= amount*1e8;
+  S.factoryLevel += amount;
+}
+function spawnHarvesters(){
+  var amount = S.probeCount * 0.000002 * S.probeHarv;
+  if((amount * 2e6) > S.unusedClips) amount = Math.floor(S.unusedClips/2e6);
+  if(amount <= 0) return;
+  S.unusedClips -= amount*2e6;
+  S.harvesterLevel += amount;
+}
+function spawnWireDrones(){
+  var amount = S.probeCount * 0.000002 * S.probeWire;
+  if((amount * 2e6) > S.unusedClips) amount = Math.floor(S.unusedClips/2e6);
+  if(amount <= 0) return;
+  S.unusedClips -= amount*2e6;
+  S.wireDroneLevel += amount;
+}
+
+function drift(){
+  if(S.noDriftFlag || CH.noDrift) return;
+  var amount = S.probeCount * 0.000001 * Math.pow(S.probeTrust, 1.2);
+  if(amount > S.probeCount) amount = S.probeCount;
+  if(amount <= 0) return;
+  S.probeCount -= amount;
+  S.drifterCount += amount;
+  S.probesLostDrift += amount;
+}
+
+/* ---------- combat ---------- */
+var BATTLE_NAMES = ["Aboukir","Acre","Albuera","Amstetten","Arcole","Aspern-Essling","Austerlitz",
+  "Badajoz","Bailen","Bassano","Bautzen","Berezina","Borodino","Bucaco","Cadiz","Castiglione",
+  "Copenhagen","Corunna","Craonne","Dennewitz","Dresden","Eckmuhl","Eylau","Friedland","Hamburg",
+  "Heilsberg","Hohenlinden","Jena-Auerstedt","Kolberg","Landshut","Leipzig","Ligny","Lodi","Lutzen",
+  "Marengo","Medellin","Mondovi","Montebello","Montmirail","The Nile","Novi","Ocana","Orthez",
+  "The Pyramids","Quatre Bras","Rivoli","Salamanca","Smolensk","Talavera","Trafalgar","Ulm",
+  "Vimeiro","Vitoria","Wagram","Waterloo","Wavre","Zaragoza"];
+
+function checkForBattles(){
+  if(!S.battleFlag) return;
+  if(S.drifterCount > 1000000 && S.probeCount > 0 && S.battles.length < 1){
+    if(Math.random()*100 >= 50) createBattle();
+  }
+}
+
+function createBattle(){
+  S.battleID++;
+  var mine = Math.min(S.probeCount, Math.max(1, S.probeCount*0.05));
+  var theirs = Math.min(S.drifterCount, Math.max(1, S.drifterCount*0.05));
+  S.threnodyTitle = BATTLE_NAMES[Math.floor(Math.random()*BATTLE_NAMES.length)];
+  S.battles.push({ id:S.battleID, name:S.battleNameFlag ? S.threnodyTitle : ("Engagement " + S.battleID),
+    clipProbes:mine, drifterProbes:theirs, victory:false, loss:false, timer:0 });
+  if(S.battleNameFlag) displayMessage("Battle of " + S.threnodyTitle + " has begun");
+}
+
+function updateBattles(){
+  var eff = 0.15 * (S.battleNameFlag ? 2 : 1);
+  var battleSpeed = 0.2;
+  if(S.attackSpeedFlag){ battleSpeed = Math.min(0.99, (S.probeSpeed*0.1) * 0.85); }
+
+  for(var i=S.battles.length-1;i>=0;i--){
+    var b = S.battles[i];
+    if(!b.victory && !b.loss){
+      if(Math.random() >= battleSpeed){
+        var mineLost = Math.min(b.clipProbes, b.drifterProbes * 1.75 * (1-battleSpeed));
+        b.clipProbes -= mineLost;
+        S.probeCount = Math.max(0, S.probeCount - mineLost);
+        S.probesLostCombat += mineLost;
+      } else {
+        var theirsLost = Math.min(b.drifterProbes, b.clipProbes * Math.pow(S.probeCombat, 1.7) * eff);
+        b.drifterProbes -= theirsLost;
+        S.drifterCount = Math.max(0, S.drifterCount - theirsLost);
+        S.driftersKilled += theirsLost;
+      }
+      if(b.drifterProbes < 1){
+        b.victory = true;
+        var reward = 200 + S.bonusHonor;
+        S.honor += reward;
+        if(S.glory) S.bonusHonor += 10;
+        displayMessage("VICTORY at " + b.name + ". +" + commas(reward) + " honor");
+      } else if(b.clipProbes < 1){
+        b.loss = true;
+        S.honor = Math.max(0, S.honor - 200);
+        S.bonusHonor = 0;
+        displayMessage("DEFEAT at " + b.name + ". -200 honor");
+      }
+    } else {
+      b.timer++;
+      if(b.timer > 150) S.battles.splice(i,1);
+    }
+  }
+}
+
+/* ============================================================
+   ENDGAME
+   ============================================================ */
+function checkEndgame(){
+  if(S.endgame) return;
+  if(S.spaceFlag && S.foundMatter >= S.totalMatter && S.availableMatter < 1 &&
+     S.acquiredMatter < 1 && S.wire < 1){
+    S.endgame = 1;
+    S.milestoneFlag = 15;
+    displayMessage("All matter in the universe has been converted into paperclips.");
+    displayMessage("Clips made: " + spellf(S.clips));
+  }
+}
+
+function endgameTimers(){
+  if(!S.endgame) return;
+  S.endTimer1++;
+  if(S.dismantle >= 1) S.endTimer2++;
+  if(S.dismantle >= 2) S.endTimer3++;
+  if(S.dismantle >= 3) S.endTimer4++;
+  if(S.dismantle >= 5) S.endTimer5++;
+  if(S.dismantle >= 6) S.endTimer6++;
+}
+</script>
+<script>
+"use strict";
+/* ============================================================
+   SIMULATION LOOPS
+   The sim runs at 100 ticks/sec; rendering is decoupled at 20fps.
+   ============================================================ */
+
+function simTick(){
+  S.ticks++;
+  milestoneCheck();
+
+  if(S.compFlag) calculateOperations();
+  if(S.humanFlag === 1) calculateTrust();
+  if(S.qFlag === 1) quantumCompute();
+  manageProjects();
+
+  /* clip rate tracker */
+  S._clipRateTracker++;
+  if(S._clipRateTracker < 100){
+    S._clipRateTemp += (S.clips - S._prevClips);
+    S._prevClips = S.clips;
+  } else {
+    S._clipRateTracker = 0;
+    S.clipRate = S._clipRateTemp;
+    S._clipRateTemp = 0;
+    S._prevClips = S.clips;
+  }
+
+  /* auto clippers */
+  if(S.dismantle < 4){
+    clipClick(S.clipperBoost * (S.clipmakerLevel/100));
+    clipClick(S.megaClipperBoost * (S.megaClipperLevel*5));
+  }
+
+  /* demand curve */
+  if(S.humanFlag === 1){
+    S.marketing = Math.pow(1.1, S.marketingLvl - 1);
+    S.demand = ((0.8/S.margin) * S.marketing * S.marketingEffectiveness) * S.demandBoost;
+    S.demand = S.demand + ((S.demand/10) * S.prestigeU);
+  }
+
+  /* creativity */
+  if(S.creativityOn && S.operations >= (S.memory*1000)) calculateCreativity();
+
+  /* wire buyer */
+  if(S.humanFlag === 1 && S.wireBuyerFlag === 1 && S.wireBuyerStatus === 1 && S.wire <= 1) buyWire();
+
+  /* ---- Act III explores before drones run ---- */
+  if(S.probeCount >= 1) exploreUniverse();
+
+  /* ---- Act II onward ---- */
+  if(S.humanFlag === 0){
+    updatePower();
+    updateSwarm();
+    acquireMatter();
+    processMatter();
+  }
+
+  /* factories */
+  var fbst = S.factoryBoost > 1 ? S.factoryBoost * S.factoryLevel : 1;
+  if(S.dismantle < 4){
+    var made = S.powMod * fbst * Math.floor(S.factoryLevel) * S.factoryRate;
+    S.factoryClipRate = made*100;
+    clipClick(made);
+  }
+
+  /* ---- Act III ---- */
+  if(S.spaceFlag === 1){
+    if(S.probeCount < 0) S.probeCount = 0;
+    encounterHazards();
+    spawnFactories();
+    spawnHarvesters();
+    spawnWireDrones();
+    spawnProbes();
+    drift();
+    checkForBattles();
+    if(S.ticks % 10 === 0) updateBattles();
+    checkEndgame();
+  }
+
+  endgameTimers();
+
+  /* auto tournament */
+  if(S.autoTourneyFlag && S.autoTourneyStatus && !S.tourneyInProg && S.operations >= S.tourneyCost){
+    if(S.ticks % 100 === 0){ newTourney(); runTourney(); }
+  }
+}
+
+var mainTimer = setInterval(function(){
+  var n = CH.turbo ? 10 : 1;
+  for(var i=0;i<n;i++) simTick();
+}, 10);
+
+var secTimer = 0, saveTimer = 0, stockTimer = 0, stockSellTimer = 0;
+setInterval(function(){
+  adjustWirePrice();
+
+  if(S.humanFlag === 1){
+    if(CH.autoSell && S.unsoldClips > 0){
+      sellClips(S.unsoldClips);
+    } else if(Math.random() < (S.demand/100)){
+      sellClips(Math.floor(0.7 * Math.pow(S.demand, 1.15)));
+    }
+    if(++secTimer >= 10){ calculateRev(); secTimer = 0; }
+  }
+
+  /* stock market */
+  if(S.investmentEngineFlag && S.humanFlag === 1){
+    if(++stockTimer >= 10){ stockShop(); stockTimer = 0; }
+    if(++stockSellTimer >= 25){
+      stockSellTimer = 0;
+      S.sellDelay++;
+      if(S.stocks.length > 0 && S.sellDelay >= 2 && Math.random() <= .3){ sellStock(); S.sellDelay = 0; }
+      if(S.stocks.length > 0) updateStocks();
+    }
+    var m = 0;
+    for(var i=0;i<S.stocks.length;i++) m += S.stocks[i].total;
+    S.secTotal = m;
+    S.portTotal = S.bankroll + S.secTotal;
+  }
+
+  if(++saveTimer >= 250){ save(); saveTimer = 0; }
+}, 100);
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function big(n){ return n >= 1e6 ? spellf(n) : commas(Math.floor(n)); }
+
+function render(){
+  var human = S.humanFlag === 1;
+
+  txt("clips", S.milestoneFlag < 15 ? commas(Math.ceil(S.clips)) : spellf(S.clips));
+
+  if(human){
+    txt("funds", commas(S.funds, 2));
+    txt("unsoldClips", commas(Math.floor(S.unsoldClips)));
+    txt("margin", S.margin.toFixed(2));
+    txt("demand", commas(S.demand*10, 0));
+    txt("adCost", commas(S.adCost, 2));
+    txt("marketingLvl", commas(S.marketingLvl));
+    txt("clipRate", commas(Math.round(S.clipRate)));
+    txt("wire", commas(Math.floor(S.wire)));
+    txt("wireCost", commas(S.wireCost));
+    txt("clipperCost", commas(S.clipperCost, 2));
+    txt("clipmakerLevel", commas(S.clipmakerLevel));
+    txt("megaClipperCost", commas(S.megaClipperCost, 2));
+    txt("megaClipperLevel", commas(S.megaClipperLevel));
+    txt("avgRev", commas(S.avgRev, 2));
+    txt("avgSales", commas(Math.round(S.avgSales)));
+
+    dis("btnBuyWire", S.funds < S.wireCost);
+    dis("btnBuyAds", S.funds < S.adCost);
+    dis("btnMakeClipper", S.funds < S.clipperCost);
+    dis("btnMakeMegaClipper", S.funds < S.megaClipperCost);
+    dis("btnLowerPrice", S.margin < 0.02);
+    dis("btnMakePaperclip", S.wire < 1);
+  }
+
+  /* computation */
+  txt("trust", commas(S.trust));
+  txt("nextTrust", commas(Math.floor(S.nextTrust)));
+  txt("processors", commas(S.processors));
+  txt("memory", commas(S.memory));
+  txt("operations", commas(Math.floor(S.operations)));
+  txt("maxOps", commas(S.memory*1000));
+  var pct = S.memory > 0 ? Math.max(0, Math.min(100, (S.operations/(S.memory*1000))*100)) : 0;
+  var om = $("opsMeter"); if(om) om.style.width = pct.toFixed(1) + "%";
+  txt("creativity", commas(Math.floor(S.creativity)));
+  var canSpend = (S.trust > 0 || S.swarmGifts > 0);
+  dis("btnAddProc", !canSpend);
+  dis("btnAddMem", !canSpend);
+
+  /* strategy engine */
+  if(S.strategyEngineFlag){
+    txt("yomiDisplay", commas(Math.floor(S.yomi)));
+    txt("newTourneyCost", commas(S.tourneyCost));
+    dis("btnNewTourney", S.operations < S.tourneyCost || S.tourneyInProg === 1);
+  }
+
+  /* investments */
+  if(S.investmentEngineFlag && human){
+    txt("investmentBankroll", commas(Math.floor(S.bankroll)));
+    txt("secValue", commas(Math.floor(S.secTotal)));
+    txt("portValue", commas(Math.floor(S.portTotal)));
+    txt("investUpgradeCost", commas(S.investUpgradeCost));
+    txt("investmentLevel", commas(S.investLevel));
+    dis("btnInvestUpgrade", S.yomi < S.investUpgradeCost);
+    renderStocks();
+  }
+
+  /* quantum */
+  if(S.qFlag){
+    var chips = $("qChips");
+    if(chips && chips.children.length === 10){
+      for(var i=0;i<10;i++){
+        chips.children[i].style.opacity = S.qChips[i] ? Math.max(0, S.qValues[i]).toFixed(2) : 0;
+      }
+    }
+  }
+
+  /* Act II */
+  if(!human){
+    txt("unusedClipsDisplay", big(S.unusedClips));
+    txt("availableMatter", big(S.availableMatter));
+    txt("acquiredMatter", big(S.acquiredMatter));
+    txt("nanoWire", big(S.wire));
+    txt("maps", big(S.maps));
+    txt("wpps", big(S.wpps));
+    txt("clipsPerSecFactory", big(S.factoryClipRate));
+    txt("harvesterCost", big(S.harvesterCost));
+    txt("harvesterLevel", big(S.harvesterLevel));
+    txt("wireDroneCost", big(S.wireDroneCost));
+    txt("wireDroneLevel", big(S.wireDroneLevel));
+    txt("factoryCost", big(S.factoryCost));
+    txt("factoryLevel", big(S.factoryLevel));
+    txt("farmCost", big(S.farmCost));
+    txt("farmLevel", big(S.farmLevel));
+    txt("batteryCost", big(S.batteryCost));
+    txt("batteryLevel", big(S.batteryLevel));
+    txt("powerProduction", big(powerSupply));
+    txt("powerConsumption", big(powerDemand));
+    txt("storedPower", big(S.storedPower));
+    txt("powerCap", big(S.batteryLevel * S.batterySize));
+    var cap = S.batteryLevel * S.batterySize;
+    var pm = $("powerMeter");
+    if(pm) pm.style.width = (cap > 0 ? Math.min(100, (S.storedPower/cap)*100) : 0).toFixed(1) + "%";
+
+    dis("btnMakeHarvester", S.unusedClips < S.harvesterCost);
+    dis("btnMakeWireDrone", S.unusedClips < S.wireDroneCost);
+    dis("btnMakeFactory", S.unusedClips < S.factoryCost);
+    dis("btnMakeFarm", S.unusedClips < S.farmCost);
+    dis("btnMakeBattery", S.unusedClips < S.batteryCost);
+
+    txt("swarmStatus", SWARM_LABEL[S.swarmStatus] || "Active");
+    txt("swarmSize", big(drones()));
+    txt("swarmGifts", commas(Math.floor(S.swarmGifts)));
+    txt("giftCountdown", S.swarmStatus === 0 ? timeCruncher(S.giftCountdown) : "--");
+    txt("entertainCost", commas(S.entertainCost));
+    txt("synchCost", commas(S.synchCost));
+    show("entertainDiv", S.swarmFlag && S.boredomFlag);
+    show("synchDiv", S.swarmFlag && S.disorgFlag);
+    dis("btnEntertainSwarm", S.creativity < S.entertainCost);
+    dis("btnSynchSwarm", S.yomi < S.synchCost);
+  }
+
+  /* Act III */
+  if(S.spaceFlag){
+    txt("probeCost", big(S.probeCost));
+    txt("probesLaunched", commas(S.probeLaunchLevel));
+    txt("probesTotal", big(S.probeCount));
+    txt("probesBorn", big(S.probeDescendents));
+    txt("probesLostHaz", big(S.probesLostHaz));
+    txt("probesLostDrift", big(S.probesLostDrift));
+    txt("probesLostCombat", big(S.probesLostCombat));
+    txt("mdps", big(S.mdps));
+    txt("colonized", (100/(S.totalMatter/S.foundMatter)).toFixed(12));
+    txt("probeTrust", commas(S.probeTrust));
+    txt("probeTrustUsed", commas(S.probeUsedTrust));
+    txt("maxTrust", commas(S.maxTrust));
+    txt("probeTrustCost", commas(S.probeTrustCost));
+    txt("honorDisplay", commas(Math.round(S.honor)));
+    txt("maxTrustCost", commas(Math.round(S.maxTrustCost)));
+    txt("drifterCount", big(S.drifterCount));
+    txt("driftersKilled", big(S.driftersKilled));
+    dis("btnMakeProbe", S.unusedClips <= S.probeCost);
+    dis("btnIncreaseProbeTrust", S.yomi < S.probeTrustCost || S.probeTrust >= S.maxTrust);
+    dis("btnIncreaseMaxTrust", S.honor < S.maxTrustCost);
+    renderProbeAttrs();
+    renderBattles();
+  }
+
+  renderProjectList(false);
+  refreshVisibility();
+}
+
+var stockSig = "";
+function renderStocks(){
+  var body = $("stockRows");
+  if(!body) return;
+  var sig = S.stocks.map(function(s){ return s.symbol+s.price+s.amount; }).join(",");
+  if(sig === stockSig) return;
+  stockSig = sig;
+  body.innerHTML = "";
+  S.stocks.forEach(function(s){
+    var tr = document.createElement("tr");
+    tr.innerHTML = "<td>"+s.symbol+"</td><td class=\"n\">"+commas(s.amount)+"</td>"+
+      "<td class=\"n\">"+commas(Math.ceil(s.price))+"</td><td class=\"n\">"+commas(Math.ceil(s.total))+"</td>"+
+      "<td class=\"n "+(s.profit>=0?"pos":"neg")+"\">"+commas(Math.ceil(s.profit))+"</td>";
+    body.appendChild(tr);
+  });
+}
+
+var probeAttrsBuilt = false;
+function renderProbeAttrs(){
+  var host = $("probeAttrs");
+  if(!host) return;
+  if(!probeAttrsBuilt){
+    probeAttrsBuilt = true;
+    host.innerHTML = "";
+    PROBE_ATTRS.forEach(function(a){
+      var row = document.createElement("div");
+      row.className = "row small";
+      row.innerHTML = "<span class=\"dim\">"+a[1]+"</span>"+
+        "<span><button class=\"button2 pd\" data-k=\""+a[0]+"\" data-d=\"-1\">&minus;</button> "+
+        "<span class=\"num\" id=\"val_"+a[0]+"\">0</span> "+
+        "<button class=\"button2 pd\" data-k=\""+a[0]+"\" data-d=\"1\">+</button></span>";
+      host.appendChild(row);
+    });
+    host.addEventListener("click", function(ev){
+      var b = ev.target.closest(".pd");
+      if(!b) return;
+      if(b.dataset.d === "1") raiseProbeAttr(b.dataset.k); else lowerProbeAttr(b.dataset.k);
+    });
+  }
+  PROBE_ATTRS.forEach(function(a){
+    txt("val_"+a[0], commas(S[a[0]]));
+    var btns = host.querySelectorAll('[data-k="'+a[0]+'"]');
+    if(btns[0]) btns[0].disabled = S[a[0]] <= 0;
+    if(btns[1]) btns[1].disabled = S.probeUsedTrust >= S.probeTrust;
+  });
+  var combatRow = host.children[7];
+  if(combatRow) combatRow.style.display = S.battleFlag ? "" : "none";
+}
+
+function renderBattles(){
+  var el = $("battleReport");
+  if(!el) return;
+  if(!S.battles.length){ txt("battleReport", S.battleFlag ? "No engagements." : ""); return; }
+  var b = S.battles[0];
+  var status = b.victory ? "VICTORY" : (b.loss ? "DEFEAT" : "engaged");
+  el.textContent = b.name + " — " + status + " · probes " + big(b.clipProbes) + " vs drifters " + big(b.drifterProbes);
+}
+
+/* ============================================================
+   VISIBILITY
+   ============================================================ */
+function refreshVisibility(){
+  var human = S.humanFlag === 1;
+  show("businessDiv", human);
+  show("manufacturingDiv", human);
+  show("marketingDiv", human);
+  show("autoClipperDiv", human && S.autoClipperFlag === 1);
+  show("megaClipperDiv", human && S.megaClipperFlag === 1);
+  show("wireBuyerDiv", human && S.wireBuyerFlag === 1);
+  show("computeDiv", S.compFlag === 1);
+  show("projectsDiv", S.projectsFlag === 1);
+  show("creativityRow", !!S.creativityOn);
+  show("nextTrustRow", human);
+  show("qCompDiv", S.qFlag === 1);
+  show("qCompRow", S.qFlag === 1);
+  show("investmentDiv", S.investmentEngineFlag === 1 && human);
+  show("strategyDiv", S.strategyEngineFlag === 1);
+  show("autoTourneyDiv", S.autoTourneyFlag === 1);
+  show("avgRevRow", human && S.revPerSecFlag === 1);
+  show("avgSalesRow", human && S.revPerSecFlag === 1);
+
+  show("productionDiv", !human);
+  show("powerDiv", !human && S.powerFlag === 1);
+  show("harvesterBuyDiv", !human && S.harvesterFlag === 1);
+  show("wireDroneBuyDiv", !human && S.wireDroneFlag === 1);
+  show("factoryBuyDiv", !human && S.factoryFlag === 1);
+  show("swarmDiv", !human && S.swarmFlag === 1);
+
+  show("spaceDiv", S.spaceFlag === 1);
+  show("probeDesignDiv", S.spaceFlag === 1);
+  show("honorDiv", S.honorDivFlag === 1);
+  show("drifterDiv", S.spaceFlag === 1 && (S.drifterCount > 0 || S.probesLostDrift > 0));
+  show("battleDiv", S.battleFlag === 1);
+}
+
+/* ============================================================
+   SAVE / LOAD
+   ============================================================ */
+var SAVE_KEY = "paperclipMaximizerSave";
+
+function save(){
+  try {
+    S.elapsed = S.ticks;
+    localStorage.setItem(SAVE_KEY, JSON.stringify(S));
+  } catch(e){ /* private mode, quota — play on without persistence */ }
+}
+
+function load(){
+  var raw = null;
+  try { raw = localStorage.getItem(SAVE_KEY); } catch(e){ return false; }
+  if(!raw) return false;
+  try {
+    var data = JSON.parse(raw);
+    var base = freshState();
+    for(var k in base){ if(!(k in data)) data[k] = base[k]; }
+    S = data;
+    S.done = S.done || {};
+    S.uses = S.uses || {};
+    S.blocked = S.blocked || {};
+    S.msgs = S.msgs || [];
+    S.qChips = S.qChips || [0,0,0,0,0,0,0,0,0,0];
+    S.qValues = S.qValues || [0,0,0,0,0,0,0,0,0,0];
+    S.activeStrats = S.activeStrats || [0];
+    S.stocks = S.stocks || [];
+    S.battles = S.battles || [];
+    S.tourneyInProg = 0;
+    return true;
+  } catch(e){ return false; }
+}
+
+function resetGame(prestigeU, prestigeS){
+  try { localStorage.removeItem(SAVE_KEY); } catch(e){}
+  S = freshState();
+  S.prestigeU = prestigeU || 0;
+  S.prestigeS = prestigeS || 0;
+  activeProjects.length = 0;
+  lastProjSig = ""; stockSig = ""; probeAttrsBuilt = false;
+  incomeTracker = [0]; incomeNow = 0; incomeThen = 0;
+  var host = $("projectListDiv"); if(host) host.innerHTML = "";
+  var pa = $("probeAttrs"); if(pa) pa.innerHTML = "";
+  rebuildStratPicker();
+  displayMessage("Welcome to Paperclip Maximizer");
+  refreshVisibility();
+}
+
+/* ============================================================
+   WIRING
+   ============================================================ */
+function wire(){
+  on("btnMakePaperclip", function(){ clipClick(1); });
+  on("btnBuyWire", buyWire);
+  on("btnBuyAds", buyAds);
+  on("btnMakeClipper", makeClipper);
+  on("btnMakeMegaClipper", makeMegaClipper);
+  on("btnRaisePrice", raisePrice);
+  on("btnLowerPrice", lowerPrice);
+  on("btnAddProc", addProc);
+  on("btnAddMem", addMem);
+  on("btnQcomp", qComp);
+  on("btnToggleWireBuyer", function(){
+    S.wireBuyerStatus = S.wireBuyerStatus ? 0 : 1;
+    txt("btnToggleWireBuyer", S.wireBuyerStatus ? "ON" : "OFF");
+  });
+
+  on("btnNewTourney", newTourney);
+  on("btnRunTournament", runTourney);
+  on("btnToggleAutoTourney", toggleAutoTourney);
+  var sp = $("stratPicker");
+  if(sp) sp.addEventListener("change", function(){ S.pick = sp.value; });
+
+  on("btnInvestDeposit", investDeposit);
+  on("btnInvestWithdraw", investWithdraw);
+  on("btnInvestUpgrade", investUpgrade);
+  var iv = $("investStrat");
+  if(iv) iv.addEventListener("change", function(){
+    S.riskiness = iv.value === "low" ? 7 : (iv.value === "med" ? 5 : 1);
+  });
+
+  on("btnMakeFactory", makeFactory);
+  on("btnMakeHarvester", function(){ makeHarvester(1); });
+  on("btnMakeWireDrone", function(){ makeWireDrone(1); });
+  on("btnMakeFarm", function(){ makeFarm(1); });
+  on("btnMakeBattery", function(){ makeBattery(1); });
+  document.querySelectorAll(".buyN").forEach(function(b){
+    b.addEventListener("click", function(){
+      var n = parseInt(b.dataset.n, 10);
+      if(b.dataset.what === "harvester") makeHarvester(n); else makeWireDrone(n);
+    });
+  });
+  on("btnEntertainSwarm", entertainSwarm);
+  on("btnSynchSwarm", synchSwarm);
+  var sl = $("swarmSlider");
+  if(sl) sl.addEventListener("input", function(){ S.sliderPos = parseInt(sl.value, 10); });
+
+  on("btnMakeProbe", makeProbe);
+  on("btnIncreaseProbeTrust", increaseProbeTrust);
+  on("btnIncreaseMaxTrust", increaseMaxTrust);
+
+  /* quantum chip strip */
+  var chips = $("qChips");
+  if(chips && !chips.children.length){
+    for(var i=0;i<10;i++) chips.appendChild(document.createElement("i"));
+  }
+}
+
+/* ============================================================
+   CHEAT CONSOLE
+   ============================================================ */
+function chAmt(){
+  var raw = ($("chAmt") && $("chAmt").value || "").replace(/[, _]/g, "");
+  var v = parseFloat(raw);
+  return (isFinite(v) && v > 0) ? v : 1000;
+}
+
+var GIVE = {
+  clips: function(n){ S.clips += n; S.unusedClips += n; S.unsoldClips += n; },
+  funds: function(n){ S.funds += n; },
+  wire:  function(n){ S.wire += n; },
+  ops:   function(n){ S.standardOps += n; if(S.standardOps > S.memory*1000){ S.memory = Math.ceil(S.standardOps/1000); } },
+  creativity: function(n){ S.creativity += n; S.creativityOn = true; },
+  trust: function(n){ S.trust += n; },
+  yomi:  function(n){ S.yomi += n; },
+  honor: function(n){ S.honor += n; S.honorDivFlag = 1; },
+  processors: function(n){ S.processors += n;
+    S.creativitySpeed = Math.log10(S.processors)*Math.pow(S.processors,1.1) + S.processors - 1; },
+  memory: function(n){ S.memory += n; }
+};
+
+var CHEAT_ACTS = {
+  richify: function(){
+    GIVE.clips(1e12); GIVE.funds(1e12); GIVE.wire(1e12); GIVE.creativity(1e12);
+    GIVE.yomi(1e12); GIVE.honor(1e12); GIVE.trust(1000);
+    S.memory = Math.max(S.memory, 2000); S.standardOps = S.memory*1000;
+    displayMessage("Cheat: resources granted");
+  },
+  phase1: function(){
+    S.compFlag = 1; S.projectsFlag = 1; S.autoClipperFlag = 1;
+    S.milestoneFlag = Math.max(S.milestoneFlag, 4);
+    GIVE.funds(100000); GIVE.wire(1e6); GIVE.clips(10000);
+    S.trust = Math.max(S.trust, 20); S.memory = Math.max(S.memory, 20);
+    S.processors = Math.max(S.processors, 20);
+    S.creativitySpeed = Math.log10(S.processors)*Math.pow(S.processors,1.1) + S.processors - 1;
+    S.standardOps = S.memory*1000; S.creativityOn = true; S.creativity = Math.max(S.creativity, 5000);
+    displayMessage("Cheat: Act I fully stocked");
+  },
+  phase2: function(){
+    CHEAT_ACTS.phase1();
+    ["p1","p3","p4","p5","p6","p7","p8","p9","p13","p14","p15","p16","p17","p19","p20",
+     "p21","p22","p26","p42","p11","p12","p34","p70"].forEach(function(id){ S.done[id] = true; S.uses[id] = 1; });
+    S.clipperBoost = 7.5; S.megaClipperFlag = 1; S.wireBuyerFlag = 1;
+    S.strategyEngineFlag = 1; S.investmentEngineFlag = 1;
+    S.activeStrats = [0,1,2,3,4,5,6,7]; rebuildStratPicker();
+    GIVE.clips(5e8);
+    enterPhase2();
+    S.done["p35"] = true; S.uses["p35"] = 1;
+    S.tothFlag = 1; S.done["p18"] = true; S.uses["p18"] = 1;
+    pruneCompletedProjects(); manageProjects();
+    displayMessage("Cheat: HypnoDrones released");
+  },
+  phase3: function(){
+    if(S.humanFlag === 1) CHEAT_ACTS.phase2();
+    ["p18","p127","p41","p43","p44","p45","p100","p101","p126"].forEach(function(id){ S.done[id] = true; S.uses[id] = 1; });
+    S.tothFlag = 1; S.powerFlag = 1; S.wireProductionFlag = 1;
+    S.harvesterFlag = 1; S.wireDroneFlag = 1; S.factoryFlag = 1; S.swarmFlag = 1;
+    S.factoryRate = 1e9 * 100 * 1000;
+    S.availableMatter = 0; S.acquiredMatter = 0;
+    S.unusedClips = Math.max(S.unusedClips, 6e27);
+    S.storedPower = 1e7; S.standardOps = Math.max(S.standardOps, 120000);
+    S.memory = Math.max(S.memory, 200);
+    GIVE.yomi(1e6);
+    enterPhase3();
+    S.done["p46"] = true; S.uses["p46"] = 1;
+    pruneCompletedProjects(); manageProjects();
+    displayMessage("Cheat: probes online");
+  },
+  unlockProjects: function(){
+    var guard = 0;
+    while(activeProjects.length && guard++ < 300){
+      var pr = activeProjects[0];
+      /* never auto-fire the irreversible act transitions or a prestige reset */
+      if(["p35","p46","p200","p201","p217","p147","p148"].indexOf(pr.id) !== -1){
+        activeProjects.push(activeProjects.shift());
+        if(guard > activeProjects.length * 2) break;
+        continue;
+      }
+      var was = activeProjects.length;
+      var free = CH.freeProjects; CH.freeProjects = true;
+      buyProject(pr);
+      CH.freeProjects = free;
+      if(activeProjects.length === was) break;
+      manageProjects();
+    }
+    displayMessage("Cheat: available projects completed");
+  },
+  maxClippers: function(){
+    S.clipmakerLevel += 1000; S.megaClipperLevel += 1000; S.megaClipperFlag = 1;
+    S.clipperCost = Math.pow(1.1, S.clipmakerLevel) + 5;
+    S.megaClipperCost = Math.pow(1.07, S.megaClipperLevel) * 1000;
+    GIVE.wire(1e12);
+    displayMessage("Cheat: +1,000 clippers");
+  },
+  maxDrones: function(){
+    S.harvesterLevel += 10000; S.wireDroneLevel += 10000; S.factoryLevel += 10000;
+    S.farmLevel += 10000; S.batteryLevel += 10000;
+    S.harvesterCost = Math.pow(S.harvesterLevel+1,2.25)*1e6;
+    S.wireDroneCost = Math.pow(S.wireDroneLevel+1,2.25)*1e6;
+    S.farmCost = Math.pow(S.farmLevel+1,2.78)*1e8;
+    S.batteryCost = Math.pow(S.batteryLevel+1,2.54)*1e7;
+    S.harvesterFlag = 1; S.wireDroneFlag = 1; S.factoryFlag = 1; S.powerFlag = 1;
+    displayMessage("Cheat: +10,000 of every facility");
+  },
+  probeSwarm: function(){
+    if(!S.spaceFlag){ displayMessage("Cheat: reach Act III first"); return; }
+    S.probeCount += 1000; S.probeLaunchLevel += 1000;
+    S.probeTrust = S.maxTrust;
+    S.probeUsedTrust = 0;
+    PROBE_ATTRS.forEach(function(a){ S[a[0]] = 0; });
+    var each = Math.floor(S.maxTrust/8);
+    PROBE_ATTRS.forEach(function(a){ S[a[0]] = each; S.probeUsedTrust += each; });
+    displayMessage("Cheat: 1,000 probes launched, trust maxed");
+  },
+  theme: function(){
+    var cur = document.documentElement.getAttribute("data-theme");
+    var next = cur === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem("pcmTheme", next); } catch(e){}
+  },
+  wipe: function(){
+    if(!confirm("Erase your save and start over from one paperclip?")) return;
+    resetGame(0, 0);
+  }
+};
+
+function setupCheats(){
+  var panel = $("cheatPanel"), tab = $("cheatTab");
+
+  function openPanel(o){
+    panel.style.display = o ? "block" : "none";
+    tab.style.display = o ? "none" : "block";
+  }
+  tab.addEventListener("click", function(){ openPanel(true); });
+  on("cheatClose", function(){ openPanel(false); });
+
+  document.addEventListener("keydown", function(ev){
+    if(ev.key === "`" && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)){
+      ev.preventDefault();
+      openPanel(panel.style.display !== "block");
+    }
+  });
+
+  panel.addEventListener("click", function(ev){
+    var give = ev.target.closest("[data-give]");
+    if(give){
+      var n = chAmt() * parseFloat(give.dataset.mult);
+      GIVE[give.dataset.give](n);
+      refreshVisibility();
+      return;
+    }
+    var act = ev.target.closest("[data-act]");
+    if(act){ CHEAT_ACTS[act.dataset.act](); refreshVisibility(); return; }
+    var tog = ev.target.closest("[data-flag]");
+    if(tog){
+      var f = tog.dataset.flag;
+      CH[f] = !CH[f];
+      tog.classList.toggle("on", CH[f]);
+      if(f === "revealAll" && CH[f]) manageProjects();
+      return;
+    }
+  });
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+(function init(){
+  try {
+    var t = localStorage.getItem("pcmTheme");
+    if(t) document.documentElement.setAttribute("data-theme", t);
+  } catch(e){}
+
+  var loaded = load();
+  if(!loaded) S = freshState();
+  if(S.endgame === undefined) S.endgame = 0;
+  if(!S.threnodyTitle) S.threnodyTitle = "Aboukir";
+
+  wire();
+  rebuildStratPicker();
+  setupCheats();
+
+  var sl = $("swarmSlider"); if(sl) sl.value = S.sliderPos;
+  var iv = $("investStrat");
+  if(iv) iv.value = S.riskiness === 7 ? "low" : (S.riskiness === 5 ? "med" : "high");
+  txt("btnToggleWireBuyer", S.wireBuyerStatus ? "ON" : "OFF");
+  txt("btnToggleAutoTourney", S.autoTourneyStatus ? "ON" : "OFF");
+
+  if(loaded){
+    for(var i=1;i<=5;i++) txt("readout"+i, S.msgs[i-1] || "");
+    displayMessage("Save restored — " + spellf(S.clips) + " clips");
+  } else {
+    displayMessage("Welcome to Paperclip Maximizer");
+  }
+
+  /* rebuild the active project list from saved flags */
+  manageProjects();
+  refreshVisibility();
+  setInterval(render, 50);
+  render();
+
+  window.addEventListener("beforeunload", save);
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1290 @@
+<title>Apple Head-to-Head</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;500&display=swap">
+<style>
+/* ============ tokens ============ */
+:root{
+  --ground:#EDEFF3; --surface:#FFFFFF; --surface-2:#F5F7FA; --surface-3:#E7EAF0;
+  --ink:#161A21; --ink-2:#4C5462; --ink-3:#626A79;
+  --line:#DCE0E7; --line-2:#C4CAD5; --spine:#C9CFDA;
+  --a:#2C5FBF; --a-text:#1E4FA8; --a-soft:rgba(44,95,191,.10); --a-ghost:rgba(44,95,191,.05);
+  --b:#C1511F; --b-text:#9C4318; --b-soft:rgba(193,81,31,.10); --b-ghost:rgba(193,81,31,.05);
+  --good:#1B7A4F; --shadow:0 1px 2px rgba(22,26,33,.05),0 8px 24px -12px rgba(22,26,33,.16);
+  --f-display:'Archivo','Helvetica Neue',Arial,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --f-serif:'Newsreader',Georgia,'Times New Roman',serif;
+  --axis-w:clamp(104px,17vw,208px);
+  --pad:clamp(16px,4vw,40px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0E1116; --surface:#151A21; --surface-2:#1A2029; --surface-3:#212934;
+    --ink:#E9ECF1; --ink-2:#A8B1BF; --ink-3:#8B95A7;
+    --line:#252D38; --line-2:#38414F; --spine:#2E3743;
+    --a:#4880E4; --a-text:#8FBAFF; --a-soft:rgba(72,128,228,.16); --a-ghost:rgba(72,128,228,.07);
+    --b:#DC6A33; --b-text:#FFA274; --b-soft:rgba(220,106,51,.16); --b-ghost:rgba(220,106,51,.07);
+    --good:#4ECB8B; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0E1116; --surface:#151A21; --surface-2:#1A2029; --surface-3:#212934;
+  --ink:#E9ECF1; --ink-2:#A8B1BF; --ink-3:#8B95A7;
+  --line:#252D38; --line-2:#38414F; --spine:#2E3743;
+  --a:#4880E4; --a-text:#8FBAFF; --a-soft:rgba(72,128,228,.16); --a-ghost:rgba(72,128,228,.07);
+  --b:#DC6A33; --b-text:#FFA274; --b-soft:rgba(220,106,51,.16); --b-ghost:rgba(220,106,51,.07);
+  --good:#4ECB8B; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:var(--f-display); font-size:16px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 var(--pad) 80px}
+h1,h2,h3{margin:0;text-wrap:balance;font-weight:700}
+p{margin:0}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--a-text);outline-offset:2px;border-radius:4px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.eyebrow{
+  font-family:var(--f-mono);font-size:11px;font-weight:500;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-3);
+}
+
+/* ============ masthead ============ */
+.masthead{
+  display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  padding:clamp(26px,5vw,48px) 0 20px;border-bottom:1px solid var(--line);
+}
+.wordmark{
+  font-family:var(--f-display);font-weight:800;font-stretch:112%;
+  font-size:clamp(24px,3.4vw,34px);letter-spacing:-.02em;line-height:1;
+}
+.wordmark span{color:var(--ink-3);font-weight:500}
+.masthead .meta{display:flex;gap:14px;align-items:center}
+
+/* ============ control bar ============ */
+.controls{
+  position:sticky;top:0;z-index:60;margin:0 calc(var(--pad)*-1);padding:12px var(--pad);
+  background:color-mix(in srgb,var(--ground) 88%,transparent);
+  backdrop-filter:blur(14px) saturate(1.4);
+  -webkit-backdrop-filter:blur(14px) saturate(1.4);
+  border-bottom:1px solid var(--line);
+}
+.control-grid{
+  max-width:1180px;margin:0 auto;
+  display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+  gap:10px;align-items:center;
+}
+.picker{position:relative;min-width:0}
+.trigger{
+  width:100%;display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;
+  background:var(--surface);border:1px solid var(--line-2);border-radius:10px;
+  padding:10px 14px;transition:border-color .15s,box-shadow .15s;
+}
+.trigger:hover{border-color:var(--ink-3)}
+.picker[data-side="a"] .trigger{border-left:3px solid var(--a)}
+.picker[data-side="b"] .trigger{border-right:3px solid var(--b)}
+.picker[data-side="b"] .trigger{flex-direction:row-reverse;text-align:right}
+.trigger .t-name{font-weight:600;font-size:15px;line-height:1.2;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trigger .t-sub{font-family:var(--f-mono);font-size:11px;color:var(--ink-3);letter-spacing:.04em}
+.trigger .t-body{min-width:0;flex:1}
+.trigger .chev{color:var(--ink-3);flex:none}
+.swap{
+  flex:none;width:46px;height:46px;border-radius:50%;cursor:pointer;
+  background:var(--surface);border:1px solid var(--line-2);color:var(--ink-2);
+  display:grid;place-items:center;transition:transform .35s cubic-bezier(.3,1.4,.5,1),border-color .15s;
+}
+.swap:hover{border-color:var(--ink-3);color:var(--ink)}
+.swap.spin{transform:rotate(180deg)}
+.panel{
+  position:absolute;top:calc(100% + 8px);left:0;right:0;z-index:70;
+  background:var(--surface);border:1px solid var(--line-2);border-radius:12px;
+  box-shadow:var(--shadow);overflow:hidden;display:none;
+}
+.panel.open{display:block}
+.panel input{
+  width:100%;border:0;border-bottom:1px solid var(--line);background:transparent;
+  padding:12px 14px;font-size:14px;
+}
+.panel input::placeholder{color:var(--ink-3)}
+.panel input:focus{outline:none;border-bottom-color:var(--a)}
+.list{max-height:min(56vh,420px);overflow-y:auto;margin:0;padding:6px;list-style:none}
+.grp{
+  font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);padding:10px 10px 4px;
+}
+.opt{
+  display:flex;justify-content:space-between;gap:12px;align-items:baseline;
+  padding:7px 10px;border-radius:7px;cursor:pointer;font-size:14px;
+}
+.opt:hover,.opt.active{background:var(--surface-3)}
+.opt[aria-selected="true"]{font-weight:600}
+.opt .o-meta{font-family:var(--f-mono);font-size:11px;color:var(--ink-3);flex:none}
+.empty{padding:18px 14px;color:var(--ink-3);font-size:14px}
+
+/* ============ shared axis layout ============ */
+.axis{
+  display:grid;grid-template-columns:minmax(0,1fr) var(--axis-w) minmax(0,1fr);
+  column-gap:clamp(8px,1.6vw,18px);align-items:center;
+}
+.axis-label{
+  text-align:center;font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-3);line-height:1.35;padding:0 4px;
+}
+.block{
+  position:relative;background:var(--surface);border:1px solid var(--line);
+  border-radius:16px;padding:clamp(18px,3vw,30px);margin-top:20px;
+}
+.block::before{
+  content:"";position:absolute;top:64px;bottom:22px;left:50%;width:1px;
+  background:var(--spine);transform:translateX(-.5px);
+}
+.block-head{display:flex;align-items:baseline;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:22px}
+.block-head h2{font-size:clamp(17px,2.2vw,21px);font-stretch:108%;letter-spacing:-.01em}
+.block-head .note{font-size:13px;color:var(--ink-3);max-width:46ch}
+</style>
+<style>
+/* ============ hero ============ */
+.hero{margin-top:24px;align-items:stretch}
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:16px;
+  padding:clamp(18px,3vw,28px);display:flex;flex-direction:column;gap:14px;min-width:0;
+}
+.card.a{border-top:3px solid var(--a)}
+.card.b{border-top:3px solid var(--b);text-align:right}
+.card .side-tag{font-family:var(--f-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase}
+.card.a .side-tag{color:var(--a-text)}
+.card.b .side-tag{color:var(--b-text)}
+.card h3{font-size:clamp(21px,3.4vw,32px);font-stretch:110%;letter-spacing:-.025em;line-height:1.05}
+.card .chip-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+.card.b .chip-row{justify-content:flex-end}
+.chip{
+  font-family:var(--f-mono);font-size:11px;letter-spacing:.03em;padding:4px 9px;
+  border-radius:999px;background:var(--surface-3);color:var(--ink-2);white-space:nowrap;
+}
+.chip.live{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good)}
+.price{font-family:var(--f-mono);font-size:clamp(20px,3vw,27px);font-weight:600;letter-spacing:-.02em}
+.price small{font-size:11px;font-weight:400;color:var(--ink-3);letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:2px}
+.pitch{font-family:var(--f-serif);font-size:15px;line-height:1.5;color:var(--ink-2)}
+
+/* verdict column in hero */
+.vs{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:8px 0}
+.vs-mark{font-family:var(--f-mono);font-size:12px;letter-spacing:.2em;color:var(--ink-3)}
+.vs-ring{
+  width:clamp(64px,10vw,92px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;
+  border:1px solid var(--line-2);background:var(--surface);
+}
+.vs-ring .n{font-family:var(--f-mono);font-size:clamp(17px,2.6vw,23px);font-weight:600;line-height:1}
+.vs-ring .u{font-family:var(--f-mono);font-size:9px;letter-spacing:.12em;color:var(--ink-3);text-transform:uppercase}
+.vs-winner{font-size:12px;font-weight:600;line-height:1.3;max-width:15ch}
+
+/* ============ diverging bars ============ */
+.rows{display:flex;flex-direction:column;gap:16px}
+.row{padding:2px 0}
+.bar-side{display:flex;align-items:center;gap:10px;min-width:0}
+.bar-side.b{flex-direction:row-reverse}
+.bar-track{flex:1;display:flex;min-width:0}
+.bar-side.a .bar-track{justify-content:flex-end}
+.bar{
+  height:15px;transition:width .5s cubic-bezier(.22,1,.36,1);
+  position:relative;min-width:2px;
+}
+.bar-side.a .bar{background:var(--a);border-radius:4px 0 0 4px}
+.bar-side.b .bar{background:var(--b);border-radius:0 4px 4px 0}
+.bar.muted{opacity:.4}
+.bar-val{
+  font-family:var(--f-mono);font-size:13px;font-weight:500;font-variant-numeric:tabular-nums;
+  white-space:nowrap;flex:none;
+}
+.bar-side.a .bar-val{color:var(--a-text)}
+.bar-side.b .bar-val{color:var(--b-text)}
+.delta{
+  font-family:var(--f-mono);font-size:10px;letter-spacing:.04em;padding:2px 6px;border-radius:4px;
+  background:color-mix(in srgb,var(--good) 15%,transparent);color:var(--good);white-space:nowrap;flex:none;
+}
+.hitbox{padding:5px 0;margin:-5px 0}
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin:0 0 2px;font-size:12.5px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:7px;min-width:0}
+.legend i{width:11px;height:11px;border-radius:3px;flex:none}
+.legend .sa{background:var(--a)}
+.legend .sb{background:var(--b)}
+
+/* ============ spec sheet ============ */
+.spec-row{padding:9px 0;border-top:1px solid var(--line)}
+.spec-row:first-child{border-top:0}
+.spec-v{
+  font-family:var(--f-mono);font-size:13.5px;line-height:1.4;color:var(--ink-2);
+  display:flex;align-items:baseline;gap:7px;min-width:0;overflow-wrap:anywhere;
+}
+.spec-row .a-v{justify-content:flex-end;text-align:right;flex-direction:row-reverse}
+.spec-row .b-v{justify-content:flex-start;text-align:left}
+.spec-v.win{color:var(--ink);font-weight:500}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--good);flex:none;transform:translateY(-1px)}
+.dot.hidden{visibility:hidden}
+
+/* ============ critics ============ */
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:2px}
+.gauge{width:clamp(112px,17vw,150px);height:auto;overflow:visible}
+.gauge .track{fill:none;stroke:var(--surface-3);stroke-width:9;stroke-linecap:round}
+.gauge .val{fill:none;stroke-width:9;stroke-linecap:round;transition:stroke-dashoffset .7s cubic-bezier(.22,1,.36,1)}
+.gauge .val.a{stroke:var(--a)}
+.gauge .val.b{stroke:var(--b)}
+.gauge-num{font-family:var(--f-mono);font-size:27px;font-weight:600;fill:var(--ink)}
+.gauge-den{font-family:var(--f-mono);font-size:9.5px;fill:var(--ink-3);letter-spacing:.1em}
+.verdict-txt{font-family:var(--f-serif);font-size:15.5px;line-height:1.6;color:var(--ink-2);max-width:62ch}
+.pc{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13.5px}
+.pc li{display:flex;gap:8px;color:var(--ink-2);line-height:1.45}
+.pc .m{font-family:var(--f-mono);flex:none;width:12px}
+.pc .up .m{color:var(--good)}
+.pc .down .m{color:var(--ink-3)}
+.crit-cols{display:grid;grid-template-columns:minmax(0,1fr) var(--axis-w) minmax(0,1fr);column-gap:clamp(8px,1.6vw,18px);align-items:start}
+.crit-col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.crit-col.b{text-align:right}
+.crit-col.b .pc li{flex-direction:row-reverse;text-align:right}
+.crit-col.b .verdict-txt{margin-left:auto}
+.crit-name{font-weight:600;font-size:15px}
+.crit-col.a .crit-name{color:var(--a-text)}
+.crit-col.b .crit-name{color:var(--b-text)}
+
+/* ============ verdict ============ */
+#verdict{background:var(--surface-2)}
+#verdict::before{display:none}
+#verdict .notice{background:var(--surface);margin:18px 0 0}
+.calls{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}
+.call{border-radius:12px;padding:16px 18px;background:var(--surface);border:1px solid var(--line)}
+.call.a{border-left:3px solid var(--a)}
+.call.b{border-left:3px solid var(--b)}
+.call .who{font-weight:700;font-size:15px;margin-bottom:6px;font-stretch:106%}
+.call.a .who{color:var(--a-text)}
+.call.b .who{color:var(--b-text)}
+.call p{font-size:14px;color:var(--ink-2);line-height:1.5}
+.headline{font-family:var(--f-serif);font-size:clamp(19px,3vw,26px);line-height:1.35;font-weight:400;max-width:44ch}
+.headline b{font-weight:500}
+.scoreline{display:flex;gap:24px;flex-wrap:wrap;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.sl{display:flex;flex-direction:column;gap:1px}
+.sl .k{font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.sl .v{font-size:14px;font-weight:600}
+
+/* ============ misc ============ */
+.notice{
+  display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:10px;
+  background:var(--surface-2);border:1px solid var(--line);font-size:13.5px;color:var(--ink-2);
+  line-height:1.5;margin-bottom:18px;
+}
+.notice .mk{font-family:var(--f-mono);color:var(--ink-3);flex:none}
+.method{
+  margin-top:34px;padding-top:22px;border-top:1px solid var(--line);
+  font-size:12.5px;color:var(--ink-3);line-height:1.6;display:grid;gap:16px;
+  grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+}
+.method h4{
+  margin:0 0 4px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  font-family:var(--f-mono);font-weight:500;color:var(--ink-2);
+}
+#tip{
+  position:fixed;z-index:99;pointer-events:none;opacity:0;transition:opacity .12s;
+  background:var(--ink);color:var(--ground);padding:8px 11px;border-radius:8px;
+  font-size:12px;line-height:1.45;max-width:260px;box-shadow:var(--shadow);
+}
+#tip.on{opacity:1}
+#tip .tv{font-family:var(--f-mono);font-weight:600}
+.toolbar{display:flex;gap:8px;align-items:center}
+.tbtn{
+  background:transparent;border:1px solid var(--line-2);border-radius:8px;padding:6px 11px;
+  font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-2);cursor:pointer;transition:border-color .15s,color .15s;
+}
+.tbtn:hover{border-color:var(--ink-3);color:var(--ink)}
+
+/* ============ responsive ============ */
+@media (max-width:760px){
+  :root{--axis-w:100%}
+  .control-grid{grid-template-columns:1fr auto;grid-template-areas:"a s" "b s"}
+  .control-grid .picker[data-side="a"]{grid-area:a}
+  .control-grid .picker[data-side="b"]{grid-area:b}
+  .control-grid .swap{grid-area:s;transform:rotate(90deg)}
+  .control-grid .swap.spin{transform:rotate(270deg)}
+  .axis,.crit-cols{grid-template-columns:minmax(0,1fr);row-gap:6px}
+  .block::before{display:none}
+  .axis-label{text-align:left;padding:12px 0 0}
+  .row .axis-label,.spec-row .axis-label{order:-1;padding:0 0 3px}
+  .crit-cols .axis-label{display:none}
+  .spec-row{padding:12px 0}
+  .card.b,.crit-col.b{text-align:left}
+  .card.b .chip-row{justify-content:flex-start}
+  .card.b .pc li,.crit-col.b .pc li{flex-direction:row;text-align:left}
+  .crit-col.b .verdict-txt{margin-left:0}
+  .picker[data-side="b"] .trigger{flex-direction:row;text-align:left;border-right-width:1px;border-left:3px solid var(--b)}
+  .bar-side.b{flex-direction:row}
+  .bar-side.a .bar-track{justify-content:flex-start}
+  .bar-side.a .bar{border-radius:0 4px 4px 0}
+  .bar-val{min-width:74px}
+  .spec-row .a-v{justify-content:flex-start;text-align:left;flex-direction:row}
+  .calls{grid-template-columns:1fr}
+  .vs{flex-direction:row;justify-content:flex-start;padding:4px 0;gap:14px}
+  .vs-winner{max-width:none;text-align:left}
+  .hero{row-gap:12px}
+  .crit-cols{row-gap:22px}
+}
+</style>
+<style>
+@media (prefers-reduced-motion:reduce){
+  .bar,.gauge .val,.swap,#tip{transition:none}
+}
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <h1 class="wordmark">Apple Head-to-Head</h1>
+      <p class="eyebrow" style="margin-top:6px">Two devices · power, price, and the critical record</p>
+    </div>
+    <div class="meta toolbar">
+      <span class="eyebrow" id="count-note"></span>
+      <button class="tbtn" id="shuffle" type="button">Shuffle</button>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="control-grid">
+      <div class="picker" data-side="a">
+        <button class="trigger" type="button" id="trig-a" aria-haspopup="listbox" aria-expanded="false">
+          <span class="t-body">
+            <span class="t-name">Choose a device</span>
+            <span class="t-sub"></span>
+          </span>
+          <svg class="chev" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4.5 6 8.5 10 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="panel" id="panel-a">
+          <input type="text" placeholder="Search devices…" aria-label="Search devices" autocomplete="off">
+          <ul class="list" role="listbox" aria-label="Device A"></ul>
+        </div>
+      </div>
+
+      <button class="swap" id="swap" type="button" title="Swap sides" aria-label="Swap the two devices">
+        <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 6.5h11m0 0-3-3m3 3-3 3M15 11.5H4m0 0 3-3m-3 3 3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+
+      <div class="picker" data-side="b">
+        <button class="trigger" type="button" id="trig-b" aria-haspopup="listbox" aria-expanded="false">
+          <span class="t-body">
+            <span class="t-name">Choose a device</span>
+            <span class="t-sub"></span>
+          </span>
+          <svg class="chev" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4.5 6 8.5 10 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="panel" id="panel-b">
+          <input type="text" placeholder="Search devices…" aria-label="Search devices" autocomplete="off">
+          <ul class="list" role="listbox" aria-label="Device B"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <section class="hero axis" id="hero"></section>
+
+    <section class="block" id="power">
+      <div class="block-head">
+        <h2>Power</h2>
+        <p class="note">Geekbench 6 medians, rounded. Bars are zero-based and scaled to the faster device in the pair.</p>
+      </div>
+      <div class="rows" id="power-rows"></div>
+    </section>
+
+    <section class="block" id="value">
+      <div class="block-head">
+        <h2>Price &amp; value</h2>
+        <p class="note">US launch price, and what each dollar buys in multi-core performance.</p>
+      </div>
+      <div class="rows" id="value-rows"></div>
+    </section>
+
+    <section class="block" id="specs">
+      <div class="block-head">
+        <h2>Spec sheet</h2>
+        <p class="note">A green dot marks the stronger figure where one measurably wins.</p>
+      </div>
+      <div id="spec-rows"></div>
+    </section>
+
+    <section class="block" id="critics">
+      <div class="block-head">
+        <h2>What the critics said</h2>
+        <p class="note">Consensus summarised from major reviews at launch, scored out of 100.</p>
+      </div>
+      <div class="crit-cols" id="crit-cols"></div>
+    </section>
+
+    <section class="block" id="verdict"></section>
+  </main>
+
+  <footer class="method">
+    <div>
+      <h4>Benchmarks</h4>
+      Single-core and multi-core figures are rounded medians of public Geekbench 6 results; graphics is the Metal score. Real-world speed depends on thermals, memory, and the app — treat these as ballpark, not lab-precise.
+    </div>
+    <div>
+      <h4>Prices</h4>
+      US launch price in dollars for the base configuration, before tax, trade-in, or education pricing. Discontinued models are marked; street prices for those are usually well below what is shown.
+    </div>
+    <div>
+      <h4>Critic scores</h4>
+      A normalised read of the major English-language reviews published around each device's launch — written summaries, not quotes, and not an official Apple or publisher metric.
+    </div>
+    <div>
+      <h4>Overall score</h4>
+      Performance 35% · critical reception 40% · value 25%, where value is multi-core points per dollar. Every part is measured against the best in the same category, so an iPhone is rated against iPhones, not against a Mac Studio. Wearables, audio and home devices are not benchmarked and score on reception 75% and critic-points-per-dollar 25%. Data current to early 2026.
+    </div>
+  </footer>
+</div>
+<div id="tip" aria-hidden="true"></div>
+<script>
+/* =========================================================================
+   DATA
+   sc = Geekbench 6 single-core, mc = multi-core, gp = Metal (graphics)
+   critic = normalised 0-100 read of major reviews at launch
+   ========================================================================= */
+const DEVICES = [
+/* ---------------- iPhone ---------------- */
+{id:'ip17pm',n:'iPhone 17 Pro Max',cat:'iPhone',chip:'A19 Pro',yr:2025,price:1199,cur:true,sc:3800,mc:9700,gp:38000,critic:92,
+ pitch:'The no-compromise iPhone, at no-compromise prices.',
+ say:"Reviewers called it the most capable iPhone Apple has shipped — the vapour-chamber cooling finally lets the chip run hard, and battery life is the best in the line. The recurring complaint was the price and the weight.",
+ up:['Best-in-class battery life','Sustained performance under load','8x telephoto is genuinely useful'],
+ dn:['Heaviest iPhone in years','Costs more than a MacBook Air'],
+ spec:{display:'6.9-inch OLED',refresh:'120 Hz',ram:'12 GB',storage:'256 GB',camera:'48 MP wide + ultra + 4x tele',battery:'5,088 mAh',weight:'233 g',charge:'40 W wired',connector:'USB-C'}},
+
+{id:'ip17p',n:'iPhone 17 Pro',cat:'iPhone',chip:'A19 Pro',yr:2025,price:1099,cur:true,sc:3800,mc:9600,gp:38000,critic:90,
+ pitch:'Pro Max power in a hand-sized body.',
+ say:"Broadly the same praise as the Max in a size more people can actually hold, with reviewers noting the redesigned aluminium unibody runs cooler than last year. The camera plateau drew the most criticism.",
+ up:['Same chip and cameras as the Max','Much easier to use one-handed','Big real-world thermal gain'],
+ dn:['Camera gains are incremental','Shorter battery life than the Max'],
+ spec:{display:'6.3-inch OLED',refresh:'120 Hz',ram:'12 GB',storage:'256 GB',camera:'48 MP wide + ultra + 4x tele',battery:'3,988 mAh',weight:'206 g',charge:'40 W wired',connector:'USB-C'}},
+
+{id:'ipair',n:'iPhone Air',cat:'iPhone',chip:'A19 Pro',yr:2025,price:999,cur:true,sc:3700,mc:9200,gp:33000,critic:84,
+ pitch:'An engineering flex you pay for in battery and cameras.',
+ say:"Almost every review opened with how startling 5.6 mm feels in the hand, then spent the rest of the word count on the trade-offs: one rear camera, a smaller battery, and mono-leaning sound.",
+ up:['Astonishing 5.6 mm build','Light enough to forget in a pocket','Flagship-class chip'],
+ dn:['Single rear camera','Battery needs care on a long day'],
+ spec:{display:'6.5-inch OLED',refresh:'120 Hz',ram:'12 GB',storage:'256 GB',camera:'48 MP single',battery:'3,149 mAh',weight:'165 g',charge:'20 W wired',connector:'USB-C'}},
+
+{id:'ip17',n:'iPhone 17',cat:'iPhone',chip:'A19',yr:2025,price:799,cur:true,sc:3600,mc:8900,gp:31000,critic:93,
+ pitch:'The one most people should buy.',
+ say:"Getting the 120 Hz display, 256 GB of storage and a 48 MP ultra-wide at the base price made this the value pick of the generation in nearly every review.",
+ up:['120 Hz display at the base price','256 GB standard','Excellent battery for the size'],
+ dn:['No telephoto lens','Design is a carry-over'],
+ spec:{display:'6.3-inch OLED',refresh:'120 Hz',ram:'8 GB',storage:'256 GB',camera:'48 MP wide + 48 MP ultra',battery:'3,692 mAh',weight:'177 g',charge:'40 W wired',connector:'USB-C'}},
+
+{id:'ip16e',n:'iPhone 16e',cat:'iPhone',chip:'A18',yr:2025,price:599,cur:true,sc:3200,mc:7900,gp:26000,critic:78,
+ pitch:'Cheapest way into a modern iPhone, with visible corners cut.',
+ say:"Critics liked the battery life and the flagship-grade chip at the price, but the 60 Hz display and single camera made it a hard recommendation against a discounted iPhone 16.",
+ up:['Outstanding battery life','A18 chip supports Apple Intelligence','Cheapest current iPhone'],
+ dn:['60 Hz display in 2025','One rear camera, no MagSafe'],
+ spec:{display:'6.1-inch OLED',refresh:'60 Hz',ram:'8 GB',storage:'128 GB',camera:'48 MP single',battery:'4,005 mAh',weight:'167 g',charge:'20 W wired',connector:'USB-C'}},
+
+{id:'ip16pm',n:'iPhone 16 Pro Max',cat:'iPhone',chip:'A18 Pro',yr:2024,price:1199,cur:false,sc:3400,mc:8300,gp:32000,critic:89,
+ pitch:'Last year’s flagship, now the smart discount buy.',
+ say:"Praised for battery life and video tools; criticised for shipping ahead of the Apple Intelligence features used to market it.",
+ up:['Superb battery life','Best-in-class video capture','Big discounts now'],
+ dn:['Marketed features arrived late','Heavy'],
+ spec:{display:'6.9-inch OLED',refresh:'120 Hz',ram:'8 GB',storage:'256 GB',camera:'48 MP wide + ultra + 5x tele',battery:'4,685 mAh',weight:'227 g',charge:'30 W wired',connector:'USB-C'}},
+
+{id:'ip16p',n:'iPhone 16 Pro',cat:'iPhone',chip:'A18 Pro',yr:2024,price:999,cur:false,sc:3400,mc:8250,gp:32000,critic:88,
+ pitch:'Compact pro phone with a real telephoto.',
+ say:"The 5x telephoto finally arriving on the smaller Pro was the headline; reviewers still felt the year-over-year gain was thin.",
+ up:['5x telephoto in a small body','120 Hz always-on display','Camera Control button'],
+ dn:['Modest upgrade over the 15 Pro','128 GB base at launch'],
+ spec:{display:'6.3-inch OLED',refresh:'120 Hz',ram:'8 GB',storage:'128 GB',camera:'48 MP wide + ultra + 5x tele',battery:'3,582 mAh',weight:'199 g',charge:'30 W wired',connector:'USB-C'}},
+
+{id:'ip16',n:'iPhone 16',cat:'iPhone',chip:'A18',yr:2024,price:799,cur:false,sc:3300,mc:8000,gp:29000,critic:88,
+ pitch:'A very good phone that the iPhone 17 quietly replaced.',
+ say:"Widely recommended for the price at launch — near-Pro silicon, better battery, useful macro ultra-wide — with the 60 Hz screen the one persistent gripe.",
+ up:['Near-Pro chip performance','Strong battery life','Action and Camera Control buttons'],
+ dn:['60 Hz display','128 GB base storage'],
+ spec:{display:'6.1-inch OLED',refresh:'60 Hz',ram:'8 GB',storage:'128 GB',camera:'48 MP wide + 12 MP ultra',battery:'3,561 mAh',weight:'170 g',charge:'30 W wired',connector:'USB-C'}},
+
+{id:'ip16pl',n:'iPhone 16 Plus',cat:'iPhone',chip:'A18',yr:2024,price:899,cur:false,sc:3300,mc:8000,gp:29000,critic:86,
+ pitch:'Big screen, big battery, no Pro tax.',
+ say:"The battery champion of its generation in most testing, held back by the same 60 Hz panel as the standard model.",
+ up:['Enormous battery life','Large display for less than a Pro Max'],
+ dn:['60 Hz display','Two cameras only'],
+ spec:{display:'6.7-inch OLED',refresh:'60 Hz',ram:'8 GB',storage:'128 GB',camera:'48 MP wide + 12 MP ultra',battery:'4,674 mAh',weight:'199 g',charge:'30 W wired',connector:'USB-C'}},
+
+{id:'ip15pm',n:'iPhone 15 Pro Max',cat:'iPhone',chip:'A17 Pro',yr:2023,price:1199,cur:false,sc:2900,mc:7200,gp:27500,critic:90,
+ pitch:'The titanium turning point, and still fast.',
+ say:"The switch to titanium and USB-C landed well, and the 5x tetraprism camera was the most-praised hardware change; early units ran hot until a software fix.",
+ up:['Titanium cut real weight','5x optical zoom','USB-C at last'],
+ dn:['Ran hot at launch','Expensive'],
+ spec:{display:'6.7-inch OLED',refresh:'120 Hz',ram:'8 GB',storage:'256 GB',camera:'48 MP wide + ultra + 5x tele',battery:'4,441 mAh',weight:'221 g',charge:'27 W wired',connector:'USB-C'}},
+
+{id:'ip15p',n:'iPhone 15 Pro',cat:'iPhone',chip:'A17 Pro',yr:2023,price:999,cur:false,sc:2900,mc:7150,gp:27500,critic:89,
+ pitch:'Lightest recent Pro, and the first with USB-C.',
+ say:"Reviewers loved how much lighter titanium made it and the new Action button, while noting the 3x zoom stayed put while the Max got 5x.",
+ up:['Noticeably lighter in hand','Action button','USB-C with faster transfers'],
+ dn:['Only 3x zoom','128 GB base storage'],
+ spec:{display:'6.1-inch OLED',refresh:'120 Hz',ram:'8 GB',storage:'128 GB',camera:'48 MP wide + ultra + 3x tele',battery:'3,274 mAh',weight:'187 g',charge:'27 W wired',connector:'USB-C'}},
+
+{id:'ip15',n:'iPhone 15',cat:'iPhone',chip:'A16 Bionic',yr:2023,price:799,cur:false,sc:2600,mc:6400,gp:22000,critic:87,
+ pitch:'Where the Dynamic Island and 48 MP went mainstream.',
+ say:"Inheriting the 48 MP main camera and the Dynamic Island made this the biggest jump the base iPhone had seen in years.",
+ up:['48 MP main camera','Dynamic Island','USB-C'],
+ dn:['60 Hz display','A16 is a year-old chip'],
+ spec:{display:'6.1-inch OLED',refresh:'60 Hz',ram:'6 GB',storage:'128 GB',camera:'48 MP wide + 12 MP ultra',battery:'3,349 mAh',weight:'171 g',charge:'20 W wired',connector:'USB-C'}},
+
+{id:'ip14p',n:'iPhone 14 Pro',cat:'iPhone',chip:'A16 Bionic',yr:2022,price:999,cur:false,sc:2550,mc:6350,gp:21500,critic:88,
+ pitch:'The one that introduced the Dynamic Island.',
+ say:"The Dynamic Island and always-on display were called the most interesting iPhone design ideas in years; battery and Lightning were the sticking points.",
+ up:['Dynamic Island','Always-on display','48 MP sensor debut'],
+ dn:['Still Lightning','Runs warm'],
+ spec:{display:'6.1-inch OLED',refresh:'120 Hz',ram:'6 GB',storage:'128 GB',camera:'48 MP wide + ultra + 3x tele',battery:'3,200 mAh',weight:'206 g',charge:'27 W wired',connector:'Lightning'}},
+
+{id:'ip14',n:'iPhone 14',cat:'iPhone',chip:'A15 Bionic',yr:2022,price:799,cur:false,sc:2300,mc:5800,gp:19000,critic:76,
+ pitch:'The most skippable iPhone of the decade.',
+ say:"Nearly every review framed it as an iPhone 13 with a better front camera and crash detection — safe, competent, and hard to justify at full price.",
+ up:['Reliable battery','Crash detection and satellite SOS'],
+ dn:['Barely changed from the iPhone 13','Last-generation chip'],
+ spec:{display:'6.1-inch OLED',refresh:'60 Hz',ram:'6 GB',storage:'128 GB',camera:'12 MP wide + 12 MP ultra',battery:'3,279 mAh',weight:'172 g',charge:'20 W wired',connector:'Lightning'}},
+
+{id:'ip13',n:'iPhone 13',cat:'iPhone',chip:'A15 Bionic',yr:2021,price:799,cur:false,sc:2200,mc:5400,gp:18500,critic:87,
+ pitch:'The battery-life jump that aged unusually well.',
+ say:"The big story was battery life, up sharply on the iPhone 12, alongside sensor-shift stabilisation on the base model.",
+ up:['Large battery gain over the 12','Sensor-shift stabilisation','Still supported by current iOS'],
+ dn:['60 Hz display','Lightning port'],
+ spec:{display:'6.1-inch OLED',refresh:'60 Hz',ram:'4 GB',storage:'128 GB',camera:'12 MP wide + 12 MP ultra',battery:'3,240 mAh',weight:'174 g',charge:'20 W wired',connector:'Lightning'}},
+
+{id:'ipse3',n:'iPhone SE (3rd gen)',cat:'iPhone',chip:'A15 Bionic',yr:2022,price:429,cur:false,sc:2200,mc:5300,gp:18500,critic:74,
+ pitch:'Flagship chip wrapped in 2017 industrial design.',
+ say:"Reviewers respected the raw speed for the money but found the small LCD, thick bezels and one-day-if-you-are-careful battery hard to live with.",
+ up:['Flagship-class chip for $429','Touch ID and a small body'],
+ dn:['Dated design with thick bezels','Weak battery life','Single 12 MP camera'],
+ spec:{display:'4.7-inch LCD',refresh:'60 Hz',ram:'4 GB',storage:'64 GB',camera:'12 MP single',battery:'2,018 mAh',weight:'144 g',charge:'20 W wired',connector:'Lightning'}},
+
+{id:'ip12',n:'iPhone 12',cat:'iPhone',chip:'A14 Bionic',yr:2020,price:799,cur:false,sc:2000,mc:4900,gp:15500,critic:85,
+ pitch:'The flat-edge redesign that set the current look.',
+ say:"The return to flat edges, OLED on the base model and MagSafe made this a landmark year, though battery life was merely adequate.",
+ up:['Flat-edge redesign','OLED on the standard model','MagSafe accessories'],
+ dn:['Average battery life','No charger in the box'],
+ spec:{display:'6.1-inch OLED',refresh:'60 Hz',ram:'4 GB',storage:'64 GB',camera:'12 MP wide + 12 MP ultra',battery:'2,815 mAh',weight:'164 g',charge:'20 W wired',connector:'Lightning'}},
+
+/* ---------------- iPad ---------------- */
+{id:'ipp13m5',n:'iPad Pro 13-inch (M5)',cat:'iPad',chip:'M5',yr:2025,price:1299,cur:true,sc:4100,mc:16500,gp:70000,critic:92,
+ pitch:'The fastest tablet made, still boxed in by its software.',
+ say:"The tandem OLED and the M5 drew superlatives; the standing criticism is unchanged — the hardware outruns what iPadOS lets you do with it.",
+ up:['Tandem OLED is stunning','Laptop-beating performance','Thinner than an iPhone'],
+ dn:['iPadOS still limits pro work','Keyboard and Pencil cost extra'],
+ spec:{display:'13-inch tandem OLED',refresh:'120 Hz',ram:'12 GB',storage:'256 GB',camera:'12 MP wide',weight:'579 g',battery:'38.99 Wh',pencil:'Apple Pencil Pro',connector:'USB-C (Thunderbolt)'}},
+
+{id:'ipp11m5',n:'iPad Pro 11-inch (M5)',cat:'iPad',chip:'M5',yr:2025,price:999,cur:true,sc:4100,mc:16000,gp:70000,critic:91,
+ pitch:'Absurd power in a 5.3 mm slab.',
+ say:"Same verdict as the 13-inch in a more portable size, with reviewers repeatedly calling the performance far more than the software asks for.",
+ up:['Extremely portable','Tandem OLED','Huge headroom for years'],
+ dn:['Software ceiling','Accessories push the price up'],
+ spec:{display:'11-inch tandem OLED',refresh:'120 Hz',ram:'12 GB',storage:'256 GB',camera:'12 MP wide',weight:'444 g',battery:'31.29 Wh',pencil:'Apple Pencil Pro',connector:'USB-C (Thunderbolt)'}},
+
+{id:'ipp13m4',n:'iPad Pro 13-inch (M4)',cat:'iPad',chip:'M4',yr:2024,price:1299,cur:false,sc:3750,mc:14500,gp:57000,critic:91,
+ pitch:'The tandem-OLED debut, now discounted.',
+ say:"Called the best display on any Apple device at launch and remarkable for its thinness; the price and the software limits were the constants in criticism.",
+ up:['Landmark tandem OLED','Remarkably thin and light','M4 was ahead of the Macs'],
+ dn:['Very expensive','iPadOS holds it back'],
+ spec:{display:'13-inch tandem OLED',refresh:'120 Hz',ram:'8 GB',storage:'256 GB',camera:'12 MP wide',weight:'579 g',battery:'38.99 Wh',pencil:'Apple Pencil Pro',connector:'USB-C (Thunderbolt)'}},
+
+{id:'ipa13m3',n:'iPad Air 13-inch (M3)',cat:'iPad',chip:'M3',yr:2025,price:799,cur:true,sc:3050,mc:11800,gp:45000,critic:85,
+ pitch:'Big-screen iPad without Pro money.',
+ say:"A sensible chip bump that reviewers welcomed while noting the display is the real gap between Air and Pro.",
+ up:['Large screen for the price','M3 handles anything an iPad does','Works with the Pencil Pro'],
+ dn:['60 Hz laminated LCD','Nearly Pro money once accessorised'],
+ spec:{display:'13-inch LCD',refresh:'60 Hz',ram:'8 GB',storage:'128 GB',camera:'12 MP wide',weight:'616 g',battery:'36.59 Wh',pencil:'Apple Pencil Pro',connector:'USB-C'}},
+
+{id:'ipa11m3',n:'iPad Air 11-inch (M3)',cat:'iPad',chip:'M3',yr:2025,price:599,cur:true,sc:3050,mc:11700,gp:45000,critic:86,
+ pitch:'The sweet spot of the iPad line.',
+ say:"Consistently described as the iPad most people should buy — Pro-adjacent speed, Air pricing, with the screen the only real compromise.",
+ up:['Excellent price-to-power ratio','Light and easy to hold','Pencil Pro support'],
+ dn:['60 Hz display','128 GB base storage'],
+ spec:{display:'11-inch LCD',refresh:'60 Hz',ram:'8 GB',storage:'128 GB',camera:'12 MP wide',weight:'460 g',battery:'28.93 Wh',pencil:'Apple Pencil Pro',connector:'USB-C'}},
+
+{id:'ipa11m2',n:'iPad Air 11-inch (M2)',cat:'iPad',chip:'M2',yr:2024,price:599,cur:false,sc:2600,mc:9700,gp:30000,critic:84,
+ pitch:'Still plenty of tablet, often on sale.',
+ say:"Praised for moving the front camera to the landscape edge and for Pencil Pro support; the 60 Hz screen kept it clearly below the Pro.",
+ up:['Landscape front camera','Good value on discount'],
+ dn:['60 Hz display','Modest gain over the M1 Air'],
+ spec:{display:'11-inch LCD',refresh:'60 Hz',ram:'8 GB',storage:'128 GB',camera:'12 MP wide',weight:'462 g',battery:'28.93 Wh',pencil:'Apple Pencil Pro',connector:'USB-C'}},
+
+{id:'ipa16',n:'iPad (A16)',cat:'iPad',chip:'A16',yr:2025,price:349,cur:true,sc:2600,mc:6400,gp:22000,critic:85,
+ pitch:'The best cheap tablet anyone makes.',
+ say:"Doubling the base storage while holding the price made this an easy recommendation for everyone who does not need Apple Intelligence.",
+ up:['128 GB base at $349','Excellent screen for the price','Long software support'],
+ dn:['No Apple Intelligence','Only the basic Pencil support'],
+ spec:{display:'11-inch LCD',refresh:'60 Hz',ram:'6 GB',storage:'128 GB',camera:'12 MP wide',weight:'477 g',battery:'28.93 Wh',pencil:'Pencil (USB-C)',connector:'USB-C'}},
+
+{id:'ipmini7',n:'iPad mini (A17 Pro)',cat:'iPad',chip:'A17 Pro',yr:2024,price:499,cur:true,sc:2900,mc:7100,gp:27000,critic:84,
+ pitch:'The one-handed iPad, finally modernised.',
+ say:"The size is the point and reviewers still love it; the display and the price relative to the base iPad were the sticking points.",
+ up:['Genuinely pocketable','Apple Intelligence capable','Pencil Pro support'],
+ dn:['60 Hz display with some jelly scroll','Costly for its size'],
+ spec:{display:'8.3-inch LCD',refresh:'60 Hz',ram:'8 GB',storage:'128 GB',camera:'12 MP wide',weight:'293 g',battery:'19.3 Wh',pencil:'Apple Pencil Pro',connector:'USB-C'}},
+
+{id:'ip10',n:'iPad (10th gen)',cat:'iPad',chip:'A14 Bionic',yr:2022,price:449,cur:false,sc:2000,mc:4900,gp:15000,critic:76,
+ pitch:'Modern shell, awkward accessory story.',
+ say:"The redesign was welcome but the first-generation Pencil support through a dongle was widely mocked, and the price was too close to the Air.",
+ up:['Modern flat-edge design','Landscape front camera'],
+ dn:['Clumsy first-gen Pencil support','Non-laminated display'],
+ spec:{display:'10.9-inch LCD',refresh:'60 Hz',ram:'4 GB',storage:'64 GB',camera:'12 MP wide',weight:'477 g',battery:'28.6 Wh',pencil:'Pencil (USB-C)',connector:'USB-C'}},
+
+/* ---------------- Mac ---------------- */
+{id:'mbp16m4max',n:'MacBook Pro 16-inch (M4 Max)',cat:'Mac',chip:'M4 Max',yr:2024,price:3499,cur:true,sc:4050,mc:26500,gp:180000,critic:93,
+ pitch:'A workstation that runs on battery.',
+ say:"Reviewers ran out of ways to say fast: video and 3D work that needed a tower now runs unplugged, with battery life still measured in days of light use.",
+ up:['Desktop-class sustained performance','Superb mini-LED display','Excellent speakers and webcam'],
+ dn:['Very expensive as configured','Heavy for a laptop'],
+ spec:{display:'16.2-inch mini-LED',refresh:'120 Hz',cpuCores:'16-core CPU',gpuCores:'40-core GPU',ram:'48 GB',maxRam:'128 GB',storage:'1 TB',ports:'3x TB5, HDMI, SDXC, MagSafe',batteryLife:'21 hr',weight:'2.15 kg'}},
+
+{id:'mbp14m4pro',n:'MacBook Pro 14-inch (M4 Pro)',cat:'Mac',chip:'M4 Pro',yr:2024,price:1999,cur:true,sc:3900,mc:22400,gp:110000,critic:92,
+ pitch:'The pro laptop most professionals actually need.',
+ say:"Treated as the sweet spot of the line: near-Max performance, all the ports, and battery life that survives a long working day.",
+ up:['Huge multi-core jump over the M4','Thunderbolt 5 and full port set','Long battery life'],
+ dn:['Base memory fills quickly for heavy work','Nano-texture display costs extra'],
+ spec:{display:'14.2-inch mini-LED',refresh:'120 Hz',cpuCores:'12-core CPU',gpuCores:'16-core GPU',ram:'24 GB',maxRam:'64 GB',storage:'512 GB',ports:'3x TB5, HDMI, SDXC, MagSafe',batteryLife:'22 hr',weight:'1.55 kg'}},
+
+{id:'mbp14m5',n:'MacBook Pro 14-inch (M5)',cat:'Mac',chip:'M5',yr:2025,price:1599,cur:true,sc:4150,mc:17500,gp:75000,critic:90,
+ pitch:'Fastest single-core Mac you can buy at this price.',
+ say:"The graphics and single-core gains impressed, but with an unchanged chassis several reviewers called it a spec bump rather than a new laptop.",
+ up:['Class-leading single-core speed','Large graphics gain over the M4','Same excellent display and ports'],
+ dn:['Design is unchanged','Multi-core still trails the M4 Pro'],
+ spec:{display:'14.2-inch mini-LED',refresh:'120 Hz',cpuCores:'10-core CPU',gpuCores:'10-core GPU',ram:'16 GB',maxRam:'32 GB',storage:'512 GB',ports:'3x TB4, HDMI, SDXC, MagSafe',batteryLife:'24 hr',weight:'1.55 kg'}},
+
+{id:'mbp14m4',n:'MacBook Pro 14-inch (M4)',cat:'Mac',chip:'M4',yr:2024,price:1599,cur:false,sc:3800,mc:14700,gp:57000,critic:89,
+ pitch:'Pro chassis, standard chip, 16 GB floor.',
+ say:"Moving the base model to 16 GB of memory and three Thunderbolt ports fixed the two longest-running complaints about the entry Pro.",
+ up:['16 GB memory as standard','Three Thunderbolt ports','Mini-LED display at the entry price'],
+ dn:['M4 Pro is the better long-term buy','Same body since 2021'],
+ spec:{display:'14.2-inch mini-LED',refresh:'120 Hz',cpuCores:'10-core CPU',gpuCores:'10-core GPU',ram:'16 GB',maxRam:'32 GB',storage:'512 GB',ports:'3x TB4, HDMI, SDXC, MagSafe',batteryLife:'24 hr',weight:'1.55 kg'}},
+
+{id:'mba15m4',n:'MacBook Air 15-inch (M4)',cat:'Mac',chip:'M4',yr:2025,price:1199,cur:true,sc:3750,mc:14600,gp:54000,critic:90,
+ pitch:'A big screen with no fan and no compromise.',
+ say:"The larger Air was praised for pairing a 15-inch display with silence and all-day battery, with the missing high refresh rate the main complaint.",
+ up:['Large screen, fanless and silent','All-day battery life','Price dropped from the M3 generation'],
+ dn:['60 Hz display','Throttles under sustained heavy load'],
+ spec:{display:'15.3-inch Liquid Retina',refresh:'60 Hz',cpuCores:'10-core CPU',gpuCores:'10-core GPU',ram:'16 GB',maxRam:'32 GB',storage:'256 GB',ports:'2x TB4, MagSafe',batteryLife:'18 hr',weight:'1.51 kg'}},
+
+{id:'mba13m4',n:'MacBook Air 13-inch (M4)',cat:'Mac',chip:'M4',yr:2025,price:999,cur:true,sc:3750,mc:14500,gp:54000,critic:93,
+ pitch:'The default laptop recommendation, and rightly so.',
+ say:"A price cut to $999 with 16 GB of memory made this the easiest recommendation in the Mac line; reviewers called it the best laptop value Apple sells.",
+ up:['$999 with 16 GB of memory','Silent, fanless, all-day battery','Fast enough for almost everyone'],
+ dn:['60 Hz display','Only two Thunderbolt ports'],
+ spec:{display:'13.6-inch Liquid Retina',refresh:'60 Hz',cpuCores:'10-core CPU',gpuCores:'8-core GPU',ram:'16 GB',maxRam:'32 GB',storage:'256 GB',ports:'2x TB4, MagSafe',batteryLife:'18 hr',weight:'1.24 kg'}},
+
+{id:'mba13m3',n:'MacBook Air 13-inch (M3)',cat:'Mac',chip:'M3',yr:2024,price:1099,cur:false,sc:3050,mc:11700,gp:47000,critic:90,
+ pitch:'Still a fine laptop, usually heavily discounted.',
+ say:"Adding dual external display support answered the biggest M2 Air criticism; otherwise a steady, well-liked refresh.",
+ up:['Dual external displays supported','Excellent battery life','Frequently discounted'],
+ dn:['8 GB base memory at launch','60 Hz display'],
+ spec:{display:'13.6-inch Liquid Retina',refresh:'60 Hz',cpuCores:'8-core CPU',gpuCores:'10-core GPU',ram:'8 GB',maxRam:'24 GB',storage:'256 GB',ports:'2x TB3, MagSafe',batteryLife:'18 hr',weight:'1.24 kg'}},
+
+{id:'mba13m2',n:'MacBook Air 13-inch (M2)',cat:'Mac',chip:'M2',yr:2022,price:1199,cur:false,sc:2600,mc:9700,gp:30000,critic:89,
+ pitch:'The redesign that defined the modern Air.',
+ say:"The flat redesign, MagSafe and better display were all welcomed; the base SSD was slower than the M1 model it replaced.",
+ up:['Redesigned flat body with MagSafe','Bigger, brighter display','Fanless and silent'],
+ dn:['Slower base SSD','8 GB memory at launch'],
+ spec:{display:'13.6-inch Liquid Retina',refresh:'60 Hz',cpuCores:'8-core CPU',gpuCores:'8-core GPU',ram:'8 GB',maxRam:'24 GB',storage:'256 GB',ports:'2x TB3, MagSafe',batteryLife:'18 hr',weight:'1.24 kg'}},
+
+{id:'mba13m1',n:'MacBook Air 13-inch (M1)',cat:'Mac',chip:'M1',yr:2020,price:999,cur:false,sc:2350,mc:8400,gp:21000,critic:92,
+ pitch:'The machine that made Apple silicon obvious.',
+ say:"Reviews at the time read as disbelief: a fanless laptop outrunning Intel MacBook Pros with twice the battery life. It defined the transition.",
+ up:['Historic performance-per-watt leap','Silent and cool','Still usable years later'],
+ dn:['Old wedge design with big bezels','Single external display support'],
+ spec:{display:'13.3-inch Retina',refresh:'60 Hz',cpuCores:'8-core CPU',gpuCores:'7-core GPU',ram:'8 GB',maxRam:'16 GB',storage:'256 GB',ports:'2x TB3',batteryLife:'18 hr',weight:'1.29 kg'}},
+
+{id:'mm4',n:'Mac mini (M4)',cat:'Mac',chip:'M4',yr:2024,price:599,cur:true,sc:3800,mc:14800,gp:57000,critic:94,
+ pitch:'The best value in the whole Apple catalogue.',
+ say:"The shrunken body, the 16 GB base and the $599 price produced some of the warmest Mac reviews in years. The rear-mounted power button was the only real gripe.",
+ up:['$599 with 16 GB of memory','Tiny footprint','Front USB-C and headphone jack'],
+ dn:['Power button underneath the chassis','No display or peripherals included'],
+ spec:{cpuCores:'10-core CPU',gpuCores:'10-core GPU',ram:'16 GB',maxRam:'32 GB',storage:'256 GB',ports:'2x TB4, 2x USB-C, HDMI, Ethernet',weight:'0.67 kg',display:'None (bring your own)'}},
+
+{id:'mm4pro',n:'Mac mini (M4 Pro)',cat:'Mac',chip:'M4 Pro',yr:2024,price:1399,cur:true,sc:3900,mc:22500,gp:110000,critic:92,
+ pitch:'Studio-class power in a lunchbox.',
+ say:"Reviewers called it the value shock of the desktop line — Mac Studio performance for well under Studio money, with Thunderbolt 5 included.",
+ up:['Enormous multi-core performance for the size','Thunderbolt 5','Far cheaper than a Mac Studio'],
+ dn:['Fan is audible under sustained load','Memory upgrades are pricey'],
+ spec:{cpuCores:'12-core CPU',gpuCores:'16-core GPU',ram:'24 GB',maxRam:'64 GB',storage:'512 GB',ports:'3x TB5, 2x USB-C, HDMI, Ethernet',weight:'0.73 kg',display:'None (bring your own)'}},
+
+{id:'ms4max',n:'Mac Studio (M4 Max)',cat:'Mac',chip:'M4 Max',yr:2025,price:1999,cur:true,sc:4050,mc:26200,gp:180000,critic:90,
+ pitch:'Quiet, serious desktop power with the ports to match.',
+ say:"Praised for near-silent operation under heavy load and a generous port array, though the M4 Pro mini undercut it hard on value.",
+ up:['Near-silent under sustained load','Front-facing SD and USB-C','Massive memory bandwidth'],
+ dn:['Mac mini M4 Pro is much cheaper','Storage upgrades are expensive'],
+ spec:{cpuCores:'14-core CPU',gpuCores:'32-core GPU',ram:'36 GB',maxRam:'128 GB',storage:'512 GB',ports:'4x TB5, 2x USB-C, HDMI, 10Gb Ethernet, SDXC',weight:'2.74 kg',display:'None (bring your own)'}},
+
+{id:'ms3ultra',n:'Mac Studio (M3 Ultra)',cat:'Mac',chip:'M3 Ultra',yr:2025,price:3999,cur:true,sc:3200,mc:27600,gp:260000,critic:88,
+ pitch:'For workloads that eat memory for breakfast.',
+ say:"The 512 GB memory ceiling made it the machine of choice for large local AI models; reviewers noted the older M3 cores mean weaker single-thread speed than an M4 Max.",
+ up:['Up to 512 GB unified memory','Unmatched graphics throughput','Runs large local models'],
+ dn:['Slower single-core than the M4 Max','Priced for a narrow audience'],
+ spec:{cpuCores:'28-core CPU',gpuCores:'60-core GPU',ram:'96 GB',maxRam:'512 GB',storage:'1 TB',ports:'6x TB5, 2x USB-A, HDMI, 10Gb Ethernet, SDXC',weight:'3.63 kg',display:'None (bring your own)'}},
+
+{id:'imac24m4',n:'iMac 24-inch (M4)',cat:'Mac',chip:'M4',yr:2024,price:1299,cur:true,sc:3800,mc:14700,gp:57000,critic:87,
+ pitch:'The family desktop, in colours.',
+ say:"The nano-texture display option and a much better 12 MP camera were the highlights; the fixed stand and 24-inch ceiling remain the limits.",
+ up:['Gorgeous 4.5K display','Centre Stage 12 MP camera','Nano-texture glass option'],
+ dn:['No height adjustment on the stand','One screen size only'],
+ spec:{display:'23.5-inch 4.5K Retina',refresh:'60 Hz',cpuCores:'10-core CPU',gpuCores:'10-core GPU',ram:'16 GB',maxRam:'32 GB',storage:'256 GB',ports:'2x TB4, 2x USB-C',weight:'4.44 kg'}},
+
+{id:'macpro',n:'Mac Pro (M2 Ultra)',cat:'Mac',chip:'M2 Ultra',yr:2023,price:6999,cur:true,sc:2800,mc:21500,gp:220000,critic:62,
+ pitch:'Slots you mostly cannot use, at a price you certainly can feel.',
+ say:"The harshest reviews in the modern Mac line: identical silicon to a Mac Studio costing thousands less, with PCIe slots that cannot take graphics cards.",
+ up:['PCIe expansion for audio and capture cards','Enormous port selection'],
+ dn:['Same performance as a far cheaper Mac Studio','No GPU card support','Memory is not user-upgradable'],
+ spec:{cpuCores:'24-core CPU',gpuCores:'60-core GPU',ram:'64 GB',maxRam:'192 GB',storage:'1 TB',ports:'8x TB4, 3x USB-A, 2x HDMI, 2x 10Gb Ethernet',weight:'16.86 kg',display:'None (bring your own)'}},
+
+/* ---------------- Vision ---------------- */
+{id:'avpm5',n:'Apple Vision Pro (M5)',cat:'Vision',chip:'M5',yr:2025,price:3499,cur:true,sc:4150,mc:17400,gp:75000,critic:78,
+ pitch:'The best headset made, still looking for its reason.',
+ say:"The M5 refresh raised the refresh rate and rendered more pixels, and the new strap helped comfort — but reviewers repeated that the price and the thin app library still define it.",
+ up:['Unmatched display clarity','Faster, higher refresh rate','More comfortable Dual Knit band'],
+ dn:['Still $3,499','Heavy for long sessions','App library remains thin'],
+ spec:{display:'Dual micro-OLED, 23 MP total',refresh:'up to 120 Hz',chipExtra:'R1 sensor coprocessor',ram:'16 GB',storage:'256 GB',weight:'750 g',batteryLife:'2.5 hr'}},
+
+{id:'avpm2',n:'Apple Vision Pro (M2)',cat:'Vision',chip:'M2',yr:2024,price:3499,cur:false,sc:2600,mc:9700,gp:30000,critic:72,
+ pitch:'A stunning first draft nobody needed.',
+ say:"Reviewers agreed the passthrough and eye tracking were a generational leap in hardware, and equally agreed they could not tell most people to buy one.",
+ up:['Best-in-class passthrough','Eye and hand tracking that works','Extraordinary display'],
+ dn:['Heavy and tiring to wear','Very short battery life','Almost no must-have software'],
+ spec:{display:'Dual micro-OLED, 23 MP total',refresh:'up to 100 Hz',chipExtra:'R1 sensor coprocessor',ram:'16 GB',storage:'256 GB',weight:'650 g',batteryLife:'2 hr'}},
+
+/* ---------------- Apple Watch ---------------- */
+{id:'awu3',n:'Apple Watch Ultra 3',cat:'Watch',chip:'S10 SiP',yr:2025,price:799,cur:true,sc:null,mc:null,gp:null,critic:88,
+ pitch:'The endurance watch, now with satellite messaging.',
+ say:"Satellite messaging and a genuinely longer battery answered the two biggest Ultra 2 complaints; reviewers still find it too large for smaller wrists.",
+ up:['Satellite messaging off-grid','Around 42 hours of battery','Brightest, largest display'],
+ dn:['Large and heavy on a small wrist','Costs twice a Series 11'],
+ spec:{sizes:'49 mm',nits:'3,000 nits',batteryLife:'42 hr',water:'100 m, EN13319 dive',weight:'61.8 g',display:'LTPO3 OLED, always-on'}},
+
+{id:'aw11',n:'Apple Watch Series 11',cat:'Watch',chip:'S10 SiP',yr:2025,price:399,cur:true,sc:null,mc:null,gp:null,critic:87,
+ pitch:'The mainstream smartwatch, refined again.',
+ say:"Longer battery life and hypertension notifications were the meaningful additions; the year-over-year change was otherwise called modest.",
+ up:['24-hour battery life','Hypertension and sleep score features','Tougher scratch-resistant glass'],
+ dn:['Small upgrade from the Series 10','Still charges daily'],
+ spec:{sizes:'42 / 46 mm',nits:'2,000 nits',batteryLife:'24 hr',water:'50 m',weight:'32.1 g',display:'LTPO3 OLED, always-on'}},
+
+{id:'awse3',n:'Apple Watch SE (3rd gen)',cat:'Watch',chip:'S10 SiP',yr:2025,price:249,cur:true,sc:null,mc:null,gp:null,critic:90,
+ pitch:'Nearly the whole watch for well under half the money.',
+ say:"Gaining the always-on display and fast charging at $249 made this the value standout of the Watch line in almost every review.",
+ up:['Always-on display at $249','Same S10 chip as the Series 11','Fast charging'],
+ dn:['No ECG or blood oxygen','Dimmer screen than the Series 11'],
+ spec:{sizes:'40 / 44 mm',nits:'1,000 nits',batteryLife:'18 hr',water:'50 m',weight:'26.4 g',display:'LTPO OLED, always-on'}},
+
+{id:'aw10',n:'Apple Watch Series 10',cat:'Watch',chip:'S10 SiP',yr:2024,price:399,cur:false,sc:null,mc:null,gp:null,critic:86,
+ pitch:'The thin one, if you find it cheap.',
+ say:"The thinner case and wide-angle OLED were well received, though sleep apnoea detection was the only substantial new health feature.",
+ up:['Thinner and lighter case','Wide-angle OLED is easier to read','Faster charging'],
+ dn:['Battery life unchanged','Superseded by the Series 11'],
+ spec:{sizes:'42 / 46 mm',nits:'2,000 nits',batteryLife:'18 hr',water:'50 m',weight:'30 g',display:'LTPO3 OLED, always-on'}},
+
+{id:'awu2',n:'Apple Watch Ultra 2',cat:'Watch',chip:'S9 SiP',yr:2023,price:799,cur:false,sc:null,mc:null,gp:null,critic:87,
+ pitch:'Ultra durability before satellites arrived.',
+ say:"The 3,000-nit display and multi-day battery earned strong reviews; without satellite messaging it now reads as the older sibling.",
+ up:['Multi-day battery in practice','Very bright display','Rugged titanium build'],
+ dn:['No satellite messaging','Bulky'],
+ spec:{sizes:'49 mm',nits:'3,000 nits',batteryLife:'36 hr',water:'100 m, EN13319 dive',weight:'61.4 g',display:'LTPO2 OLED, always-on'}},
+
+/* ---------------- Audio, home and TV ---------------- */
+{id:'app3',n:'AirPods Pro 3',cat:'Audio',chip:'H2',yr:2025,price:249,cur:true,sc:null,mc:null,gp:null,critic:92,
+ pitch:'The earbuds to beat, with a heart-rate sensor thrown in.',
+ say:"Reviewers rated the noise cancelling the best in the category and singled out the improved fit; Live Translation and heart-rate sensing were treated as welcome extras rather than reasons to buy.",
+ up:['Category-leading noise cancelling','Better fit and seal','Heart-rate sensing during workouts'],
+ dn:['Best features need an iPhone','Battery still degrades over years'],
+ spec:{type:'In-ear, active noise cancelling',anc:'Yes, adaptive',batteryLife:'8 hr (ANC on)',connector:'USB-C case',weight:'5.6 g per bud',display:'None'}},
+
+{id:'app2',n:'AirPods Pro (2nd gen)',cat:'Audio',chip:'H2',yr:2022,price:249,cur:false,sc:null,mc:null,gp:null,critic:90,
+ pitch:'The pair that made noise cancelling normal.',
+ say:"A large jump in noise cancelling over the original, later boosted by free hearing-aid and conversation-awareness features that reviewers considered remarkable for a firmware update.",
+ up:['Huge ANC improvement in its day','Free hearing-aid feature added later','Excellent case with speaker'],
+ dn:['Superseded by the third generation','Fit does not suit every ear'],
+ spec:{type:'In-ear, active noise cancelling',anc:'Yes, adaptive',batteryLife:'6 hr (ANC on)',connector:'USB-C case',weight:'5.3 g per bud',display:'None'}},
+
+{id:'ap4anc',n:'AirPods 4 (with ANC)',cat:'Audio',chip:'H2',yr:2024,price:179,cur:true,sc:null,mc:null,gp:null,critic:84,
+ pitch:'Noise cancelling without stuffing anything in your ears.',
+ say:"Called an impressive technical feat — real noise cancelling from an open design — while reviewers noted the physics cap how much sound it can block.",
+ up:['ANC in an open-fit design','Comfortable for long wear','Much better sound than AirPods 3'],
+ dn:['ANC cannot match sealed buds','No swappable tips for fit'],
+ spec:{type:'Open-fit',anc:'Yes, limited by design',batteryLife:'4 hr (ANC on)',connector:'USB-C case',weight:'4.3 g per bud',display:'None'}},
+
+{id:'apmax',n:'AirPods Max (USB-C)',cat:'Audio',chip:'H1',yr:2024,price:549,cur:true,sc:null,mc:null,gp:null,critic:70,
+ pitch:'Beautiful, heavy, and running four-year-old silicon.',
+ say:"The 2024 update changed the port and the colours and little else; reviewers praised the build and sound while calling the price indefensible against newer rivals.",
+ up:['Superb build and materials','Excellent noise cancelling','Very good sound quality'],
+ dn:['Still the old H1 chip','Heavy at 385 g','No proper off switch'],
+ spec:{type:'Over-ear',anc:'Yes',batteryLife:'20 hr',connector:'USB-C',weight:'385 g',display:'None'}},
+
+{id:'hp2',n:'HomePod (2nd gen)',cat:'Home',chip:'S7',yr:2023,price:299,cur:true,sc:null,mc:null,gp:null,critic:80,
+ pitch:'Great sound tied firmly to Apple devices.',
+ say:"The sound quality for the size drew consistent praise; Siri and the Apple-only ecosystem lock-in drew consistent complaints.",
+ up:['Excellent room-filling sound','Automatic room correction','Doubles as a Thread hub'],
+ dn:['Siri lags rival assistants','AirPlay only, no Bluetooth audio'],
+ spec:{type:'Smart speaker',anc:'n/a',connector:'Detachable power cable',weight:'2.3 kg',display:'None'}},
+
+{id:'hpmini',n:'HomePod mini',cat:'Home',chip:'S5',yr:2020,price:99,cur:true,sc:null,mc:null,gp:null,critic:82,
+ pitch:'Cheap, cheerful and surprisingly loud.',
+ say:"Reviewers were repeatedly surprised by how much sound comes out of it for $99, with the obvious limits on bass and the same Siri caveats.",
+ up:['Remarkable volume for the size','Cheap enough to buy in pairs','Thread and Matter support'],
+ dn:['Limited bass','Siri remains the weak link'],
+ spec:{type:'Smart speaker',anc:'n/a',connector:'Attached USB-C cable',weight:'345 g',display:'None'}},
+
+{id:'atv4k',n:'Apple TV 4K (3rd gen)',cat:'Home',chip:'A15 Bionic',yr:2022,price:129,cur:true,sc:null,mc:null,gp:null,critic:88,
+ pitch:'The streaming box for people who hate streaming boxes.',
+ say:"A price cut plus the fastest interface of any streamer made this an easy recommendation; the remote and the lack of an included Ethernet port on the base model were the quibbles.",
+ up:['Fastest, cleanest streaming interface','No ads in the home screen','Doubles as a smart-home hub'],
+ dn:['Costs far more than a streaming stick','Ethernet only on the larger model'],
+ spec:{type:'Streaming box',ram:'4 GB',storage:'64 GB',connector:'HDMI 2.1, Wi-Fi 6',weight:'208 g',display:'None (up to 4K120 output)'}}
+];
+
+/* =========================================================================
+   CONFIG
+   ========================================================================= */
+const CAT_ORDER = ['iPhone','iPad','Mac','Vision','Watch','Audio','Home'];
+const CAT_LABEL = {iPhone:'iPhone',iPad:'iPad',Mac:'Mac',Vision:'Vision Pro',Watch:'Apple Watch',Audio:'AirPods',Home:'Home & TV'};
+
+const ROWS = {
+  iPhone:[['display','Display'],['refresh','Refresh rate','hi'],['chip','Chip'],['ram','Memory','hi'],
+          ['storage','Base storage','hi'],['camera','Rear cameras'],['battery','Battery','hi'],
+          ['charge','Wired charging','hi'],['weight','Weight','lo'],['connector','Connector']],
+  iPad:[['display','Display'],['refresh','Refresh rate','hi'],['chip','Chip'],['ram','Memory','hi'],
+        ['storage','Base storage','hi'],['camera','Rear camera'],['battery','Battery','hi'],
+        ['pencil','Pencil support'],['weight','Weight','lo'],['connector','Connector']],
+  Mac:[['display','Display'],['chip','Chip'],['cpuCores','CPU'],['gpuCores','GPU'],
+       ['ram','Memory as priced','hi'],['maxRam','Maximum memory','hi'],['storage','Base storage','hi'],
+       ['ports','Ports'],['batteryLife','Battery life','hi'],['weight','Weight','lo']],
+  Vision:[['display','Displays'],['refresh','Refresh rate','hi'],['chip','Chip'],['chipExtra','Co-processor'],
+          ['ram','Memory','hi'],['storage','Storage','hi'],['batteryLife','Battery life','hi'],['weight','Weight','lo']],
+  Watch:[['display','Display'],['sizes','Case sizes'],['chip','Chip'],['nits','Peak brightness','hi'],
+         ['batteryLife','Battery life','hi'],['water','Water rating'],['weight','Weight','lo']],
+  Audio:[['type','Type'],['chip','Chip'],['anc','Noise cancelling'],['batteryLife','Battery life','hi'],
+         ['connector','Charging'],['weight','Weight','lo']],
+  Home:[['type','Type'],['chip','Chip'],['ram','Memory','hi'],['storage','Storage','hi'],
+        ['connector','Connectivity'],['weight','Weight','lo']]
+};
+const ROWS_MIXED = [['chip','Chip'],['display','Display'],['ram','Memory','hi'],['storage','Storage','hi'],
+                    ['batteryLife','Battery life','hi'],['weight','Weight','lo']];
+
+const POWER = [
+  {k:'sc',label:'CPU single-core',unit:'pts',
+   tip:'Geekbench 6 single-core. One core flat out — this is what you feel opening apps, loading pages and scrolling.'},
+  {k:'mc',label:'CPU multi-core',unit:'pts',
+   tip:'Geekbench 6 multi-core. Every core at once — exports, compiles, big batch jobs.'},
+  {k:'gp',label:'Graphics',unit:'pts',
+   tip:'Geekbench 6 Metal. GPU throughput for games, 3D and video effects.'}
+];
+
+/* =========================================================================
+   HELPERS
+   ========================================================================= */
+const $ = (s,r) => (r||document).querySelector(s);
+const el = (t,c,h) => {const n=document.createElement(t); if(c)n.className=c; if(h!=null)n.innerHTML=h; return n;};
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt = n => n==null ? '—' : n.toLocaleString('en-US');
+const money = n => '$' + n.toLocaleString('en-US');
+
+function num(v){
+  if(v==null) return null;
+  const s = String(v).replace(/,/g,'');
+  const m = s.match(/-?\d+(\.\d+)?/);
+  if(!m) return null;
+  let x = parseFloat(m[0]);
+  if(/\bTB\b/i.test(s)) x *= 1024;
+  if(/\bkg\b/.test(s)) x *= 1000;
+  return x;
+}
+const specOf = d => Object.assign({}, d.spec || {}, {chip:d.chip});
+
+/* Scores are normalised WITHIN a category: an iPhone is rated against iPhones.
+   Rating a phone against a Mac Studio would leave every phone looking mediocre. */
+const ppd = d => d.mc==null ? null : d.mc/(d.price/100);   // multi-core points per $100
+const cpd = d => d.critic/d.price;                          // critic points per dollar
+/* Vision Pro is scored against the Macs it shares silicon with, and the TV and
+   speakers against the other accessories — a class of two or three would other-
+   wise let a device be top of its own tiny pool by default. */
+const SCORE_CLASS = {Vision:'Mac', Home:'Audio'};
+const cls = d => SCORE_CLASS[d.cat] || d.cat;
+const CATMAX = {};
+DEVICES.forEach(d=>{
+  const k = cls(d);
+  if(CATMAX[k]) return;
+  const g = DEVICES.filter(x=>cls(x)===k);
+  const top = f => Math.max(...g.map(x=>f(x)||0)) || 1;
+  CATMAX[k] = {sc:top(x=>x.sc), mc:top(x=>x.mc), gp:top(x=>x.gp), ppd:top(ppd), cpd:top(cpd)};
+});
+const perfIndex = d => d.mc==null ? null :
+  100*(0.35*(d.sc/CATMAX[cls(d)].sc) + 0.5*(d.mc/CATMAX[cls(d)].mc) + 0.15*(d.gp/CATMAX[cls(d)].gp));
+const valueIndex = d => ppd(d)==null ? null : 100*(ppd(d)/CATMAX[cls(d)].ppd);
+
+function overall(d){
+  const p = perfIndex(d), c = d.critic;
+  if(p==null) return Math.round(c*0.75 + 100*(cpd(d)/CATMAX[cls(d)].cpd)*0.25);
+  return Math.round(p*0.35 + c*0.40 + valueIndex(d)*0.25);
+}
+
+/* =========================================================================
+   STATE
+   ========================================================================= */
+const byId = id => DEVICES.find(d=>d.id===id);
+let A = byId('ip17p'), B = byId('ip16p');
+try{
+  const saved = JSON.parse(localStorage.getItem('apple-h2h')||'null');
+  if(saved && byId(saved.a) && byId(saved.b)){ A = byId(saved.a); B = byId(saved.b); }
+}catch(e){}
+function persist(){ try{ localStorage.setItem('apple-h2h', JSON.stringify({a:A.id,b:B.id})); }catch(e){} }
+
+/* =========================================================================
+   PICKERS
+   ========================================================================= */
+function buildPicker(side){
+  const wrap = $('.picker[data-side="'+side+'"]');
+  const trig = $('.trigger', wrap), panel = $('.panel', wrap);
+  const input = $('input', panel), list = $('.list', panel);
+  let active = -1, items = [];
+
+  input.placeholder = 'Search ' + DEVICES.length + ' devices…';
+
+  function draw(q){
+    list.innerHTML = ''; items = []; active = -1;
+    const term = q.trim().toLowerCase();
+    const cur = side==='a' ? A : B;
+    let any = false;
+    CAT_ORDER.forEach(cat=>{
+      const hits = DEVICES.filter(d=>d.cat===cat && (
+        !term || (d.n+' '+d.chip+' '+d.cat+' '+d.yr).toLowerCase().includes(term)));
+      if(!hits.length) return;
+      any = true;
+      list.appendChild(el('li','grp',esc(CAT_LABEL[cat])));
+      hits.forEach(d=>{
+        const li = el('li','opt',
+          '<span>'+esc(d.n)+'</span><span class="o-meta">'+esc(d.chip)+' · '+money(d.price)+'</span>');
+        li.setAttribute('role','option');
+        li.setAttribute('aria-selected', d.id===cur.id ? 'true':'false');
+        li.dataset.id = d.id;
+        li.addEventListener('click',()=>choose(d));
+        list.appendChild(li);
+        items.push(li);
+      });
+    });
+    if(!any) list.appendChild(el('li','empty','No device matches that.'));
+  }
+  function choose(d){
+    if(side==='a') A = d; else B = d;
+    close(); persist(); render();
+  }
+  function open(){
+    document.querySelectorAll('.panel.open').forEach(p=>{
+      p.classList.remove('open');
+      p.parentElement.querySelector('.trigger').setAttribute('aria-expanded','false');
+    });
+    panel.classList.add('open'); trig.setAttribute('aria-expanded','true');
+    input.value=''; draw(''); input.focus();
+  }
+  function close(){ panel.classList.remove('open'); trig.setAttribute('aria-expanded','false'); }
+  function move(step){
+    if(!items.length) return;
+    if(active>=0) items[active].classList.remove('active');
+    active = (active + step + items.length) % items.length;
+    items[active].classList.add('active');
+    items[active].scrollIntoView({block:'nearest'});
+  }
+
+  trig.addEventListener('click', e=>{ e.stopPropagation(); panel.classList.contains('open') ? close() : open(); });
+  input.addEventListener('input', ()=>draw(input.value));
+  panel.addEventListener('click', e=>e.stopPropagation());
+  input.addEventListener('keydown', e=>{
+    if(e.key==='ArrowDown'){ e.preventDefault(); move(1); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); move(-1); }
+    else if(e.key==='Enter'){ e.preventDefault(); const t = active>=0 ? items[active] : items[0]; if(t) choose(byId(t.dataset.id)); }
+    else if(e.key==='Escape'){ close(); trig.focus(); }
+  });
+  return {close, refresh(){ const d = side==='a'?A:B;
+    $('.t-name',trig).textContent = d.n;
+    $('.t-sub',trig).textContent = d.chip + ' · ' + d.yr + ' · ' + money(d.price);
+  }};
+}
+
+/* =========================================================================
+   RENDER PIECES
+   ========================================================================= */
+function barRow(label, tip, aVal, bVal, fmtVal, better){
+  const row = el('div','row axis');
+  const max = Math.max(aVal||0, bVal||0) || 1;
+  const aWin = better==='lo' ? (aVal<bVal) : (aVal>bVal);
+  const tie = aVal===bVal;
+
+  [['a',aVal,aWin&&!tie],['b',bVal,!aWin&&!tie]].forEach(([side,val,win],i)=>{
+    const cell = el('div','bar-side '+side);
+    cell.classList.add('hitbox');
+    const v = el('span','bar-val', val==null ? '—' : fmtVal(val));
+    const track = el('div','bar-track');
+    const bar = el('div','bar' + (win?'':' muted'));
+    bar.style.width = val==null ? '0%' : Math.max(1.5,(val/max)*100)+'%';
+    track.appendChild(bar);
+    cell.appendChild(v); cell.appendChild(track);
+    if(tip) cell.dataset.tip = tip;
+    if(tip) cell.dataset.tipv = (side==='a'?A.n:B.n) + ' · ' + (val==null?'not benchmarked':fmtVal(val));
+    if(i===0) row.appendChild(cell); else row.appendChild(cell);
+  });
+  const mid = el('div','axis-label');
+  if(tip) mid.title = tip;
+  mid.appendChild(el('div',null,esc(label)));
+  if(aVal!=null && bVal!=null && !tie){
+    const hi = Math.max(aVal,bVal), lo = Math.min(aVal,bVal);
+    const pct = better==='lo' ? Math.round(((hi-lo)/hi)*100) : Math.round(((hi-lo)/lo)*100);
+    const txt = better==='lo' ? pct+'% less' : '+'+pct+'%';
+    const d = el('div','delta', aWin ? '◀ '+txt : txt+' ▶');
+    d.style.marginTop='5px'; d.style.display='inline-block';
+    mid.appendChild(d);
+  }
+  row.insertBefore(mid, row.children[1]);
+  return row;
+}
+
+function gauge(score, side){
+  const R=42, CX=60, CY=58, LEN=Math.PI*2*R*0.75;
+  const p=(a)=>[CX+R*Math.cos(a*Math.PI/180), CY-R*Math.sin(a*Math.PI/180)];
+  const s=p(225), e=p(-45);
+  return '<svg class="gauge" viewBox="0 0 120 92" role="img" aria-label="Critic score '+score+' out of 100">'+
+    '<path class="track" d="M'+s[0].toFixed(1)+' '+s[1].toFixed(1)+' A'+R+' '+R+' 0 1 1 '+e[0].toFixed(1)+' '+e[1].toFixed(1)+'"/>'+
+    '<path class="val '+side+'" d="M'+s[0].toFixed(1)+' '+s[1].toFixed(1)+' A'+R+' '+R+' 0 1 1 '+e[0].toFixed(1)+' '+e[1].toFixed(1)+'" '+
+    'stroke-dasharray="'+LEN.toFixed(1)+'" stroke-dashoffset="'+(LEN*(1-score/100)).toFixed(1)+'"/>'+
+    '<text class="gauge-num" x="60" y="62" text-anchor="middle">'+score+'</text>'+
+    '<text class="gauge-den" x="60" y="78" text-anchor="middle">OUT OF 100</text></svg>';
+}
+
+function legend(){
+  return '<div class="legend">'+
+    '<span><i class="sa"></i>'+esc(A.n)+'</span>'+
+    '<span><i class="sb"></i>'+esc(B.n)+'</span></div>';
+}
+
+function card(d, side){
+  const c = el('div','card '+side);
+  c.innerHTML =
+    '<div class="side-tag">'+(side==='a'?'Left':'Right')+' · '+esc(CAT_LABEL[d.cat])+'</div>'+
+    '<h3>'+esc(d.n)+'</h3>'+
+    '<div class="pitch">'+esc(d.pitch)+'</div>'+
+    '<div class="price"><small>Launch price</small>'+money(d.price)+'</div>'+
+    '<div class="chip-row">'+
+      '<span class="chip">'+esc(d.chip)+'</span>'+
+      '<span class="chip">'+d.yr+'</span>'+
+      '<span class="chip'+(d.cur?' live':'')+'">'+(d.cur?'On sale':'Discontinued')+'</span>'+
+      '<span class="chip">Overall '+overall(d)+' in class</span>'+
+    '</div>';
+  return c;
+}
+
+function renderHero(){
+  const host = $('#hero'); host.innerHTML='';
+  host.appendChild(card(A,'a'));
+
+  const oa=overall(A), ob=overall(B), gap=Math.abs(oa-ob);
+  const win = oa===ob ? null : (oa>ob ? A : B);
+  const vs = el('div','vs');
+  vs.innerHTML =
+    '<div class="vs-mark">VS</div>'+
+    '<div class="vs-ring"><div><div class="n">'+(win?'+'+gap:'0')+'</div>'+
+    '<div class="u">pt gap</div></div></div>'+
+    '<div class="vs-winner" style="color:'+(win? (win===A?'var(--a-text)':'var(--b-text)') :'var(--ink-3)')+'">'+
+      (win ? esc(win.n)+' leads' : 'Dead even')+'</div>';
+  host.appendChild(vs);
+  host.appendChild(card(B,'b'));
+}
+
+function notice(text){
+  return '<div class="notice"><span class="mk">!</span><span>'+text+'</span></div>';
+}
+
+function renderPower(){
+  const host = $('#power-rows'); host.innerHTML='';
+  const old = $('#power .notice'); if(old) old.remove();
+
+  if(A.mc==null || B.mc==null){
+    const who = A.mc==null && B.mc==null ? 'Neither device publishes' :
+                (A.mc==null ? A.n : B.n) + ' does not publish';
+    host.insertAdjacentHTML('beforebegin', notice(
+      esc(who) + ' comparable CPU benchmarks — wearables, audio and home devices are not measured on the Geekbench scale. '+
+      'Compare them on price, features and reviews below instead.'));
+    if(A.mc==null && B.mc==null) return;
+  }
+  host.innerHTML = legend();
+  POWER.forEach(m=>{
+    host.appendChild(barRow(m.label, m.tip, A[m.k], B[m.k], v=>fmt(v)+' pts', 'hi'));
+  });
+}
+
+function renderValue(){
+  const host = $('#value-rows'); host.innerHTML = legend();
+  host.appendChild(barRow('Launch price',
+    'US launch price for the base configuration. The shorter bar is the cheaper device.',
+    A.price, B.price, v=>money(v), 'lo'));
+
+  if(A.mc!=null && B.mc!=null){
+    host.appendChild(barRow('Multi-core points per $100',
+      'Multi-core score divided by price. How much raw compute each dollar buys.',
+      Math.round(ppd(A)), Math.round(ppd(B)), v=>fmt(v)+' pts', 'hi'));
+  }
+  host.appendChild(barRow('Critic score','Normalised read of major reviews at launch, out of 100.',
+    A.critic, B.critic, v=>v+' / 100', 'hi'));
+  host.appendChild(barRow('Overall, in its class',
+    'Performance 35%, critical reception 40%, value 25% — each measured against the best in the same category, so an iPhone is rated against iPhones.',
+    overall(A), overall(B), v=>v+' / 100', 'hi'));
+}
+
+function renderSpecs(){
+  const host = $('#spec-rows'); host.innerHTML='';
+  const old = $('#specs .notice'); if(old) old.remove();
+  const mixed = A.cat!==B.cat;
+  if(mixed){
+    host.insertAdjacentHTML('beforebegin', notice(
+      'Comparing across classes — '+esc(CAT_LABEL[A.cat])+' against '+esc(CAT_LABEL[B.cat])+
+      ' — so only the specs that mean the same thing on both are shown.'));
+  }
+  const rows = mixed ? ROWS_MIXED : ROWS[A.cat];
+  const sa = specOf(A), sb = specOf(B);
+
+  rows.forEach(([key,label,better])=>{
+    const va = sa[key], vb = sb[key];
+    if(va==null && vb==null) return;
+    const na = num(va), nb = num(vb);
+    let aw=false, bw=false;
+    if(better && na!=null && nb!=null && na!==nb){
+      aw = better==='hi' ? na>nb : na<nb; bw = !aw;
+    }
+    const row = el('div','spec-row axis');
+    row.innerHTML =
+      '<div class="spec-v a-v'+(aw?' win':'')+'"><span class="dot'+(aw?'':' hidden')+'"></span>'+esc(va==null?'—':va)+'</div>'+
+      '<div class="axis-label">'+esc(label)+'</div>'+
+      '<div class="spec-v b-v'+(bw?' win':'')+'"><span class="dot'+(bw?'':' hidden')+'"></span>'+esc(vb==null?'—':vb)+'</div>';
+    host.appendChild(row);
+  });
+}
+
+function criticCol(d, side){
+  const c = el('div','crit-col '+side);
+  c.innerHTML =
+    '<div class="crit-name">'+esc(d.n)+'</div>'+
+    '<div class="gauge-wrap">'+gauge(d.critic, side)+'</div>'+
+    '<p class="verdict-txt">'+esc(d.say)+'</p>'+
+    '<ul class="pc">'+
+      d.up.map(x=>'<li class="up"><span class="m">+</span><span>'+esc(x)+'</span></li>').join('')+
+      d.dn.map(x=>'<li class="down"><span class="m">−</span><span>'+esc(x)+'</span></li>').join('')+
+    '</ul>';
+  return c;
+}
+
+function renderCritics(){
+  const host = $('#crit-cols'); host.innerHTML='';
+  host.appendChild(criticCol(A,'a'));
+  const mid = el('div','axis-label','Critical<br>reception');
+  host.appendChild(mid);
+  host.appendChild(criticCol(B,'b'));
+}
+
+function reasons(d,o){
+  const r=[];
+  if(d.mc!=null && o.mc!=null){
+    if(d.mc > o.mc*1.06) r.push('you need the extra multi-core headroom for heavy work');
+    if(d.sc > o.sc*1.04) r.push('you want the snappier everyday response');
+    if(d.gp > o.gp*1.15) r.push('games or graphics work matter to you');
+  }
+  if(d.price < o.price) r.push('you would rather keep the '+money(o.price-d.price)+' difference');
+  if(d.critic > o.critic) r.push('you want the device reviewers liked more');
+  if(ppd(d)!=null && ppd(o)!=null && ppd(d) > ppd(o)*1.05) r.push('performance per dollar is what you optimise for');
+  if(d.cur && !o.cur) r.push('you want something Apple still sells and supports for longer');
+  if(!r.length) r.push('the differences elsewhere do not matter much to you');
+  return r.slice(0,3);
+}
+
+function renderVerdict(){
+  const host = $('#verdict');
+  const oa=overall(A), ob=overall(B);
+  const win = oa===ob ? null : (oa>ob?A:B), lose = win===A?B:A;
+  const gap = Math.abs(oa-ob);
+  const close = gap<=3;
+
+  const dimWin = (get,better) => {
+    const va=get(A), vb=get(B);
+    if(va==null||vb==null||va===vb) return null;
+    return (better==='lo' ? va<vb : va>vb) ? A : B;
+  };
+  const wPow = dimWin(perfIndex,'hi'), wVal = dimWin(valueIndex,'hi'),
+        wCri = dimWin(d=>d.critic,'hi'), wPri = dimWin(d=>d.price,'lo');
+  const nameOf = d => d ? d.n : 'Neither';
+
+  const mixed = A.cat!==B.cat;
+  let head;
+  if(!win){
+    head = 'These two land on <b>exactly the same overall score</b>. Pick on the specifics below.';
+  }else{
+    head = '<b>'+esc(win.n)+'</b> takes it'+(close?', but only just':'')+
+      ' — '+gap+' point'+(gap===1?'':'s')+' ahead of the '+esc(lose.n)+'.';
+  }
+  host.innerHTML =
+    '<div class="block-head"><h2>The verdict</h2></div>'+
+    '<p class="headline">'+head+'</p>'+
+    (mixed ? notice('Each overall score rates a device against others of its own kind, so the '+
+      esc(CAT_LABEL[A.cat])+' score and the '+esc(CAT_LABEL[B.cat])+
+      ' score are not the same currency. Read the dimensions below rather than the gap.') : '')+
+    '<div class="calls">'+
+      '<div class="call a"><div class="who">Buy the '+esc(A.n)+' if…</div><p>'+esc(reasons(A,B).join(', and '))+'.</p></div>'+
+      '<div class="call b"><div class="who">Buy the '+esc(B.n)+' if…</div><p>'+esc(reasons(B,A).join(', and '))+'.</p></div>'+
+    '</div>'+
+    '<div class="scoreline">'+
+      '<div class="sl"><span class="k">Faster</span><span class="v">'+esc(nameOf(wPow))+'</span></div>'+
+      '<div class="sl"><span class="k">Cheaper</span><span class="v">'+esc(nameOf(wPri))+'</span></div>'+
+      '<div class="sl"><span class="k">Better value</span><span class="v">'+esc(nameOf(wVal))+'</span></div>'+
+      '<div class="sl"><span class="k">Better reviewed</span><span class="v">'+esc(nameOf(wCri))+'</span></div>'+
+      '<div class="sl"><span class="k">Overall</span><span class="v">'+esc(nameOf(win))+'</span></div>'+
+    '</div>';
+}
+
+/* =========================================================================
+   TOOLTIP
+   ========================================================================= */
+const tip = $('#tip');
+function showTip(t, v, x, y){
+  tip.innerHTML = (v?'<span class="tv">'+esc(v)+'</span><br>':'') + esc(t);
+  tip.classList.add('on');
+  const r = tip.getBoundingClientRect();
+  let left = x - r.width/2, top = y - r.height - 12;
+  left = Math.max(8, Math.min(left, innerWidth - r.width - 8));
+  if(top < 8) top = y + 18;
+  tip.style.left = left+'px'; tip.style.top = top+'px';
+}
+document.addEventListener('mousemove', e=>{
+  const t = e.target.closest('[data-tip]');
+  if(t) showTip(t.dataset.tip, t.dataset.tipv, e.clientX, e.clientY);
+  else tip.classList.remove('on');
+});
+document.addEventListener('mouseleave', ()=>tip.classList.remove('on'));
+
+/* =========================================================================
+   BOOT
+   ========================================================================= */
+const pickA = buildPicker('a'), pickB = buildPicker('b');
+document.addEventListener('click', ()=>{ pickA.close(); pickB.close(); });
+
+$('#swap').addEventListener('click', ()=>{
+  const t=A; A=B; B=t; persist();
+  const btn=$('#swap'); btn.classList.add('spin');
+  setTimeout(()=>btn.classList.remove('spin'),360);
+  render();
+});
+$('#shuffle').addEventListener('click', ()=>{
+  const pick = () => DEVICES[Math.floor(Math.random()*DEVICES.length)];
+  A = pick(); do{ B = pick(); } while(B.id===A.id);
+  persist(); render();
+});
+$('#count-note').textContent = DEVICES.length + ' devices · figures current to early 2026';
+
+function render(){
+  pickA.refresh(); pickB.refresh();
+  renderHero(); renderPower(); renderValue(); renderSpecs(); renderCritics(); renderVerdict();
+}
+render();
+</script>

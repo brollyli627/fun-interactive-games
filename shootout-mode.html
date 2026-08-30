@@ -1,0 +1,1320 @@
+<title>Shootout Mode</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+*,*::before,*::after{box-sizing:border-box}
+
+:root{
+  --bg:#E6E9EA; --surface:#F5F7F7; --raise:#FFFFFF;
+  --ink:#0C1316; --ink-2:#39474D; --muted:#6D7C83;
+  --line:#C4CCD0; --line-2:#D9DFE1;
+  --a:#B0501A; --a-tint:rgba(176,80,26,.10); --a-tint-2:rgba(176,80,26,.22);
+  --b:#0A6B82; --b-tint:rgba(10,107,130,.10); --b-tint-2:rgba(10,107,130,.22);
+  --good:#2C6E4C; --bad:#9A3B2C; --warn:#8A6113;
+  --shadow:0 1px 0 rgba(12,19,22,.04), 0 10px 26px -18px rgba(12,19,22,.55);
+  --r:6px;
+  --disp:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --body:"IBM Plex Sans","Segoe UI",Roboto,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1013; --surface:#131A1E; --raise:#182126;
+    --ink:#E9EEF0; --ink-2:#AEBBC1; --muted:#7B8B93;
+    --line:#25323A; --line-2:#1C272D;
+    --a:#EE8342; --a-tint:rgba(238,131,66,.14); --a-tint-2:rgba(238,131,66,.30);
+    --b:#41B4D2; --b-tint:rgba(65,180,210,.14); --b-tint-2:rgba(65,180,210,.30);
+    --good:#5EBE8B; --bad:#E0705C; --warn:#D4A64A;
+    --shadow:0 1px 0 rgba(0,0,0,.35), 0 12px 30px -20px rgba(0,0,0,.9);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1013; --surface:#131A1E; --raise:#182126;
+  --ink:#E9EEF0; --ink-2:#AEBBC1; --muted:#7B8B93;
+  --line:#25323A; --line-2:#1C272D;
+  --a:#EE8342; --a-tint:rgba(238,131,66,.14); --a-tint-2:rgba(238,131,66,.30);
+  --b:#41B4D2; --b-tint:rgba(65,180,210,.14); --b-tint-2:rgba(65,180,210,.30);
+  --good:#5EBE8B; --bad:#E0705C; --warn:#D4A64A;
+  --shadow:0 1px 0 rgba(0,0,0,.35), 0 12px 30px -20px rgba(0,0,0,.9);
+}
+
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--body); font-size:15px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:var(--disp); font-variation-settings:"wdth" 112; margin:0; text-wrap:balance; letter-spacing:-.015em}
+button{font:inherit; color:inherit; background:none; border:none; cursor:pointer}
+:focus-visible{outline:2px solid var(--ink); outline-offset:2px; border-radius:3px}
+
+.lbl{font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
+
+/* ---------- header ---------- */
+.bar{
+  position:sticky; top:0; z-index:60;
+  background:var(--surface);
+  border-bottom:1px solid var(--line);
+}
+.bar-in{max-width:1220px; margin:0 auto; padding:11px 22px; display:flex; align-items:center; gap:16px; flex-wrap:wrap}
+.wordmark{display:flex; align-items:baseline; gap:9px; margin-right:auto}
+.wordmark b{font-family:var(--disp); font-variation-settings:"wdth" 122; font-weight:800; font-size:19px; letter-spacing:-.02em}
+.wordmark .tag{font-family:var(--mono); font-size:10px; letter-spacing:.16em; color:var(--muted); text-transform:uppercase}
+.readout{font-family:var(--mono); font-size:10.5px; letter-spacing:.09em; color:var(--muted); text-transform:uppercase; white-space:nowrap}
+.readout em{font-style:normal; color:var(--ink-2)}
+
+.sync{
+  display:inline-flex; align-items:center; gap:9px;
+  background:var(--ink); color:var(--bg);
+  padding:8px 15px 8px 12px; border-radius:var(--r);
+  font-family:var(--mono); font-size:11px; letter-spacing:.13em; text-transform:uppercase; font-weight:500;
+  transition:transform .12s ease, opacity .2s ease;
+}
+.sync:hover{transform:translateY(-1px)}
+.sync:active{transform:translateY(0)}
+.sync[disabled]{opacity:.55; cursor:progress}
+.led{width:7px; height:7px; border-radius:1px; background:var(--good); animation:pulse 2.6s ease-in-out infinite}
+.sync[disabled] .led{background:var(--warn); animation-duration:.5s}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.ghost{border:1px solid var(--line); padding:7px 11px; border-radius:var(--r); font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-2)}
+.ghost:hover{border-color:var(--ink-2); color:var(--ink)}
+
+#sweep{position:fixed; inset:0; z-index:90; pointer-events:none; opacity:0;
+  background:linear-gradient(180deg,transparent 44%,var(--a-tint) 48%,var(--b-tint) 52%,transparent 56%);
+  background-size:100% 260%;}
+#sweep.go{animation:sweep .8s cubic-bezier(.4,0,.2,1)}
+@keyframes sweep{
+  0%{opacity:1; background-position:0 -120%}
+  100%{opacity:0; background-position:0 220%}
+}
+
+main{max-width:1220px; margin:0 auto; padding:26px 22px 90px}
+
+/* ---------- picker ---------- */
+.rig{display:grid; grid-template-columns:1fr 48px 1fr; align-items:stretch}
+.slot{border:1px solid var(--line); background:var(--surface); border-radius:var(--r); overflow:hidden; display:flex; flex-direction:column}
+.slot-a{border-top:3px solid var(--a)}
+.slot-b{border-top:3px solid var(--b)}
+.slot-head{display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--line-2)}
+.slot-key{font-family:var(--mono); font-weight:600; font-size:11px; letter-spacing:.16em; padding:2px 7px; border-radius:3px}
+.slot-a .slot-key{background:var(--a-tint-2); color:var(--a)}
+.slot-b .slot-key{background:var(--b-tint-2); color:var(--b)}
+.filters{display:flex; gap:4px; margin-left:auto}
+.filters button{font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; padding:4px 8px; border-radius:3px; color:var(--muted); border:1px solid transparent}
+.filters button[aria-pressed="true"]{color:var(--ink); border-color:var(--line); background:var(--raise)}
+
+.picked{padding:14px 16px 13px; border-bottom:1px solid var(--line-2); background:var(--raise)}
+.picked .who{font-family:var(--disp); font-variation-settings:"wdth" 108; font-weight:800; font-size:26px; line-height:1.08; letter-spacing:-.025em}
+.slot-a .picked .who{color:var(--a)} .slot-b .picked .who{color:var(--b)}
+.picked .sub{margin-top:6px; display:flex; gap:6px; flex-wrap:wrap; align-items:center}
+.chip{font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; padding:2px 7px; border:1px solid var(--line); border-radius:3px; color:var(--ink-2)}
+.picked .tagline{margin-top:9px; font-size:13px; color:var(--ink-2); line-height:1.45}
+
+.list{max-height:212px; overflow-y:auto; overscroll-behavior:contain}
+.mdl{display:grid; grid-template-columns:1fr auto; gap:1px 12px; width:100%; text-align:left; padding:8px 15px; border-bottom:1px solid var(--line-2)}
+.mdl:last-child{border-bottom:none}
+.mdl:hover{background:var(--raise)}
+.mdl .n{font-weight:500; font-size:14px}
+.mdl .m{font-family:var(--mono); font-size:10.5px; color:var(--muted); letter-spacing:.04em}
+.mdl .p{font-family:var(--mono); font-size:11.5px; color:var(--ink-2); align-self:center; grid-row:1/3; font-variant-numeric:tabular-nums}
+.mdl[aria-selected="true"]{background:var(--raise)}
+.slot-a .mdl[aria-selected="true"]{box-shadow:inset 3px 0 0 var(--a)}
+.slot-b .mdl[aria-selected="true"]{box-shadow:inset 3px 0 0 var(--b)}
+.slot-a .mdl[aria-selected="true"] .n{color:var(--a)} .slot-b .mdl[aria-selected="true"] .n{color:var(--b)}
+
+.vs{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:9px}
+.vs .rule{flex:1; width:1px; background:var(--line)}
+.swap{width:34px; height:34px; border:1px solid var(--line); border-radius:50%; background:var(--surface); display:grid; place-items:center; font-size:14px; color:var(--ink-2); transition:transform .3s ease, background .2s ease}
+.swap:hover{background:var(--raise); color:var(--ink); transform:rotate(180deg)}
+
+.presets{display:flex; gap:7px; flex-wrap:wrap; align-items:center; margin-top:14px}
+.presets button{border:1px solid var(--line); border-radius:99px; padding:5px 12px; font-family:var(--mono); font-size:10.5px; letter-spacing:.05em; color:var(--ink-2)}
+.presets button:hover{border-color:var(--ink-2); color:var(--ink); background:var(--surface)}
+
+/* ---------- stages ---------- */
+.stage{margin-top:44px}
+.stage-head{display:flex; align-items:flex-end; gap:14px; padding-bottom:11px; border-bottom:2px solid var(--ink)}
+.stage-no{font-family:var(--mono); font-size:11px; letter-spacing:.18em; color:var(--muted); padding-bottom:4px}
+.stage-head h2{font-size:26px; font-weight:800; font-variation-settings:"wdth" 108; line-height:1}
+.stage-head .note{margin-left:auto; padding-bottom:3px; max-width:36ch; text-align:right; font-size:12px; color:var(--muted); line-height:1.4}
+
+.flag{display:flex; gap:10px; align-items:flex-start; margin-top:16px; padding:11px 14px; border:1px solid var(--line); border-left:3px solid var(--warn); border-radius:var(--r); background:var(--surface); font-size:13px; color:var(--ink-2); line-height:1.5}
+.flag b{color:var(--ink); font-weight:600}
+
+.tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(184px,1fr)); gap:12px; margin-top:20px}
+.tile{border:1px solid var(--line); border-radius:var(--r); background:var(--surface); padding:12px 13px 11px}
+.tile .lbl{display:block; margin-bottom:9px}
+.tile .pair{display:flex; align-items:baseline; justify-content:space-between; gap:8px}
+.tile .v{font-family:var(--disp); font-variation-settings:"wdth" 100; font-weight:700; font-size:20px; letter-spacing:-.02em; font-variant-numeric:tabular-nums; white-space:nowrap}
+.tile .va{color:var(--a)} .tile .vb{color:var(--b)}
+.tile .u{font-family:var(--mono); font-size:10px; color:var(--muted); margin-left:2px; font-weight:400}
+.tile .meter{height:4px; margin-top:11px; background:var(--line-2); border-radius:2px; overflow:hidden; display:flex}
+.tile .meter i{display:block; height:100%; transition:width .7s cubic-bezier(.4,0,.2,1)}
+.tile .meter .ma{background:var(--a)} .tile .meter .mb{background:var(--b)}
+.tile .delta{margin-top:8px; font-family:var(--mono); font-size:10.5px; letter-spacing:.03em; color:var(--muted)}
+
+.tw{margin-top:22px; border:1px solid var(--line); border-radius:var(--r); overflow-x:auto; background:var(--surface)}
+table{border-collapse:collapse; width:100%; min-width:660px}
+th,td{padding:9px 14px; text-align:left; border-bottom:1px solid var(--line-2); vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+th.h{font-family:var(--mono); font-size:10.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--muted); font-weight:500; border-bottom:1px solid var(--line)}
+th.ha{color:var(--a); text-align:right} th.hb{color:var(--b)}
+tr.grp td{background:var(--raise); font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); padding:7px 14px; border-bottom:1px solid var(--line)}
+td.k{width:26%; font-size:12px; color:var(--muted); text-align:center; font-family:var(--mono); letter-spacing:.02em; padding-top:11px}
+td.va{width:37%; text-align:right; font-size:14px}
+td.vb{width:37%; font-size:14px}
+td.win-a{background:var(--a-tint); box-shadow:inset -3px 0 0 var(--a)}
+td.win-b{background:var(--b-tint); box-shadow:inset 3px 0 0 var(--b)}
+td .sup{display:block; font-family:var(--mono); font-size:10.5px; color:var(--muted); margin-top:2px; letter-spacing:.01em}
+
+.pcgrid{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:20px}
+.pc{border:1px solid var(--line); border-radius:var(--r); background:var(--surface); overflow:hidden}
+.pc.a{border-top:3px solid var(--a)} .pc.b{border-top:3px solid var(--b)}
+.pc h3{padding:13px 16px 11px; font-size:19px; font-weight:800; font-variation-settings:"wdth" 106; border-bottom:1px solid var(--line-2)}
+.pc.a h3{color:var(--a)} .pc.b h3{color:var(--b)}
+.pc h3 span{display:block; font-family:var(--mono); font-size:10px; letter-spacing:.14em; color:var(--muted); font-weight:400; margin-top:4px; text-transform:uppercase}
+.pc .seg{padding:12px 16px 14px}
+.pc .seg + .seg{border-top:1px solid var(--line-2)}
+.pc .lbl{display:block; margin-bottom:9px}
+.pc ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px}
+.pc li{display:grid; grid-template-columns:14px 1fr; gap:9px; font-size:13.5px; line-height:1.45; color:var(--ink-2)}
+.pc li i{font-family:var(--mono); font-style:normal; font-weight:600; font-size:13px; line-height:1.5}
+.pros li i{color:var(--good)} .cons li i{color:var(--bad)}
+
+.aspects{margin-top:20px; border:1px solid var(--line); border-radius:var(--r); background:var(--surface); overflow:hidden}
+.asp{display:grid; grid-template-columns:158px 1fr; gap:16px; align-items:center; padding:13px 16px; border-bottom:1px solid var(--line-2)}
+.asp:last-child{border-bottom:none}
+.asp-name{font-size:13.5px; font-weight:500}
+.asp-name span{display:block; font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:.04em; margin-top:2px}
+.tug{display:grid; grid-template-columns:40px 1fr 40px 92px; gap:10px; align-items:center}
+.tug .s{font-family:var(--mono); font-size:12.5px; font-variant-numeric:tabular-nums}
+.tug .sa{color:var(--a); text-align:right} .tug .sb{color:var(--b)}
+.track{position:relative; height:22px; background:var(--line-2); border-radius:3px; overflow:hidden; display:flex}
+.track i{display:block; height:100%; transition:width .8s cubic-bezier(.4,0,.2,1)}
+.track .fa{background:var(--a-tint-2)} .track .fb{background:var(--b-tint-2)}
+.track.wa .fa{background:var(--a)} .track.wb .fb{background:var(--b)}
+.track::after{content:""; position:absolute; left:50%; top:0; bottom:0; width:1px; background:var(--bg); opacity:.8}
+.asp-win{font-family:var(--mono); font-size:10px; letter-spacing:.09em; text-transform:uppercase; padding:3px 8px; border-radius:3px; white-space:nowrap; text-align:center; overflow:hidden; text-overflow:ellipsis}
+.asp-win.wa{background:var(--a-tint-2); color:var(--a)} .asp-win.wb{background:var(--b-tint-2); color:var(--b)}
+.asp-win.tie{background:var(--line-2); color:var(--muted)}
+
+.final{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px}
+.crown{grid-column:1/-1; border:1px solid var(--line); border-radius:var(--r); background:var(--raise); padding:22px 24px; display:grid; grid-template-columns:auto 1fr; gap:26px; align-items:center; box-shadow:var(--shadow)}
+.crown .score{text-align:center; min-width:112px}
+.crown .score .big{font-family:var(--disp); font-variation-settings:"wdth" 118; font-weight:900; font-size:50px; line-height:.9; letter-spacing:-.04em; font-variant-numeric:tabular-nums}
+.crown .score .of{font-family:var(--mono); font-size:10px; letter-spacing:.13em; color:var(--muted); text-transform:uppercase; margin-top:7px}
+.crown .verdict .lbl{display:block; margin-bottom:6px}
+.crown .verdict h3{font-size:23px; font-weight:800; font-variation-settings:"wdth" 106; line-height:1.14}
+.crown .verdict p{margin:9px 0 0; font-size:14px; color:var(--ink-2); line-height:1.5; max-width:64ch}
+.crown .tally{font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:.04em; margin-top:11px}
+.pickif{border:1px solid var(--line); border-radius:var(--r); background:var(--surface); padding:15px 17px}
+.pickif.a{border-left:3px solid var(--a)} .pickif.b{border-left:3px solid var(--b)}
+.pickif .lbl{display:block; margin-bottom:8px}
+.pickif strong{display:block; font-family:var(--disp); font-weight:700; font-size:16px; margin-bottom:6px}
+.pickif.a strong{color:var(--a)} .pickif.b strong{color:var(--b)}
+.pickif p{margin:0; font-size:13.5px; color:var(--ink-2); line-height:1.5}
+
+details.how{margin-top:16px; border:1px solid var(--line); border-radius:var(--r); background:var(--surface)}
+details.how summary{padding:10px 15px; cursor:pointer; font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+details.how summary:hover{color:var(--ink)}
+details.how .body{padding:0 15px 15px; font-size:13px; color:var(--ink-2); line-height:1.65; max-width:80ch}
+details.how code{font-family:var(--mono); font-size:12px; background:var(--raise); padding:1px 5px; border-radius:3px; border:1px solid var(--line-2)}
+details.how ul{margin:8px 0 0; padding-left:18px}
+details.how li{margin-bottom:5px}
+
+footer{margin-top:56px; padding-top:18px; border-top:1px solid var(--line); font-size:12px; color:var(--muted); line-height:1.65; max-width:84ch}
+
+@media (max-width:880px){
+  .bar-in{gap:10px 12px; padding:10px 16px}
+  .wordmark{order:1} .ghost,.sync{order:2}
+  .readout{order:3; width:100%; white-space:normal; line-height:1.6}
+  main{padding:22px 16px 80px}
+  .rig{grid-template-columns:1fr; gap:12px}
+  .vs{flex-direction:row}
+  .vs .rule{width:auto; height:1px; flex:1}
+  .pcgrid,.final{grid-template-columns:1fr}
+  .crown{grid-template-columns:1fr; gap:16px}
+  .crown .score{text-align:left}
+  .asp{grid-template-columns:1fr; gap:9px}
+  .tug{grid-template-columns:36px 1fr 36px 86px}
+  .stage-head{flex-wrap:wrap}
+  .stage-head .note{margin-left:0; text-align:left; max-width:none}
+  td.k{width:auto}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important}
+}
+</style>
+
+<div id="sweep"></div>
+
+<header class="bar">
+  <div class="bar-in">
+    <div class="wordmark">
+      <b>SHOOTOUT MODE</b>
+      <span class="tag">Insta360 &times; GoPro</span>
+    </div>
+    <div class="readout" id="readout">Rev <em>2026.08</em> &middot; 19 models &middot; Synced <em>--:--:--</em></div>
+    <button class="ghost" id="themeBtn" type="button">Theme</button>
+    <button class="sync" id="syncBtn" type="button"><span class="led"></span>Sync stats</button>
+  </div>
+</header>
+
+<main>
+  <section class="rig" aria-label="Camera selection">
+    <div class="slot slot-a">
+      <div class="slot-head">
+        <span class="slot-key">A</span>
+        <span class="lbl">Left corner</span>
+        <div class="filters" data-side="a">
+          <button type="button" data-f="all" aria-pressed="true">All</button>
+          <button type="button" data-f="insta360" aria-pressed="false">Insta360</button>
+          <button type="button" data-f="gopro" aria-pressed="false">GoPro</button>
+        </div>
+      </div>
+      <div class="picked" id="pickedA"></div>
+      <div class="list" id="listA" role="listbox" aria-label="Choose camera A"></div>
+    </div>
+
+    <div class="vs">
+      <div class="rule"></div>
+      <button class="swap" id="swapBtn" type="button" title="Swap sides" aria-label="Swap the two cameras">&#8644;</button>
+      <div class="rule"></div>
+    </div>
+
+    <div class="slot slot-b">
+      <div class="slot-head">
+        <span class="slot-key">B</span>
+        <span class="lbl">Right corner</span>
+        <div class="filters" data-side="b">
+          <button type="button" data-f="all" aria-pressed="true">All</button>
+          <button type="button" data-f="insta360" aria-pressed="false">Insta360</button>
+          <button type="button" data-f="gopro" aria-pressed="false">GoPro</button>
+        </div>
+      </div>
+      <div class="picked" id="pickedB"></div>
+      <div class="list" id="listB" role="listbox" aria-label="Choose camera B"></div>
+    </div>
+  </section>
+
+  <div class="presets" id="presets"><span class="lbl" style="margin-right:4px">Quick matchups</span></div>
+
+  <div id="mismatch"></div>
+
+  <section class="stage" id="stage1">
+    <div class="stage-head">
+      <span class="stage-no">Stage 01</span>
+      <h2>Key statistics</h2>
+      <p class="note">Every measurable spec, side by side. Tinted cells mark the stronger number.</p>
+    </div>
+    <div class="tiles" id="tiles"></div>
+    <div class="tw"><table id="specTable"></table></div>
+  </section>
+
+  <section class="stage" id="stage2">
+    <div class="stage-head">
+      <span class="stage-no">Stage 02</span>
+      <h2>Pros &amp; cons</h2>
+      <p class="note">What each body is genuinely good at, and where it will let you down.</p>
+    </div>
+    <div class="pcgrid" id="proscons"></div>
+  </section>
+
+  <section class="stage" id="stage3">
+    <div class="stage-head">
+      <span class="stage-no">Stage 03</span>
+      <h2>Who wins what</h2>
+      <p class="note">Eight aspects scored 0&ndash;100 against the whole 19-camera field, then weighted into one verdict.</p>
+    </div>
+    <div class="aspects" id="aspects"></div>
+    <div class="final" id="final"></div>
+    <details class="how">
+      <summary>How these scores are calculated</summary>
+      <div class="body" id="howBody"></div>
+    </details>
+  </section>
+
+  <footer id="footer"></footer>
+</main>
+
+<script>
+"use strict";
+
+/* =========================================================================
+   SHOOTOUT MODE - spec dataset rev 2026.08
+   Specs are from manufacturer press material and published spec sheets.
+   Street prices are approximate US figures as of August 2026 and are the
+   one field here that genuinely moves week to week - treat them as a guide.
+   ========================================================================= */
+
+var I = "Insta360", G = "GoPro";
+
+var CAMS = [
+/* ---------------------------------------------------------------- INSTA360 */
+{
+  id:"x6", brand:I, name:"X6", klass:"360", year:2026, released:"2026-08",
+  msrp:699.99, street:699,
+  tagline:"Dual 1/1.1\" square sensors, native 8K50, 10-bit Dolby Vision. The current 360 flagship.",
+  vid:{label:"8K50 (360)", px:7680*3840*50}, alt:"5K60 single-lens · 4K120 slow-mo · 11K timelapse",
+  sensor:{label:"Dual 1/1.1\" square Sony", area:100, lenses:2, note:"1-inch equivalent, 33% larger than X5"},
+  photo:120, batt:{mah:2600, min:140, mode:"8K30 360", removable:true, note:"0–80% in 24 min"},
+  weight:196, wp:20, wpNote:"IP68 · 60 m with dive case",
+  screen:"2.32\" OLED, 1200 nits", mics:"4-mic 360 array + engine mic",
+  stab:"FlowState + 360 Horizon Lock", color:"10-bit · Dolby Vision · I-Log",
+  storage:"64 GB internal + microSD to 1 TB", gps:false, glass:"Replaceable Lenses 2.0",
+  audioIdx:90, softIdx:96, llFeat:95, rugged:92,
+  pros:[
+    "Dual 1/1.1\" square sensors give true 1-inch-equivalent 360 capture — roughly four times the light per frame of the X5.",
+    "Native 8K50 with 10-bit colour, in-camera Dolby Vision and I-Log; no other 360 camera shoots gradeable log at this resolution.",
+    "140 minutes at 8K30 from the 2600 mAh pack, and empty to 80% in 24 minutes.",
+    "Replaceable Lenses 2.0 plus IP68 to 20 m bare — scratched lens glass is a cheap part, not a write-off."
+  ],
+  cons:[
+    "$699.99 makes it the most expensive consumer 360 camera on the market by a clear margin.",
+    "196 g and a 2.32\" screen: noticeably bulkier on a helmet than any flat action camera.",
+    "8K50 files are punishing — you want a recent GPU or the desktop app's proxy workflow to edit comfortably."
+  ]
+},
+{
+  id:"x5", brand:I, name:"X5", klass:"360", year:2025, released:"2025-04",
+  msrp:549.99, street:469,
+  tagline:"The low-light 360 benchmark of 2025, with the longest runtime in the category.",
+  vid:{label:"8K30 (360)", px:7680*3840*30}, alt:"Supersampled from 11K · 4K60 single-lens · 11K timelapse",
+  sensor:{label:"Dual 1/1.28\"", area:73, lenses:2, note:"144% larger than X4"},
+  photo:72, batt:{mah:2400, min:208, mode:"5.7K30 360", removable:true, note:"≈88 min at 8K30 · 80% in 20 min"},
+  weight:200, wp:15, wpNote:"IP68 · 60 m with dive case",
+  screen:"2.5\" touchscreen", mics:"4-mic array, built-in wind guard",
+  stab:"FlowState + 360 Horizon Lock", color:"I-Log",
+  storage:"microSD to 1 TB", gps:false, glass:"User-replaceable lenses",
+  audioIdx:84, softIdx:92, llFeat:88, rugged:90,
+  pros:[
+    "1/1.28\" sensors with PureVideo made it the low-light 360 benchmark right up until the X6 landed.",
+    "208 minutes rated at 5.7K30 — still the longest-running 360 camera you can buy.",
+    "User-replaceable lenses turn the classic 360-camera death, a scratched dome, into a cheap swap.",
+    "IP68 to 15 m with no housing, and a wind guard designed into the body rather than bolted on."
+  ],
+  cons:[
+    "8K is supersampled from an 11K readout rather than native, so fine detail trails the MAX2 slightly.",
+    "Single-lens mode tops out at 4K60, which makes it a weak flat action camera next to a HERO.",
+    "Now the previous flagship — bundles, firmware attention and accessory launches have moved to the X6."
+  ]
+},
+{
+  id:"x4air", brand:I, name:"X4 Air", klass:"360", year:2025, released:"2025-10",
+  msrp:399.99, street:399,
+  tagline:"165 g — the lightest 8K 360 camera made, and the cheapest way to 8K30 spherical.",
+  vid:{label:"8K30 (360)", px:7680*3840*30}, alt:"6K50 · 6.4 mm f/1.95 lenses",
+  sensor:{label:"Dual 1/1.8\"", area:38, lenses:2, note:"f/1.95"},
+  photo:29, batt:{mah:2010, min:88, mode:"8K30 360", removable:true, note:""},
+  weight:165, wp:10, wpNote:"IPX8",
+  screen:"2.5\" touchscreen", mics:"Wind-reduction array",
+  stab:"FlowState + 360 Horizon Lock", color:"8-bit",
+  storage:"microSD", gps:false, glass:"Removable lens guards",
+  audioIdx:74, softIdx:88, llFeat:70, rugged:74,
+  pros:[
+    "165 g — the lightest 8K 360 camera made, and you feel the difference on a helmet or chest mount.",
+    "8K30 and 6K50 for $399.99, undercutting every other 8K 360 body on the market.",
+    "Keeps the full 2.5\" touchscreen and a removable battery despite the weight saving.",
+    "Runs the same Insta360 app, reframing and AI editing tools as the flagships."
+  ],
+  cons:[
+    "1/1.8\" sensors are a real step down from the X5 and X6 in anything but good light.",
+    "2010 mAh gives only 88 minutes at 8K30 — the shortest of the current X line.",
+    "A single processor means slower in-camera stitching and fewer AI modes than the X5."
+  ]
+},
+{
+  id:"x4", brand:I, name:"X4", klass:"360", year:2024, released:"2024-04",
+  msrp:499.99, street:349,
+  tagline:"The 8K workhorse that made 360 mainstream, now heavily discounted.",
+  vid:{label:"8K30 (360)", px:7680*3840*30}, alt:"5.7K60 · 4K60 single-lens · 5K120 bullet time",
+  sensor:{label:"Dual 1/2\"", area:31, lenses:2, note:""},
+  photo:72, batt:{mah:2290, min:135, mode:"5.7K30 360", removable:true, note:"71 min at 8K30"},
+  weight:203, wp:10, wpNote:"IPX8",
+  screen:"2.5\" touchscreen", mics:"4-mic array",
+  stab:"FlowState + 360 Horizon Lock", color:"8-bit",
+  storage:"microSD to 1 TB", gps:false, glass:"Removable lens guards",
+  audioIdx:74, softIdx:88, llFeat:60, rugged:76,
+  pros:[
+    "8K30 360 at a street price that now regularly sits under $360.",
+    "2290 mAh delivers 135 minutes at 5.7K30 — endurance that still beats most 2026 rivals.",
+    "Removable lens guards are included in the box rather than sold as an accessory.",
+    "Two years of firmware updates and the largest 360 accessory ecosystem behind it."
+  ],
+  cons:[
+    "1/2\" sensors get noisy quickly once the sun drops below the treeline.",
+    "That 135-minute headline is at 5.7K30; shoot 8K30 and you get 71 minutes.",
+    "At 203 g it is the heaviest of the modern X bodies."
+  ]
+},
+{
+  id:"x3", brand:I, name:"X3", klass:"360", year:2022, released:"2022-09",
+  msrp:449.99, street:259,
+  tagline:"The cheapest competent 360 camera, if you can live with a 5.7K ceiling.",
+  vid:{label:"5.7K30 (360)", px:5760*2880*30}, alt:"4K30 single-lens with Active HDR",
+  sensor:{label:"Dual 1/2\", f/1.9", area:31, lenses:2, note:""},
+  photo:72, batt:{mah:1800, min:81, mode:"5.7K30 360", removable:true, note:""},
+  weight:180, wp:10, wpNote:"IPX8",
+  screen:"2.29\" touchscreen", mics:"4-mic array",
+  stab:"FlowState + Horizon Lock", color:"8-bit",
+  storage:"microSD", gps:false, glass:"Lens guards (not user-serviceable glass)",
+  audioIdx:70, softIdx:84, llFeat:45, rugged:66,
+  pros:[
+    "Frequently under $260 — the cheapest way into genuinely usable 360 capture.",
+    "1800 mAh and 81 minutes at 5.7K30 covers a day of short clips without a spare.",
+    "2.29\" touchscreen plus a single-lens 4K30 mode with Active HDR.",
+    "Still fully supported by the current Insta360 app and reframing tools."
+  ],
+  cons:[
+    "5.7K is a hard ceiling; reframed 1080p output looks soft beside any 8K body.",
+    "1/2\" sensors and no PureVideo mode make low-light footage genuinely poor.",
+    "The lens glass is not user-replaceable — a deep scratch means a service job."
+  ]
+},
+{
+  id:"rs1in", brand:I, name:"ONE RS 1-Inch 360", klass:"360", year:2022, released:"2022-06",
+  msrp:799.99, street:649,
+  tagline:"Dual 1-inch Leica sensors — unmatched 360 image quality for four years, with one fatal caveat.",
+  vid:{label:"6K30 (360)", px:6080*3040*30}, alt:"Modular RS core swaps into 4K and 1-inch flat mods",
+  sensor:{label:"Dual 1\" Leica", area:116, lenses:2, note:"Co-engineered with Leica"},
+  photo:21, batt:{mah:1350, min:62, mode:"6K30 360", removable:true, note:""},
+  weight:239, wp:0, wpNote:"IPX3 splash only — not waterproof",
+  screen:"None (phone-tethered)", mics:"4-mic array",
+  stab:"FlowState + Horizon Lock", color:"8-bit + I-Log",
+  storage:"microSD", gps:false, glass:"Exposed protruding domes",
+  audioIdx:64, softIdx:78, llFeat:55, rugged:30,
+  pros:[
+    "Dual 1\" Leica sensors — until the X6 arrived, the largest glass in any 360 camera.",
+    "Cleanest shadows and widest dynamic range of any pre-2026 360 body.",
+    "21MP 360 stills that hold up for print and VR stills work.",
+    "Modular: the RS core also takes the 4K Boost and 1-inch flat lens mods."
+  ],
+  cons:[
+    "IPX3 splash resistance only — this camera cannot go in water without a case.",
+    "The 1\" domes protrude badly and are extremely vulnerable; every mount is a risk.",
+    "1350 mAh for about 62 minutes, in a 239 g body with a 2022-era 6K30 ceiling."
+  ]
+},
+{
+  id:"acepro2", brand:I, name:"Ace Pro 2", klass:"Action", year:2024, released:"2024-10",
+  msrp:399.99, street:329,
+  tagline:"Leica-co-engineered 1/1.3\" sensor and a flip screen — the best-looking flat action camera under $400.",
+  vid:{label:"8K30", px:7680*4320*30}, alt:"4K60 Active HDR · 4K120 · 1080p240",
+  sensor:{label:"1/1.3\" 50MP, Leica SUMMARIT", area:72, lenses:1, note:"13.5 stops DR · 157° FOV"},
+  photo:50, batt:{mah:1800, min:180, mode:"1080p30", removable:true, note:"Endurance Mode: +50% at 4K30"},
+  weight:177, wp:12, wpNote:"No housing needed",
+  screen:"2.5\" flip touchscreen (440×696)", mics:"Wind-guard array + AI noise reduction",
+  stab:"FlowState + Horizon Lock", color:"10-bit · I-Log",
+  storage:"microSD", gps:false, glass:"Fixed Leica lens",
+  audioIdx:82, softIdx:90, llFeat:90, rugged:78,
+  pros:[
+    "1/1.3\" 50MP sensor with a Leica SUMMARIT lens and 13.5 stops — the best flat action image under $400.",
+    "180 minutes rated at 1080p, and Endurance Mode adds roughly 50% at 4K30.",
+    "The 2.5\" flip-up screen makes it a genuinely usable vlogging camera, not just a helmet cam.",
+    "A dual AI chip drives strong in-camera noise reduction and clean 4K120 slow motion."
+  ],
+  cons:[
+    "177 g in a chunkier body than a HERO13 Black, and it will not drop into GoPro-shaped cases.",
+    "Waterproof to 12 m, but the flip-screen hinge is the obvious long-term weak point.",
+    "The mount ecosystem is far smaller than GoPro's and third-party support is thinner."
+  ]
+},
+{
+  id:"acepro", brand:I, name:"Ace Pro", klass:"Action", year:2023, released:"2023-11",
+  msrp:449.99, street:249,
+  tagline:"The first Leica action camera. Same class of optics as the Ace Pro 2, for $80 less.",
+  vid:{label:"8K24", px:7680*4320*24}, alt:"4K60 · 2.7K120 · PureVideo low-light mode",
+  sensor:{label:"1/1.3\", Leica", area:72, lenses:1, note:""},
+  photo:48, batt:{mah:1650, min:100, mode:"4K30", removable:true, note:""},
+  weight:180, wp:10, wpNote:"No housing needed",
+  screen:"2.4\" flip touchscreen", mics:"Wind-reduction array",
+  stab:"FlowState + Horizon Lock", color:"8-bit + I-Log",
+  storage:"microSD", gps:false, glass:"Fixed Leica lens",
+  audioIdx:74, softIdx:84, llFeat:80, rugged:74,
+  pros:[
+    "The same class of 1/1.3\" Leica-co-engineered optics as the Ace Pro 2, for around $250.",
+    "Flip screen and PureVideo low-light mode at a mid-range price.",
+    "8K capture at all is still rare in this price bracket.",
+    "Standard GoPro-style finger mount, so most existing mounts fit."
+  ],
+  cons:[
+    "8K caps at 24 fps and 4K tops out at 60 — no 4K120.",
+    "1650 mAh gives about 100 minutes at 4K30, well short of the Ace Pro 2.",
+    "Superseded in 2024, so new AI features now land on the Ace Pro 2 first."
+  ]
+},
+{
+  id:"goultra", brand:I, name:"GO Ultra", klass:"Pocket", year:2025, released:"2025-08",
+  msrp:449.99, street:429,
+  tagline:"A 53 g magnetic camera that shoots 4K60 off a 1/1.28\" sensor. Nothing else does this.",
+  vid:{label:"4K60", px:3840*2160*60}, alt:"1080p240 slow-mo · 4:3, 16:9 and 2.35:1 · PureVideo",
+  sensor:{label:"1/1.28\"", area:73, lenses:1, note:"221% larger than GO 3S · 5 nm AI chip"},
+  photo:50, batt:{mah:null, min:200, mode:"with Action Pod", removable:false, note:"70 min standalone"},
+  weight:53, wp:10, wpNote:"Camera only · Action Pod is IPX4",
+  screen:"Flip touchscreen on Action Pod", mics:"Dual mic + wind reduction",
+  stab:"FlowState + Horizon Lock", color:"10-bit",
+  storage:"microSD", gps:false, glass:"Fixed lens",
+  audioIdx:70, softIdx:88, llFeat:85, rugged:68,
+  pros:[
+    "A 53 g camera that sticks magnetically anywhere — nothing else shoots 4K60 from that form factor.",
+    "The 1/1.28\" sensor is 221% larger than the GO 3S and completely changes low-light usability.",
+    "200 minutes total with the Action Pod, and finally a microSD slot instead of fixed storage.",
+    "The Action Pod doubles as a flip-screen monitor, a charger and a standalone camera grip."
+  ],
+  cons:[
+    "70 minutes standalone — without the pod in your pocket the shooting day is short.",
+    "$449.99 is HERO13 Black money for a camera whose head unit has no removable battery.",
+    "Two-piece system means two things to charge, carry and eventually lose."
+  ]
+},
+{
+  id:"go3s", brand:I, name:"GO 3S", klass:"Pocket", year:2024, released:"2024-06",
+  msrp:399.99, street:329,
+  tagline:"39 g. The lightest usable 4K camera made, with the compromises that implies.",
+  vid:{label:"4K30", px:3840*2160*30}, alt:"2.7K30 · 1080p120 · Apple Find My built in",
+  sensor:{label:"1/2.3\"", area:28, lenses:1, note:""},
+  photo:12, batt:{mah:1270, min:140, mode:"with Action Pod", removable:false, note:"38 min standalone"},
+  weight:39, wp:10, wpNote:"Camera only",
+  screen:"2.2\" flip screen on Action Pod", mics:"Dual mic",
+  stab:"FlowState + Horizon Lock", color:"8-bit",
+  storage:"64 / 128 GB fixed — no card slot", gps:false, glass:"Fixed lens",
+  audioIdx:62, softIdx:84, llFeat:45, rugged:64,
+  pros:[
+    "39 g — the lightest usable 4K camera on the market, full stop.",
+    "Magnetic pendant and pivot-stand mounting reaches angles nothing else can.",
+    "140 minutes with the Action Pod, and Apple Find My support built in.",
+    "Waterproof to 10 m without a case."
+  ],
+  cons:[
+    "1/2.3\" sensor and a 4K30 ceiling; low light is noisy and there is no 4K60.",
+    "38 minutes standalone runtime is genuinely limiting in real use.",
+    "Fixed internal storage with no card slot — what you buy is what you get."
+  ]
+},
+
+/* ------------------------------------------------------------------ GOPRO */
+{
+  id:"m1pro", brand:G, name:"MISSION 1 PRO", klass:"Cinema", year:2026, released:"2026-05",
+  msrp:699, street:699,
+  tagline:"A 50MP 1-inch sensor and GP3 in an action body. GoPro's HERO successor is a cinema camera.",
+  vid:{label:"8K60", px:7680*4320*60}, alt:"4K240 · 1080p960 · 8K30 & 4K120 Open Gate · 240 Mbps (300 via Labs)",
+  sensor:{label:"50MP 1.0\" type 4:3", area:131, lenses:1, note:"14 stops DR · GP3 processor with AI NPU"},
+  photo:50, batt:{mah:2150, min:300, mode:"1080p30", removable:true, note:"180+ min at 4K30 · Enduro 2"},
+  weight:207, wp:20, wpNote:"60 m with housing",
+  screen:"2.59\" OLED rear + 1.4\" front LCD", mics:"4 mics · 32-bit float via Media Mod",
+  stab:"HyperSmooth", color:"10-bit · GP-Log2 · HLG",
+  storage:"microSD", gps:true, glass:"Fixed (ILS variant takes MFT lenses)",
+  audioIdx:92, softIdx:76, llFeat:88, rugged:88,
+  pros:[
+    "A 50MP 1\" sensor with GP3 and 14 stops of dynamic range — cinema-camera imaging in an action body.",
+    "8K60, 4K240 and 1080p960, plus 8K30 and 4K120 Open Gate for reframing in post.",
+    "10-bit GP-Log2 and HLG at up to 240 Mbps, or 300 Mbps through GoPro Labs firmware.",
+    "2150 mAh Enduro 2 runs 5+ hours at 1080p30 and 3+ at 4K30, waterproof to 20 m with no housing."
+  ],
+  cons:[
+    "$699 unless you hold a GoPro subscription, and the Media Mod you need for 32-bit float audio and HDMI is extra.",
+    "207 g plus cinema-sized files — 8K60 H.265 fills cards fast and stresses older editing machines.",
+    "It is a compact cinema camera, not a set-and-forget helmet cam; it only pays off if you grade footage."
+  ]
+},
+{
+  id:"m1", brand:G, name:"MISSION 1", klass:"Cinema", year:2026, released:"2026-05",
+  msrp:599, street:599,
+  tagline:"The same 1-inch sensor and GP3 as the PRO, minus the high-frame-rate ceiling.",
+  vid:{label:"8K30", px:7680*4320*30}, alt:"4K120 · 1080p240 · 4K120 & 1440p240 Open Gate",
+  sensor:{label:"50MP 1.0\" type 4:3", area:131, lenses:1, note:"14 stops DR · GP3 processor"},
+  photo:50, batt:{mah:2150, min:300, mode:"1080p30", removable:true, note:"180+ min at 4K30 · Enduro 2"},
+  weight:207, wp:20, wpNote:"60 m with housing",
+  screen:"2.59\" OLED rear + 1.4\" front LCD", mics:"4 mics · 32-bit float via Media Mod",
+  stab:"HyperSmooth", color:"10-bit · GP-Log2 · HLG",
+  storage:"microSD", gps:true, glass:"Fixed",
+  audioIdx:88, softIdx:74, llFeat:86, rugged:88,
+  pros:[
+    "The same 50MP 1\" sensor and GP3 processor as the PRO for $100 less.",
+    "8K30 with 4K120 Open Gate and 1080p240 slow motion covers almost every real shot.",
+    "5+ hours at 1080p30 from the Enduro 2 pack, and 20 m waterproof with no housing.",
+    "10-bit GP-Log2 with GoPro's full mount and accessory ecosystem behind it."
+  ],
+  cons:[
+    "No 8K60, 4K240 or 1080p960 — high frame rates are the PRO's whole argument.",
+    "$599 list unless you already pay for a GoPro subscription.",
+    "Same 207 g body and the same large files; overkill if the footage only ever goes to social."
+  ]
+},
+{
+  id:"max2", brand:G, name:"MAX2", klass:"360", year:2025, released:"2025-09",
+  msrp:499.99, street:449,
+  tagline:"True native 8K 360 and six microphones — the sharpest and best-sounding spherical footage, if it stays cool.",
+  vid:{label:"8K30 (360)", px:7680*3840*30}, alt:"5.6K60 · 4K100 · 4K60 single-lens · up to 300 Mbps via Labs",
+  sensor:{label:"Dual 1/2.3\" 12MP, f/1.8", area:28, lenses:2, note:"True native 8K readout"},
+  photo:29, batt:{mah:1960, min:66, mode:"8K30 360 (rated)", removable:true, note:"Reviewers see <30 min before thermal cutoff"},
+  weight:195, wp:5, wpNote:"No housing",
+  screen:"1.82\" touchscreen", mics:"6 mics · 360 stereo · Bluetooth audio",
+  stab:"Max HyperSmooth + Horizon Lock", color:"10-bit · GP-Log",
+  storage:"microSD", gps:true, glass:"Twist-and-Go replaceable glass",
+  audioIdx:94, softIdx:74, llFeat:60, rugged:80,
+  pros:[
+    "True native 8K30 from a genuine 8K readout — the sharpest 360 output currently available.",
+    "Six microphones with 360 stereo audio; comfortably the best-sounding 360 camera made.",
+    "Twist-and-Go replaceable optical glass lenses, plus built-in GPS for telemetry overlays.",
+    "10-bit with GP-Log and up to 300 Mbps bitrate through GoPro Labs firmware."
+  ],
+  cons:[
+    "Thermals are the story: reviewers see under 30 minutes of continuous 8K30 before shutdown, against a 66-minute rating.",
+    "Waterproof to only 5 m — a third of the X5's rating and a quarter of the X6's.",
+    "1/2.3\" sensors mean it falls behind the X5 and X6 the moment the light drops."
+  ]
+},
+{
+  id:"max", brand:G, name:"MAX (2019)", klass:"360", year:2019, released:"2019-10",
+  msrp:499.99, street:329,
+  tagline:"Seven-year-old 360 hardware with stabilization that still holds up. Everything else has moved on.",
+  vid:{label:"5.6K30 (360)", px:5568*2784*30}, alt:"1440p60 single-lens · PowerPano stills",
+  sensor:{label:"Dual 1/2.3\"", area:28, lenses:2, note:""},
+  photo:16.6, batt:{mah:1600, min:78, mode:"5.6K30 360", removable:true, note:""},
+  weight:154, wp:5, wpNote:"No housing",
+  screen:"1.7\" touchscreen", mics:"6 mics",
+  stab:"Max HyperSmooth + Horizon Leveling", color:"8-bit",
+  storage:"microSD to 256 GB", gps:true, glass:"Fixed exposed lenses",
+  audioIdx:80, softIdx:58, llFeat:30, rugged:60,
+  pros:[
+    "Max HyperSmooth and Horizon Leveling genuinely still hold up seven years on.",
+    "Six microphones and PowerPano stills in a 154 g body.",
+    "Often under $330 — the cheapest route into a GoPro-ecosystem 360 camera.",
+    "Doubles as a passable single-lens HERO-style camera when you do not need the sphere."
+  ],
+  cons:[
+    "5.6K30 sits well below every current 360 camera; reframed output looks soft immediately.",
+    "1600 mAh for about 78 minutes, on a 2019 processor with slow in-camera stitching.",
+    "The GoPro Player 360 desktop workflow is dated and awkward next to Insta360 Studio."
+  ]
+},
+{
+  id:"hero13", brand:G, name:"HERO13 Black", klass:"Action", year:2024, released:"2024-09",
+  msrp:399.99, street:299,
+  tagline:"The only action camera that takes real optical accessories. Fourth outing for the same sensor.",
+  vid:{label:"5.3K60", px:5312*2988*60}, alt:"4K120 · 2.7K240 · 720p400 · 8:7 full-sensor capture",
+  sensor:{label:"1/1.9\" 27.6MP, 8:7", area:34, lenses:1, note:"Same sensor as HERO11 and HERO12"},
+  photo:27, batt:{mah:1900, min:155, mode:"1080p30", removable:true, note:"90+ min at 4K30 and 5.3K30 · Enduro"},
+  weight:159, wp:10, wpNote:"No housing · 60 m with dive case",
+  screen:"2.27\" rear + 1.4\" front", mics:"3 mics · Bluetooth audio",
+  stab:"HyperSmooth 6.0 + Horizon Lock", color:"10-bit · GP-Log",
+  storage:"microSD", gps:true, glass:"HB-Series lenses (Macro, Ultra Wide, Anamorphic, ND)",
+  audioIdx:78, softIdx:76, llFeat:60, rugged:84,
+  pros:[
+    "HB-Series lenses — Macro, Ultra Wide, Anamorphic and ND — make it the only action camera that takes real optics.",
+    "1900 mAh Enduro gives 155 minutes at 1080p30 and over 90 at 5.3K30.",
+    "GPS returns after its absence on the HERO12, so speed and altitude overlays work again.",
+    "Magnetic latch mount, 10-bit GP-Log, and by far the largest mount ecosystem in the category."
+  ],
+  cons:[
+    "The same 1/1.9\" sensor as the HERO11 and HERO12 — three generations on one piece of silicon.",
+    "5.3K60 sits below the 8K that Insta360's Ace Pro 2 delivers at a lower street price.",
+    "A lot of the headline cloud and editing features quietly assume a paid GoPro subscription."
+  ]
+},
+{
+  id:"hero12", brand:G, name:"HERO12 Black", klass:"Action", year:2023, released:"2023-09",
+  msrp:399.99, street:269,
+  tagline:"Arguably the best value-per-dollar action camera on sale — with one conspicuous omission.",
+  vid:{label:"5.3K60", px:5312*2988*60}, alt:"4K120 · 2.7K240 · 8:7 full-sensor · timecode sync",
+  sensor:{label:"1/1.9\" 27.6MP, 8:7", area:34, lenses:1, note:""},
+  photo:27, batt:{mah:1720, min:140, mode:"1080p30", removable:true, note:"Enduro"},
+  weight:154, wp:10, wpNote:"No housing · 60 m with dive case",
+  screen:"2.27\" rear + 1.4\" front", mics:"3 mics · Bluetooth audio / AirPods mic",
+  stab:"HyperSmooth 6.0 + Horizon Lock", color:"10-bit HDR · GP-Log",
+  storage:"microSD", gps:false, glass:"Fixed · built-in 1/4-20 mount",
+  audioIdx:76, softIdx:72, llFeat:55, rugged:82,
+  pros:[
+    "Often under $270 — one of the strongest value-per-dollar action cameras you can buy.",
+    "5.3K60, 4K120 and 2.7K240 with HyperSmooth 6.0, the same core imaging as the HERO13.",
+    "Built-in 1/4-20 thread, Bluetooth audio with AirPods as a mic, and timecode sync for multi-cam.",
+    "10-bit HDR video and GP-Log give it a proper grading workflow."
+  ],
+  cons:[
+    "No GPS at all — the one genuinely missing feature against both the HERO11 and HERO13.",
+    "1720 mAh runs noticeably shorter than the HERO13's 1900 mAh Enduro pack.",
+    "No HB-Series lens support; the front glass is fixed for good."
+  ]
+},
+{
+  id:"hero11", brand:G, name:"HERO11 Black", klass:"Action", year:2022, released:"2022-09",
+  msrp:499.99, street:229,
+  tagline:"The camera that introduced the 8:7 sensor. Now the cheapest way into 5.3K60.",
+  vid:{label:"5.3K60", px:5312*2988*60}, alt:"4K120 · 2.7K240 · 8:7 full-sensor capture",
+  sensor:{label:"1/1.9\" 27MP, 8:7", area:34, lenses:1, note:""},
+  photo:27, batt:{mah:1720, min:140, mode:"1080p30", removable:true, note:"Enduro"},
+  weight:154, wp:10, wpNote:"No housing · 60 m with dive case",
+  screen:"2.27\" rear + 1.4\" front", mics:"3 mics",
+  stab:"HyperSmooth 5.0 + Horizon Lock", color:"10-bit · GP-Log",
+  storage:"microSD", gps:true, glass:"Fixed",
+  audioIdx:70, softIdx:68, llFeat:50, rugged:80,
+  pros:[
+    "The 8:7 sensor that started GoPro's shoot-once, crop-to-vertical-and-horizontal workflow.",
+    "5.3K60 and 4K120 with 27MP stills, now regularly around $229.",
+    "GPS included, and full Enduro battery compatibility.",
+    "Takes exactly the same mounts, cases and mods as the HERO12 and HERO13."
+  ],
+  cons:[
+    "HyperSmooth 5.0 is a visible step behind 6.0 in the roughest conditions.",
+    "2022 processor: slower menus, longer offloads and more heat at 5.3K60.",
+    "No 1/4-20 thread in the body, no HB-Series lenses and no Bluetooth audio."
+  ]
+},
+{
+  id:"lithero", brand:G, name:"LIT HERO", klass:"Pocket", year:2025, released:"2025-10",
+  msrp:269.99, street:249,
+  tagline:"The only action camera that brings its own light. A lifestyle camera, deliberately.",
+  vid:{label:"4K60", px:3840*2160*60}, alt:"2x slow motion · optional 4:3",
+  sensor:{label:"Not published (1/2.3\"-class)", area:28, lenses:1, note:"GoPro has not disclosed sensor size"},
+  photo:12, batt:{mah:null, min:100, mode:"highest setting", removable:false, note:"Enduro chemistry"},
+  weight:93, wp:5, wpNote:"No housing",
+  screen:"Rear touchscreen", mics:"Wind-reduction mics",
+  stab:"HyperSmooth", color:"8-bit",
+  storage:"microSD", gps:false, glass:"Fixed · built-in LED light",
+  audioIdx:62, softIdx:68, llFeat:65, rugged:66,
+  pros:[
+    "A built-in light — the only action camera that solves its own low-light problem at the source.",
+    "4K60 with 2x slow motion in a 93 g body.",
+    "Magnetic mounting and one-button simplicity; nothing to configure before you shoot.",
+    "$269.99 undercuts every flagship in this comparison by a wide margin."
+  ],
+  cons:[
+    "Waterproof to just 5 m, and the built-in light only reaches a couple of metres.",
+    "No 10-bit, no GP-Log and no high-frame-rate modes beyond 2x slow motion.",
+    "12MP 4:3 stills only, a fixed lens, and a sensor size GoPro has never published."
+  ]
+},
+{
+  id:"hero24", brand:G, name:"HERO (2024)", klass:"Pocket", year:2024, released:"2024-09",
+  msrp:199.99, street:179,
+  tagline:"86 g, one button, $199. The smallest touchscreen 4K camera GoPro has made.",
+  vid:{label:"4K30", px:3840*2160*30}, alt:"2.7K 2x slow motion · 12MP stills",
+  sensor:{label:"Not published (1/2.3\"-class)", area:28, lenses:1, note:"GoPro has not disclosed sensor size"},
+  photo:12, batt:{mah:null, min:100, mode:"1080p30", removable:false, note:"155 min in Battery Saver · 60+ min at 4K"},
+  weight:86, wp:5, wpNote:"No housing",
+  screen:"Rear touchscreen", mics:"Single mic array",
+  stab:"HyperSmooth (reduced)", color:"8-bit",
+  storage:"microSD", gps:false, glass:"Fixed",
+  audioIdx:55, softIdx:62, llFeat:30, rugged:62,
+  pros:[
+    "86 g and 35% less volume than a HERO13 Black — the smallest touchscreen 4K GoPro made.",
+    "$199.99 list, and it regularly drops under $180.",
+    "One-button operation with a touch display; genuinely safe to hand to anyone.",
+    "Waterproof to 5 m with standard GoPro mounting fingers."
+  ],
+  cons:[
+    "The battery is built in and not removable — when it is flat you need a USB-C power bank.",
+    "4K30 ceiling, 12MP stills, no GPS, no log profile and no front screen.",
+    "Stabilization is a cut-down HyperSmooth without horizon lock."
+  ]
+}
+];
+
+/* =========================================================================
+   SCORING ENGINE
+   Six of the eight aspects are computed from the spec fields above and
+   normalised against the whole 19-camera field, so a score means the same
+   thing no matter what it is being compared with. Audio and Software are
+   stated editorial indices - see the "How these scores are calculated" panel.
+   ========================================================================= */
+
+var ASPECTS = [
+  {key:"image", name:"Image quality", sub:"resolution × sensor × colour", w:0.20},
+  {key:"low",   name:"Low light",     sub:"sensor area + processing",     w:0.12},
+  {key:"batt",  name:"Battery life",  sub:"rated runtime · modes differ", w:0.14},
+  {key:"dura",  name:"Durability",    sub:"water rating + build",         w:0.12},
+  {key:"port",  name:"Portability",   sub:"weight on the mount",          w:0.10},
+  {key:"audio", name:"Audio",         sub:"mic array + inputs",           w:0.10},
+  {key:"soft",  name:"Software & AI", sub:"app, editing, reframing",      w:0.10},
+  {key:"value", name:"Value",         sub:"score per street dollar",      w:0.12}
+];
+
+var LN = Math.log;
+
+function monthsSince(ym){
+  var p = ym.split("-"), then = new Date(+p[0], +p[1] - 1, 1), now = new Date();
+  return Math.max(0, (now.getFullYear() - then.getFullYear()) * 12 + (now.getMonth() - then.getMonth()));
+}
+
+function computeAll(){
+  function span(get){
+    var vs = CAMS.map(get);
+    return {mn: Math.min.apply(null, vs), mx: Math.max.apply(null, vs)};
+  }
+  function nrm(v, s){ return s.mx === s.mn ? 70 : 25 + 73 * (v - s.mn) / (s.mx - s.mn); }
+
+  var sPx    = span(function(c){ return LN(c.vid.px); });
+  var sArea  = span(function(c){ return LN(c.sensor.area * c.sensor.lenses); });
+  var sPer   = span(function(c){ return LN(c.sensor.area); });
+  var sPhoto = span(function(c){ return LN(c.photo); });
+  var sMin   = span(function(c){ return c.batt.min; });
+  var sWt    = span(function(c){ return LN(c.weight); });
+  var sWp    = span(function(c){ return LN(1 + c.wp); });
+
+  CAMS.forEach(function(c){
+    var bit = /10-bit/.test(c.color) ? 100 : (/Log/.test(c.color) ? 62 : 35);
+    c.S = {};
+    c.S.image = 0.45 * nrm(LN(c.vid.px), sPx)
+              + 0.28 * nrm(LN(c.sensor.area * c.sensor.lenses), sArea)
+              + 0.15 * bit
+              + 0.12 * nrm(LN(c.photo), sPhoto);
+    c.S.low   = 0.68 * nrm(LN(c.sensor.area), sPer) + 0.32 * c.llFeat;
+    c.S.batt  = nrm(c.batt.min, sMin);
+    c.S.dura  = 0.58 * nrm(LN(1 + c.wp), sWp) + 0.42 * c.rugged;
+    c.S.port  = 123 - nrm(LN(c.weight), sWt);
+    c.S.audio = c.audioIdx;
+    c.S.soft  = c.softIdx;
+    c.totalArea = c.sensor.area * c.sensor.lenses;
+  });
+
+  CAMS.forEach(function(c){
+    c.composite = c.S.image*0.28 + c.S.low*0.14 + c.S.batt*0.16 + c.S.dura*0.14
+                + c.S.port*0.10 + c.S.audio*0.09 + c.S.soft*0.09;
+    c.vRaw = c.composite / c.street;
+  });
+  var sV = span(function(c){ return c.vRaw; });
+
+  CAMS.forEach(function(c){
+    c.S.value = nrm(c.vRaw, sV);
+    c.overall = ASPECTS.reduce(function(t, a){ return t + c.S[a.key] * a.w; }, 0);
+    c.ageMonths = monthsSince(c.released);
+  });
+}
+
+/* =========================================================================
+   RENDERING
+   ========================================================================= */
+
+var state = {a:"x5", b:"hero13", fa:"all", fb:"all"};
+var lastSync = null;
+
+function byId(id){ for (var i=0;i<CAMS.length;i++) if (CAMS[i].id===id) return CAMS[i]; return CAMS[0]; }
+function $(s){ return document.querySelector(s); }
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function full(c){ return c.brand + " " + c.name; }
+function money(n){ return "$" + Math.round(n).toLocaleString("en-US"); }
+function r1(n){ return Math.round(n * 10) / 10; }
+
+function ageLabel(m){
+  if (m < 1) return "New this month";
+  if (m < 24) return m + " month" + (m===1?"":"s") + " old";
+  return r1(m/12) + " years old";
+}
+
+/* ---------- camera lists ---------- */
+function renderList(side){
+  var f = state["f" + side], sel = state[side];
+  var host = document.getElementById("list" + side.toUpperCase());
+  var html = "";
+  CAMS.forEach(function(c){
+    if (f !== "all" && c.brand.toLowerCase() !== f) return;
+    html += '<button type="button" role="option" class="mdl" data-side="' + side + '" data-id="' + c.id + '"'
+          + ' aria-selected="' + (c.id === sel) + '">'
+          + '<span class="n">' + esc(c.brand + " " + c.name) + '</span>'
+          + '<span class="p">' + money(c.street) + '</span>'
+          + '<span class="m">' + c.year + " · " + c.klass.toUpperCase() + " · " + esc(c.vid.label) + '</span>'
+          + '</button>';
+  });
+  host.innerHTML = html;
+}
+
+function renderPicked(side){
+  var c = byId(state[side]);
+  document.getElementById("picked" + side.toUpperCase()).innerHTML =
+      '<div class="who">' + esc(c.brand) + " " + esc(c.name) + '</div>'
+    + '<div class="sub">'
+      + '<span class="chip">' + c.klass + '</span>'
+      + '<span class="chip">' + c.released.replace("-", " · ") + '</span>'
+      + '<span class="chip">' + esc(c.vid.label) + '</span>'
+      + '<span class="chip">' + money(c.street) + '</span>'
+    + '</div>'
+    + '<p class="tagline">' + esc(c.tagline) + '</p>';
+}
+
+/* ---------- class-mismatch notice ---------- */
+function renderMismatch(A, B){
+  var host = document.getElementById("mismatch"), msg = "";
+  if (A.id === B.id){
+    msg = "<b>Same camera on both sides.</b> Every row will tie. Pick a different model in one of the two lists to get a real comparison.";
+  } else if ((A.klass === "360") !== (B.klass === "360")){
+    var sph = A.klass === "360" ? A : B, flat = A.klass === "360" ? B : A;
+    msg = "<b>Different jobs, not just different specs.</b> The " + esc(full(sph)) + " captures a whole sphere and you choose the framing afterwards; "
+        + "the " + esc(full(flat)) + " points where you point it and puts every pixel into that one frame. "
+        + "The " + esc(flat.name) + " will usually look sharper in its own frame at the same resolution number.";
+  } else if (A.klass !== B.klass){
+    msg = "<b>Different classes.</b> " + esc(A.name) + " is a " + A.klass.toLowerCase() + " camera and " + esc(B.name)
+        + " is a " + B.klass.toLowerCase() + " camera, so weigh Portability and Value against raw imaging before deciding.";
+  }
+  host.innerHTML = msg ? '<div class="flag"><span>' + msg + "</span></div>" : "";
+}
+
+/* ---------- stage 01: tiles + spec table ---------- */
+function tileSpec(A, B){
+  return [
+    {lbl:"Top video mode", a:A.vid.label, b:B.vid.label, an:A.vid.px, bn:B.vid.px, better:"hi",
+     fmt:function(){ return null; },
+     delta:function(hi, lo, w){ return w ? r1(hi/lo) + "× the pixels per second" : "Identical pixel throughput"; }},
+    {lbl:"Rated runtime", a:A.batt.min, b:B.batt.min, an:A.batt.min, bn:B.batt.min, better:"hi", unit:"min",
+     delta:function(hi, lo, w){ return w ? "+" + Math.round(hi-lo) + " min longer" : "Same rated runtime"; }},
+    {lbl:"Weight", a:A.weight, b:B.weight, an:A.weight, bn:B.weight, better:"lo", unit:"g",
+     delta:function(hi, lo, w){ return w ? Math.round(hi-lo) + " g lighter" : "Same weight"; }},
+    {lbl:"Waterproof, bare", a:A.wp, b:B.wp, an:A.wp, bn:B.wp, better:"hi", unit:"m",
+     delta:function(hi, lo, w){ return w ? "+" + r1(hi-lo) + " m deeper" : "Same depth rating"; }},
+    {lbl:"Total sensor area", a:r1(A.totalArea), b:r1(B.totalArea), an:A.totalArea, bn:B.totalArea, better:"hi", unit:"mm²",
+     delta:function(hi, lo, w){ return w ? r1(hi/lo) + "× the light-gathering area" : "Same sensor area"; }},
+    {lbl:"Street price", a:A.street, b:B.street, an:A.street, bn:B.street, better:"lo", unit:"$", pre:true,
+     delta:function(hi, lo, w){ return w ? money(hi-lo) + " cheaper" : "Same price"; }}
+  ];
+}
+
+function renderTiles(A, B, animate){
+  var host = document.getElementById("tiles"), html = "";
+  tileSpec(A, B).forEach(function(t, i){
+    var aWins = t.better === "hi" ? t.an > t.bn : t.an < t.bn;
+    var tie = t.an === t.bn;
+    var hi = Math.max(t.an, t.bn), lo = Math.min(t.an, t.bn);
+    var shareA = (t.an + t.bn) === 0 ? 50 : (t.an / (t.an + t.bn)) * 100;
+    var isNum = typeof t.a === "number";
+    var pre = t.pre ? "$" : "";
+    var unit = t.unit && !t.pre ? ' <span class="u">' + t.unit + "</span>" : "";
+    var dcol = tie ? "var(--muted)" : (aWins ? "var(--a)" : "var(--b)");
+    var who = tie ? "" : (aWins ? A.name + ": " : B.name + ": ");
+
+    html += '<div class="tile"><span class="lbl">' + t.lbl + '</span>'
+      + '<div class="pair">'
+        + '<span class="v va">' + pre + '<span class="cnt" data-to="' + (isNum ? t.a : 0) + '" data-num="' + isNum + '">'
+          + (isNum ? (animate ? "0" : t.a) : esc(t.a)) + "</span>" + unit + "</span>"
+        + '<span class="v vb">' + pre + '<span class="cnt" data-to="' + (isNum ? t.b : 0) + '" data-num="' + isNum + '">'
+          + (isNum ? (animate ? "0" : t.b) : esc(t.b)) + "</span>" + unit + "</span>"
+      + "</div>"
+      + '<div class="meter"><i class="ma" style="width:' + shareA.toFixed(1) + '%"></i><i class="mb" style="width:' + (100-shareA).toFixed(1) + '%"></i></div>'
+      + '<div class="delta" style="color:' + dcol + '">' + esc(who + t.delta(hi, lo, !tie)) + "</div>"
+      + "</div>";
+  });
+  host.innerHTML = html;
+  if (animate) runCounters(host);
+}
+
+function specRows(A, B){
+  function txt(v){ return {a:v(A), b:v(B), cmp:null}; }
+  function cmp(v, n, better){ return {a:v(A), b:v(B), na:n(A), nb:n(B), cmp:better}; }
+  return [
+    {grp:"Identity"},
+    {k:"Brand", r:txt(function(c){ return c.brand; })},
+    {k:"Class", r:txt(function(c){ return c.klass + " camera"; })},
+    {k:"Released", r:cmp(function(c){ return c.released.replace("-"," · "); }, function(c){ return -c.ageMonths; }, "hi")},
+    {k:"Age today", r:cmp(function(c){ return ageLabel(c.ageMonths); }, function(c){ return -c.ageMonths; }, "hi")},
+    {k:"Launch price", r:cmp(function(c){ return money(c.msrp); }, function(c){ return -c.msrp; }, "hi")},
+    {k:"Street, Aug 2026", r:cmp(function(c){ return money(c.street); }, function(c){ return -c.street; }, "hi")},
+
+    {grp:"Imaging"},
+    {k:"Top video mode", r:cmp(function(c){ return c.vid.label; }, function(c){ return c.vid.px; }, "hi")},
+    {k:"Other modes", r:txt(function(c){ return c.alt || "—"; })},
+    {k:"Sensor", r:cmp(function(c){ return c.sensor.label + (c.sensor.note ? '<span class="sup">' + esc(c.sensor.note) + "</span>" : ""); },
+                       function(c){ return c.sensor.area; }, "hi")},
+    {k:"Total sensor area", r:cmp(function(c){ return r1(c.totalArea) + " mm²" + (c.sensor.lenses > 1 ? '<span class="sup">2 × ' + r1(c.sensor.area) + " mm²</span>" : ""); },
+                                  function(c){ return c.totalArea; }, "hi")},
+    {k:"Stills", r:cmp(function(c){ return c.photo + " MP"; }, function(c){ return c.photo; }, "hi")},
+    {k:"Colour / log", r:txt(function(c){ return c.color; })},
+
+    {grp:"Power"},
+    {k:"Battery", r:(function(){
+        var v = function(c){ return (c.batt.mah ? c.batt.mah + " mAh" : "Not published")
+          + '<span class="sup">' + (c.batt.removable ? "Removable" : "Built in, not removable") + "</span>"; };
+        /* never crown a winner against an unpublished figure */
+        return (A.batt.mah && B.batt.mah) ? cmp(v, function(c){ return c.batt.mah; }, "hi") : txt(v);
+      })()},
+    {k:"Rated runtime", r:cmp(function(c){ return c.batt.min + " min"
+        + '<span class="sup">' + esc(c.batt.mode) + (c.batt.note ? " · " + esc(c.batt.note) : "") + "</span>"; },
+        function(c){ return c.batt.min; }, "hi")},
+
+    {grp:"Body"},
+    {k:"Weight", r:cmp(function(c){ return c.weight + " g"; }, function(c){ return -c.weight; }, "hi")},
+    {k:"Waterproof", r:cmp(function(c){ return (c.wp ? c.wp + " m bare" : "Not waterproof")
+        + '<span class="sup">' + esc(c.wpNote) + "</span>"; }, function(c){ return c.wp; }, "hi")},
+    {k:"Screen", r:txt(function(c){ return c.screen; })},
+    {k:"Storage", r:txt(function(c){ return c.storage; })},
+
+    {grp:"System"},
+    {k:"Stabilization", r:txt(function(c){ return c.stab; })},
+    {k:"Microphones", r:txt(function(c){ return c.mics; })},
+    {k:"GPS", r:txt(function(c){ return c.gps ? "Yes" : "No"; })},
+    {k:"Lens / glass", r:txt(function(c){ return c.glass; })}
+  ];
+}
+
+function renderTable(A, B){
+  var html = "<thead><tr>"
+    + '<th class="h ha">' + esc(full(A)) + "</th>"
+    + '<th class="h" style="text-align:center">Spec</th>'
+    + '<th class="h hb">' + esc(full(B)) + "</th>"
+    + "</tr></thead><tbody>";
+
+  specRows(A, B).forEach(function(row){
+    if (row.grp){ html += '<tr class="grp"><td colspan="3">' + row.grp + "</td></tr>"; return; }
+    var r = row.r, ca = "", cb = "";
+    if (r.cmp && r.na !== r.nb){
+      if (r.na > r.nb) ca = " win-a"; else cb = " win-b";
+    }
+    html += "<tr>"
+      + '<td class="va' + ca + '">' + r.a + "</td>"
+      + '<td class="k">' + row.k + "</td>"
+      + '<td class="vb' + cb + '">' + r.b + "</td>"
+      + "</tr>";
+  });
+  return html + "</tbody>";
+}
+
+/* ---------- stage 02: pros & cons ---------- */
+function pcCard(c, side){
+  function items(list, cls, sign, label){
+    return '<div class="seg ' + cls + '"><span class="lbl">' + label + "</span><ul>"
+      + list.map(function(t){ return "<li><i>" + sign + "</i><span>" + esc(t) + "</span></li>"; }).join("")
+      + "</ul></div>";
+  }
+  return '<article class="pc ' + side + '"><h3>' + esc(full(c))
+    + "<span>" + c.klass + " · " + c.released.replace("-", " · ") + " · " + money(c.street) + "</span></h3>"
+    + items(c.pros, "pros", "+", "What it does well")
+    + items(c.cons, "cons", "−", "Where it costs you")
+    + "</article>";
+}
+
+/* ---------- stage 03: aspect verdicts ---------- */
+function renderAspects(A, B){
+  var html = "";
+  ASPECTS.forEach(function(a){
+    var sa = A.S[a.key], sb = B.S[a.key];
+    var diff = sa - sb, tie = Math.abs(diff) < 2.5;
+    var share = (sa / (sa + sb)) * 100;
+    var cls = tie ? "" : (diff > 0 ? " wa" : " wb");
+    var badge = tie ? '<span class="asp-win tie">Too close</span>'
+      : '<span class="asp-win ' + (diff > 0 ? "wa" : "wb") + '">' + esc((diff > 0 ? A : B).name) + "</span>";
+    html += '<div class="asp">'
+      + '<div class="asp-name">' + a.name + "<span>" + a.sub + " · weight " + Math.round(a.w*100) + "%</span></div>"
+      + '<div class="tug">'
+        + '<span class="s sa">' + Math.round(sa) + "</span>"
+        + '<div class="track' + cls + '"><i class="fa" style="width:' + share.toFixed(1) + '%"></i>'
+          + '<i class="fb" style="width:' + (100-share).toFixed(1) + '%"></i></div>'
+        + '<span class="s sb">' + Math.round(sb) + "</span>"
+        + badge
+      + "</div></div>";
+  });
+  return html;
+}
+
+function edges(win, lose){
+  return ASPECTS.map(function(a){ return {n:a.name.toLowerCase(), d:win.S[a.key] - lose.S[a.key]}; })
+                .sort(function(x, y){ return y.d - x.d; });
+}
+
+function renderFinal(A, B){
+  var win = A.overall >= B.overall ? A : B;
+  var lose = win === A ? B : A;
+  var side = win === A ? "a" : "b";
+  var margin = win.overall - lose.overall;
+  var tally = ASPECTS.filter(function(a){ return win.S[a.key] > lose.S[a.key]; }).length;
+
+  var e = edges(win, lose);
+  var top = e.slice(0, 2).filter(function(x){ return x.d > 2.5; }).map(function(x){ return x.n; });
+  var back = e.slice().reverse().slice(0, 2).filter(function(x){ return x.d < -2.5; }).map(function(x){ return x.n; });
+
+  var call = margin < 2 ? "Effectively a draw"
+           : margin < 6 ? "A narrow win for the " + win.name
+           : margin < 14 ? "A clear win for the " + win.name
+           : "A decisive win for the " + win.name;
+
+  var body = margin < 2
+    ? "These two land within two points of each other across the weighted set, so the spec sheet will not decide this for you. Read Stage 02 and pick on the trade-offs that actually apply to how you shoot."
+    : win.name + " takes " + tally + " of the 8 aspects"
+      + (top.length ? ", leading clearly on " + top.join(" and ") : "")
+      + ". " + lose.name + (back.length ? " still wins on " + back.join(" and ") + ", which is the case for choosing it." : " does not lead on any aspect by a meaningful margin.");
+
+  var winEdge = e.slice(0, 2).map(function(x){ return x.n; });
+  var loseEdge = e.slice().reverse().slice(0, 2).map(function(x){ return x.n; });
+
+  return '<div class="crown">'
+      + '<div class="score"><div class="big cnt" data-to="' + Math.round(win.overall) + '" data-num="true" style="color:var(--' + side + ')">0</div>'
+      + '<div class="of">Weighted / 100</div></div>'
+      + '<div class="verdict"><span class="lbl">Overall verdict</span>'
+        + "<h3>" + esc(call) + "</h3>"
+        + "<p>" + esc(body) + "</p>"
+        + '<div class="tally">' + esc(full(win)) + " " + Math.round(win.overall)
+          + "  ·  " + esc(full(lose)) + " " + Math.round(lose.overall)
+          + "  ·  margin " + r1(margin) + "  ·  aspects " + tally + "–" + (8 - tally) + "</div>"
+      + "</div></div>"
+    + '<div class="pickif a"><span class="lbl">Choose this one if</span><strong>' + esc(full(A)) + "</strong>"
+      + "<p>" + esc("Your priorities are " + edges(A, B).slice(0,2).map(function(x){return x.n;}).join(" and ")
+        + ". " + A.pros[0]) + "</p></div>"
+    + '<div class="pickif b"><span class="lbl">Choose this one if</span><strong>' + esc(full(B)) + "</strong>"
+      + "<p>" + esc("Your priorities are " + edges(B, A).slice(0,2).map(function(x){return x.n;}).join(" and ")
+        + ". " + B.pros[0]) + "</p></div>";
+}
+
+/* ---------- counters ---------- */
+function runCounters(scope){
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  scope.querySelectorAll(".cnt").forEach(function(el){
+    if (el.dataset.num !== "true") return;
+    var to = parseFloat(el.dataset.to);
+    var dec = (String(to).split(".")[1] || "").length;
+    var settled = false;
+    function show(v){ el.textContent = dec ? v.toFixed(dec) : Math.round(v).toLocaleString("en-US"); }
+    function settle(){ if (settled) return; settled = true; show(to); }
+
+    if (reduce){ settle(); return; }
+
+    /* Safety net: requestAnimationFrame is paused in hidden tabs and
+       non-compositing panes. Without this the counter would sit on 0
+       forever instead of showing the real number. */
+    setTimeout(settle, 800);
+
+    var t0 = null;
+    requestAnimationFrame(function step(ts){
+      if (settled) return;
+      if (!t0) t0 = ts;
+      var p = Math.min(1, (ts - t0) / 620);
+      show(to * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) requestAnimationFrame(step); else settled = true;
+    });
+  });
+}
+
+/* ---------- master render ---------- */
+function renderAll(animate){
+  var A = byId(state.a), B = byId(state.b);
+  renderList("a"); renderList("b");
+  renderPicked("a"); renderPicked("b");
+  renderMismatch(A, B);
+  renderTiles(A, B, animate);
+  document.getElementById("specTable").innerHTML = renderTable(A, B);
+  document.getElementById("proscons").innerHTML = pcCard(A, "a") + pcCard(B, "b");
+  document.getElementById("aspects").innerHTML = renderAspects(A, B);
+  var fin = document.getElementById("final");
+  fin.innerHTML = renderFinal(A, B);
+  if (animate) runCounters(fin); else fin.querySelectorAll(".cnt").forEach(function(el){ el.textContent = el.dataset.to; });
+}
+
+/* ---------- readout + sync ---------- */
+function pad(n){ return n < 10 ? "0" + n : "" + n; }
+
+function stampReadout(){
+  var el = document.getElementById("readout");
+  if (!lastSync){ el.innerHTML = "Rev <em>2026.08</em> &middot; " + CAMS.length + " models &middot; not synced"; return; }
+  var t = lastSync, ago = Math.round((Date.now() - t.getTime()) / 1000);
+  var agoTxt = ago < 60 ? ago + "s ago" : Math.floor(ago/60) + "m " + (ago % 60) + "s ago";
+  el.innerHTML = "Rev <em>2026.08</em> &middot; " + CAMS.length + " models &middot; synced <em>"
+    + pad(t.getHours()) + ":" + pad(t.getMinutes()) + ":" + pad(t.getSeconds()) + "</em> &middot; " + agoTxt;
+}
+
+function doSync(){
+  var btn = document.getElementById("syncBtn"), sweep = document.getElementById("sweep");
+  btn.disabled = true;
+  sweep.classList.remove("go"); void sweep.offsetWidth; sweep.classList.add("go");
+  setTimeout(function(){
+    computeAll();
+    renderAll(true);
+    lastSync = new Date();
+    stampReadout();
+    btn.disabled = false;
+  }, 480);
+}
+
+/* ---------- wiring ---------- */
+document.addEventListener("click", function(ev){
+  var mdl = ev.target.closest ? ev.target.closest(".mdl") : null;
+  if (mdl){ state[mdl.dataset.side] = mdl.dataset.id; renderAll(true); return; }
+
+  var flt = ev.target.closest ? ev.target.closest(".filters button") : null;
+  if (flt){
+    var side = flt.parentNode.dataset.side;
+    state["f" + side] = flt.dataset.f;
+    flt.parentNode.querySelectorAll("button").forEach(function(b){
+      b.setAttribute("aria-pressed", String(b === flt));
+    });
+    renderList(side);
+    return;
+  }
+
+  var pre = ev.target.closest ? ev.target.closest("[data-preset]") : null;
+  if (pre){
+    var ids = pre.dataset.preset.split(":");
+    state.a = ids[0]; state.b = ids[1];
+    state.fa = state.fb = "all";
+    document.querySelectorAll(".filters").forEach(function(f){
+      f.querySelectorAll("button").forEach(function(b){ b.setAttribute("aria-pressed", String(b.dataset.f === "all")); });
+    });
+    renderAll(true);
+    document.getElementById("stage1").scrollIntoView({behavior:"smooth", block:"start"});
+  }
+});
+
+document.getElementById("swapBtn").addEventListener("click", function(){
+  var t = state.a; state.a = state.b; state.b = t;
+  var tf = state.fa; state.fa = state.fb; state.fb = tf;
+  document.querySelectorAll(".filters").forEach(function(f){
+    var want = state["f" + f.dataset.side];
+    f.querySelectorAll("button").forEach(function(b){ b.setAttribute("aria-pressed", String(b.dataset.f === want)); });
+  });
+  renderAll(true);
+});
+
+document.getElementById("syncBtn").addEventListener("click", doSync);
+
+document.getElementById("themeBtn").addEventListener("click", function(){
+  var root = document.documentElement, cur = root.getAttribute("data-theme");
+  if (!cur){
+    var darkNow = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    root.setAttribute("data-theme", darkNow ? "light" : "dark");
+  } else {
+    root.setAttribute("data-theme", cur === "dark" ? "light" : "dark");
+  }
+});
+
+/* ---------- static copy ---------- */
+var PRESETS = [
+  ["x6:max2",       "X6 vs MAX2"],
+  ["x5:hero13",     "X5 vs HERO13"],
+  ["acepro2:hero13","Ace Pro 2 vs HERO13"],
+  ["x6:x5",         "X6 vs X5"],
+  ["hero13:hero12", "HERO13 vs HERO12"],
+  ["m1pro:acepro2", "MISSION 1 PRO vs Ace Pro 2"],
+  ["goultra:lithero","GO Ultra vs LIT HERO"],
+  ["max2:max",      "MAX2 vs MAX"]
+];
+document.getElementById("presets").insertAdjacentHTML("beforeend",
+  PRESETS.map(function(p){ return '<button type="button" data-preset="' + p[0] + '">' + p[1] + "</button>"; }).join(""));
+
+document.getElementById("howBody").innerHTML =
+  "<p>Each aspect is scored 0&ndash;100 against the whole 19-camera field, not against the other camera on screen. "
+  + "That means a score means the same thing in every matchup &mdash; swapping the opponent never moves a camera's number.</p>"
+  + "<ul>"
+  + "<li><b>Image quality</b> &mdash; 45% pixels per second at the top video mode, 28% total sensor area, 15% colour depth and log support, 12% stills resolution. All on a log scale.</li>"
+  + "<li><b>Low light</b> &mdash; 68% sensor area <i>per lens</i> (what actually gathers the light), 32% processing: PureVideo, Quad Bayer pixel binning, dedicated imaging chips.</li>"
+  + "<li><b>Battery life</b> &mdash; the manufacturer's rated runtime. Modes differ between makers, so the mode is printed next to every figure in Stage 01. Read them together.</li>"
+  + "<li><b>Durability</b> &mdash; 58% bare waterproof depth, 42% a build index covering replaceable lens glass, cold rating and exposed optics.</li>"
+  + "<li><b>Portability</b> &mdash; body weight, inverted.</li>"
+  + "<li><b>Audio</b> and <b>Software &amp; AI</b> &mdash; stated editorial indices. Microphone count and app quality cannot be derived from a spec sheet, so these two are judgement calls informed by published reviews, weighted at 10% each.</li>"
+  + "<li><b>Value</b> &mdash; the weighted spec composite divided by the street price, then normalised. Cheap cameras that punch above their price rank high here.</li>"
+  + "</ul>"
+  + "<p><b>Sync stats</b> re-runs this entire pipeline: it recomputes every normalisation and score from the dataset and recalculates each camera's age from today's date. "
+  + "It is a local recompute, not a network fetch &mdash; there is no public API for camera specs, and a page that claimed to poll one would be lying to you.</p>";
+
+document.getElementById("footer").innerHTML =
+  "<b>Dataset rev 2026.08.</b> Specifications come from manufacturer press releases and published spec sheets: Insta360's X6, X5, X4 Air, GO Ultra and Ace Pro 2 launch material and online spec manuals; "
+  + "GoPro's MAX2, LIT HERO, MISSION 1 Series and HERO13 Black announcements and support pages. "
+  + "Street prices are approximate US figures for August 2026 and are the one number here that moves week to week &mdash; check a retailer before you buy. "
+  + "Battery figures are manufacturer ratings at the mode shown; real-world runtime is lower, and on the MAX2 substantially lower once thermal limits bite. "
+  + "Sensor areas are computed from standard sensor-format dimensions and are comparative, not exact die measurements. "
+  + "Not affiliated with Insta360 or GoPro.";
+
+/* ---------- boot ---------- */
+computeAll();
+renderAll(false);
+lastSync = new Date();
+stampReadout();
+setInterval(stampReadout, 1000);
+</script>

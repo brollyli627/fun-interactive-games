@@ -1,0 +1,2602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>RANCH EMPIRE</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#0c0f0b;color:#e9e3d2;font-family:"Trebuchet MS",Verdana,sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none}
+canvas{display:block;position:absolute;inset:0}
+button{font-family:inherit;cursor:pointer}
+.hidden{display:none !important}
+
+/* ---------- HUD ---------- */
+#hud{position:absolute;left:0;top:0;right:0;padding:8px;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;pointer-events:none;font-size:12.5px;z-index:5}
+.card{background:rgba(12,16,11,.84);border:1px solid #3d4a33;border-radius:7px;padding:5px 9px;line-height:1.45;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.card b{color:#f3d98b}
+.bar{width:110px;height:7px;background:#2a3123;border:1px solid #47533b;border-radius:4px;overflow:hidden;display:inline-block;vertical-align:middle}
+.bar i{display:block;height:100%}
+#bottomhud{position:absolute;left:8px;bottom:8px;display:flex;gap:8px;align-items:flex-end;pointer-events:none;font-size:12.5px;z-index:5}
+#keyhint{position:absolute;right:8px;bottom:8px;font-size:11px;color:#8e9a7e;text-align:right;pointer-events:none;line-height:1.5;z-index:5}
+#toasts{position:absolute;left:50%;top:64px;transform:translateX(-50%);z-index:6;pointer-events:none;display:flex;flex-direction:column;gap:5px;align-items:center}
+.toast{background:rgba(12,16,11,.92);border:1px solid #5c6b4b;border-left:3px solid #d8b44a;padding:6px 14px;border-radius:5px;font-size:13px;animation:tin .25s ease}
+.toast.bad{border-left-color:#c8503a}.toast.good{border-left-color:#6fbf5a}.toast.cop{border-left-color:#4f8fd8}
+@keyframes tin{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+#prompt{position:absolute;left:50%;bottom:96px;transform:translateX(-50%);background:rgba(12,16,11,.9);border:1px solid #6d7b58;border-radius:6px;padding:6px 14px;font-size:13px;z-index:5;pointer-events:none;text-align:center}
+#prompt b{color:#f3d98b}
+
+/* ---------- Modal / panels ---------- */
+#modal{position:absolute;inset:0;background:rgba(6,8,6,.72);z-index:20;display:flex;align-items:center;justify-content:center;padding:18px}
+.panel{background:linear-gradient(#1a2016,#141a11);border:1px solid #55643f;border-radius:12px;width:min(980px,100%);max-height:calc(100vh - 36px);display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(0,0,0,.7)}
+.panel.sm{width:min(580px,100%)}
+.ph{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #3c4830;background:rgba(0,0,0,.22);border-radius:12px 12px 0 0}
+.ph h2{font-size:17px;letter-spacing:2px;color:#f3d98b;font-weight:700}
+.ph .sub{font-size:12px;color:#94a382;flex:1}
+.pb{padding:14px 16px;overflow:auto;flex:1}
+.pf{padding:10px 16px;border-top:1px solid #3c4830;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:#9db089}
+.x{margin-left:auto;background:#3a2420;border:1px solid #7a4436;color:#e8bfae;border-radius:6px;padding:4px 12px;font-size:12px}
+.x:hover{background:#5a3128}
+
+.btn{background:#2b3623;border:1px solid #5a6b45;color:#e4e9d6;border-radius:6px;padding:6px 12px;font-size:12.5px;transition:.12s}
+.btn:hover{background:#3c4c30;border-color:#87a163}
+.btn.on{background:#4c6136;border-color:#9dbd6d;color:#fff}
+.btn.buy{background:#2c3a2a;border-color:#5f8a4c}.btn.buy:hover{background:#3d5439}
+.btn.sell{background:#3a3324;border-color:#8a7a3f}.btn.sell:hover{background:#4e452f}
+.btn.dang{background:#3a2320;border-color:#8a4436}.btn.dang:hover{background:#52302a}
+.btn:disabled{opacity:.38;cursor:not-allowed;background:#242a20}
+.btn.sm{padding:3px 8px;font-size:11.5px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(238px,1fr))}
+.item{background:rgba(255,255,255,.035);border:1px solid #3d4a30;border-radius:9px;padding:10px;display:flex;flex-direction:column}
+.item h3{font-size:14px;color:#f0dfa8;margin-bottom:3px}
+.item .d{font-size:11.5px;color:#93a381;min-height:32px;line-height:1.4;margin-bottom:6px}
+.stat{display:flex;justify-content:space-between;font-size:11.5px;color:#c3cfb2;padding:1px 0}
+.stat s{color:#8a9a78;text-decoration:none}
+.row{display:flex;gap:8px;align-items:center;padding:7px 9px;border:1px solid #3a4630;border-radius:7px;background:rgba(255,255,255,.03);margin-bottom:7px;font-size:12.5px;flex-wrap:wrap}
+.row.sel{border-color:#9dbd6d;background:rgba(120,160,80,.14)}
+.spacer{flex:1}
+.q{padding:1px 7px;border-radius:20px;font-size:11px;font-weight:bold}
+.q1{background:#5d2a22;color:#ffbcaa}.q2{background:#5c4a1e;color:#ffe1a0}.q3{background:#2e5230;color:#b6f0ac}.q4{background:#245049;color:#9df0da}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:780px){.cols{grid-template-columns:1fr}}
+.h4{font-size:12px;letter-spacing:1.6px;color:#8fa07c;margin-bottom:8px;border-bottom:1px solid #33402a;padding-bottom:4px}
+.mood{font-size:11px;color:#9db089;font-style:italic}
+.money{color:#8fd66a;font-weight:bold}
+.warn{color:#e0a55a}.bad{color:#e07a5a}
+.chk{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#c3cfb2}
+.chk i{width:14px;height:14px;border:1px solid #7d8f68;border-radius:3px;display:inline-block;background:#1a2016}
+.chk.on i{background:#8fbf5a;box-shadow:inset 0 0 0 2px #1a2016}
+.dlg{font-size:13px;line-height:1.6;color:#cfd8c0;background:rgba(0,0,0,.22);border-left:3px solid #6f8a4f;padding:9px 12px;border-radius:0 6px 6px 0;margin-bottom:12px}
+.empty{color:#7f8d70;font-size:12.5px;font-style:italic;padding:14px 0;text-align:center}
+.help b{color:#f0dfa8}
+.help li{margin:3px 0 3px 16px;font-size:12.5px;line-height:1.55;color:#c3cfb2}
+
+/* ---------- Start screen ---------- */
+#start{position:absolute;inset:0;z-index:30;background:radial-gradient(circle at 50% 18%,#1d2717,#0a0d08 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow:auto}
+#start h1{font-size:min(58px,11vw);letter-spacing:9px;color:#f0cf72;text-shadow:0 4px 0 #3f3311,0 0 30px rgba(240,207,114,.25)}
+#start .tag{color:#93a381;letter-spacing:3px;font-size:12px;margin:6px 0 22px}
+#locs{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));max-width:1020px;width:100%}
+.loc{background:rgba(255,255,255,.04);border:1px solid #46553a;border-radius:11px;padding:14px;cursor:pointer;transition:.15s}
+.loc:hover{border-color:#a5c273;background:rgba(140,180,90,.12);transform:translateY(-3px)}
+.loc h3{color:#f0dfa8;font-size:16px;margin-bottom:4px}
+.loc .d{font-size:12px;color:#94a382;line-height:1.5;min-height:66px;margin-bottom:8px}
+#start .foot{margin-top:20px;color:#6f7d62;font-size:12px;text-align:center;line-height:1.8;max-width:660px}
+#start .foot b{color:#b8c9a2}
+
+/* ---------- Cheat menu ---------- */
+#cheatTab{position:absolute;top:8px;right:8px;z-index:16;background:rgba(20,10,10,.85);border:1px solid #7a4a3a;color:#f0c090;
+  font-size:11px;letter-spacing:1px;padding:5px 10px;border-radius:6px;cursor:pointer;pointer-events:auto}
+#cheatTab:hover{background:rgba(40,18,18,.9);border-color:#c07a4a}
+#cheatTab.active{background:rgba(60,20,20,.92);border-color:#e08a4a;color:#ffd9a0}
+#cheat{position:absolute;top:36px;right:8px;width:252px;max-height:calc(100vh - 50px);overflow:auto;z-index:16;
+  background:rgba(14,10,10,.94);border:1px solid #7a4a3a;border-radius:9px;padding:10px;pointer-events:auto;
+  box-shadow:0 10px 30px rgba(0,0,0,.6)}
+#cheat h4{font-size:10.5px;letter-spacing:1.4px;color:#e08a4a;margin:10px 0 5px;border-bottom:1px solid #4a2e24;padding-bottom:3px}
+#cheat h4:first-child{margin-top:0}
+#cheat .row2{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:4px}
+#cheat button{background:#2c1e1a;border:1px solid #6b4636;color:#f0dcc8;border-radius:5px;padding:4px 8px;font-size:11px;cursor:pointer;flex:1;min-width:0}
+#cheat button:hover{background:#40281f;border-color:#c07a4a}
+#cheat button.on{background:#4a6b36;border-color:#9dbd6d;color:#fff}
+#cheat .stat2{display:flex;justify-content:space-between;font-size:11px;color:#d8c4b0;padding:1px 0}
+#cheat .stat2 b{color:#ffd9a0}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<div id="hud"></div>
+<div id="bottomhud"></div>
+<div id="keyhint"></div>
+<div id="toasts"></div>
+<div id="prompt" class="hidden"></div>
+<div id="modal" class="hidden"></div>
+<div id="cheatTab" onclick="toggleCheat()">CHEATS ( ` )</div>
+<div id="cheat" class="hidden"></div>
+
+<div id="start">
+  <h1>RANCH EMPIRE</h1>
+  <div class="tag">RAISE &nbsp;·&nbsp; SLAUGHTER &nbsp;·&nbsp; HAGGLE &nbsp;·&nbsp; SURVIVE</div>
+  <div id="locs"></div>
+  <div class="foot">
+    <b>WASD</b> move &nbsp;·&nbsp; <b>E</b> interact &nbsp;·&nbsp; <b>C</b> collect nearby &nbsp;·&nbsp; <b>B</b> build &nbsp;·&nbsp; <b>Click</b> attack &nbsp;·&nbsp; <b>F</b> mug &nbsp;·&nbsp; <b>1-5</b> weapons &nbsp;·&nbsp; <b>H</b> help<br>
+    Pick where you set up. It changes your money, your neighbours, and how hard the county leans on you.
+  </div>
+</div>
+
+<script>
+"use strict";
+/* =========================================================================
+   RANCH EMPIRE - top-down livestock business sim, single file, no deps.
+   ========================================================================= */
+
+/* ---------------------------------------------------------------- helpers */
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const ri=(a,b)=>Math.floor(a+Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const chance=p=>Math.random()<p;
+const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const money=n=>'$'+Math.round(n).toLocaleString();
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+let UID=1; const uid=()=>UID++;
+const TILE=32;
+
+/* ------------------------------------------------------------------- data */
+const MEAT={
+  cow    :{name:'Beef',       base:13.5},
+  pig    :{name:'Pork',       base:12.0},
+  sheep  :{name:'Mutton',     base:11.0},
+  chicken:{name:'Chicken',    base:9.5},
+  duck   :{name:'Duck',       base:14.5},
+  horse  :{name:'Horse Meat', base:8.0}
+};
+const RES={
+  milk   :{name:'Milk',      unit:'L',   base:3.5, col:'#f2f0e4'},
+  egg    :{name:'Eggs',      unit:'dz',  base:6.0, col:'#e8d9a8'},
+  wool   :{name:'Wool',      unit:'kg',  base:14.0,col:'#ded8cb'},
+  truffle:{name:'Truffles',  unit:'ea',  base:26.0,col:'#5c4632'},
+  manure :{name:'Manure',    unit:'bag', base:5.0, col:'#6b5334'},
+  duckegg:{name:'Duck Eggs', unit:'dz',  base:9.0, col:'#cfe0d2'}
+};
+
+/* breed fields: grow = days to adult, prod = units/day, breed = days between births,
+   meat = kg at full maturity, feed = feed units/day, price = $, q = quality bonus */
+const SPECIES={
+  cow:{name:'Cow',plural:'Cattle',res:'milk',sz:19,litter:[1,1],breeds:{
+    holstein :{name:'Holstein', price:640, grow:11, prod:14.0, breed:20, meat:118, feed:2.9, q:0,  c1:'#f4f2ea',c2:'#2c2a28', d:'Milk machine. Eats like a tractor, breeds slow, mediocre carcass.'},
+    angus    :{name:'Angus',    price:880, grow:10, prod:3.0,  breed:17, meat:172, feed:2.5, q:12, c1:'#232221',c2:'#111111', d:'Pure beef. Barely worth milking, but the carcass is money.'},
+    jersey   :{name:'Jersey',   price:470, grow:8,  prod:9.5,  breed:11, meat:82,  feed:1.8, q:4,  c1:'#b98b52',c2:'#7a5730', d:'Cheap, quick, fertile. Small yields but they multiply.'},
+    highland :{name:'Highland', price:760, grow:14, prod:5.0,  breed:21, meat:145, feed:1.3, q:16, c1:'#b3612c',c2:'#7d4118', d:'Hardy. Nearly free to feed, slow to raise, prime quality meat.'}
+  }},
+  pig:{name:'Pig',plural:'Pigs',res:'truffle',sz:15,litter:[2,4],breeds:{
+    berkshire:{name:'Berkshire', price:340, grow:8, prod:0.32, breed:11, meat:76, feed:1.5, q:10, c1:'#332b26',c2:'#e6d7cd', d:'Black pig, marbled meat. Fair truffle nose.'},
+    hampshire:{name:'Hampshire', price:300, grow:7, prod:0.18, breed:9,  meat:88, feed:1.7, q:2,  c1:'#3a3330',c2:'#efe6de', d:'Grows fast, eats plenty, huge litters. A meat factory.'},
+    tamworth :{name:'Tamworth',  price:390, grow:9, prod:0.55, breed:13, meat:62, feed:1.1, q:6,  c1:'#c96f3a',c2:'#e5a077', d:'Ginger forager. Digs up serious truffle money, less meat.'},
+    kunekune :{name:'Kunekune',  price:210, grow:6, prod:0.24, breed:7,  meat:34, feed:0.7, q:4,  c1:'#d9a98d',c2:'#8a5c46', d:'Tiny, cheap, breeds constantly. A starter herd in a box.'}
+  }},
+  sheep:{name:'Sheep',plural:'Sheep',res:'wool',sz:15,litter:[1,2],breeds:{
+    merino :{name:'Merino',  price:300, grow:9,  prod:1.15, breed:14, meat:34, feed:1.1, q:2, c1:'#efeade',c2:'#d8cfbb', d:'The wool standard. Fleece pays, mutton is an afterthought.'},
+    suffolk:{name:'Suffolk', price:340, grow:8,  prod:0.45, breed:12, meat:56, feed:1.3, q:9, c1:'#e6e1d4',c2:'#1e1c1a', d:'Black-faced meat sheep. Thick lamb, thin fleece.'},
+    dorper :{name:'Dorper',  price:260, grow:7,  prod:0.20, breed:9,  meat:48, feed:0.9, q:5, c1:'#e9e3d6',c2:'#4a4640', d:'Sheds its own wool. Cheap, fertile, all about the carcass.'},
+    romney :{name:'Romney',  price:280, grow:10, prod:0.90, breed:13, meat:44, feed:0.8, q:6, c1:'#f2eee2',c2:'#cfc7b4', d:'Balanced and thrifty. Good fleece, decent meat, low feed.'}
+  }},
+  chicken:{name:'Chicken',plural:'Chickens',res:'egg',sz:9,litter:[2,4],breeds:{
+    leghorn  :{name:'Leghorn',   price:48, grow:4, prod:1.25, breed:4, meat:2.0, feed:0.22, q:0,  c1:'#f6f2e6',c2:'#d84a3a', d:'Egg belt. Lays nearly daily, almost no meat on it.'},
+    orpington:{name:'Orpington', price:66, grow:6, prod:0.70, breed:6, meat:4.2, feed:0.30, q:8,  c1:'#e8b24a',c2:'#b9812b', d:'Fat, docile roaster. Half eggs, half dinner.'},
+    cornish  :{name:'Cornish',   price:78, grow:5, prod:0.25, breed:7, meat:6.0, feed:0.38, q:12, c1:'#e2ddd0',c2:'#7d3b2e', d:'Broiler. Bulks up fast, barely lays.'},
+    bantam   :{name:'Bantam',    price:30, grow:3, prod:0.55, breed:3, meat:1.1, feed:0.12, q:2,  c1:'#c98b3f',c2:'#3a2a1e', d:'Dirt cheap, breeds like a rumour. Everything about it is small.'}
+  }},
+  duck:{name:'Duck',plural:'Ducks',res:'duckegg',sz:10,litter:[2,4],breeds:{
+    pekin  :{name:'Pekin',          price:82,  grow:5, prod:0.75, breed:6, meat:5.0, feed:0.30, q:10, c1:'#f7f3e2',c2:'#e8a92e', d:'White table duck. Premium meat, steady eggs.'},
+    runner :{name:'Indian Runner',  price:70,  grow:4, prod:1.20, breed:5, meat:2.6, feed:0.24, q:2,  c1:'#d9cfae',c2:'#8a7440', d:'Stands upright, runs everywhere, lays constantly.'},
+    muscovy:{name:'Muscovy',        price:110, grow:7, prod:0.45, breed:8, meat:8.5, feed:0.26, q:16, c1:'#26241f',c2:'#e4e0d4', d:'Big, lean, expensive. Chefs pay stupid money for it.'},
+    khaki  :{name:'Khaki Campbell', price:64,  grow:4, prod:1.05, breed:4, meat:2.9, feed:0.20, q:4,  c1:'#9a7b4c',c2:'#5f4a2c', d:'Cheap egg engine. Breeds fast, feeds cheap.'}
+  }},
+  horse:{name:'Horse',plural:'Horses',res:'manure',sz:20,litter:[1,1],breeds:{
+    quarter:{name:'Quarter Horse', price:1500, grow:15, prod:1.8, breed:28, meat:118, feed:2.2, q:6,  live:2100, spd:.06, c1:'#8a5a2e',c2:'#5c3a1c', d:'Steady ranch horse. Every adult you own makes you quicker on foot.'},
+    clydes :{name:'Clydesdale',    price:2200, grow:18, prod:2.6, breed:32, meat:186, feed:3.2, q:4,  live:3100, spd:.04, c1:'#4a3120',c2:'#efe9dc', d:'Enormous. Piles of fertiliser, huge carcass, huge appetite.'},
+    mustang:{name:'Mustang',       price:900,  grow:13, prod:1.2, breed:22, meat:96,  feed:1.2, q:8,  live:1250, spd:.09, c1:'#6b5240',c2:'#3a2c22', d:'Half-wild and cheap to keep. The fastest thing you can own.'},
+    arabian:{name:'Arabian',       price:2900, grow:16, prod:1.4, breed:26, meat:88,  feed:1.9, q:10, live:4400, spd:.08, c1:'#d8cfc0',c2:'#9a8f7d', d:'Status symbol. Terrible meat value, sells live for a fortune.'}
+  }}
+};
+const SPKEYS=Object.keys(SPECIES);
+
+const STRUCTS={
+  pen_s :{name:'Small Pen',      w:6,h:5, cost:280,  cap:5,  kinds:'*', d:'Fenced yard. Holds 5 head of one species.'},
+  pen_l :{name:'Large Pen',      w:9,h:7, cost:820,  cap:12, kinds:'*', d:'Holds 12 head. Cheaper per animal than two small pens.'},
+  coop  :{name:'Chicken Coop',   w:5,h:4, cost:400,  cap:10, kinds:['chicken','duck'], prod:.20, hp:10, d:'Birds only. +20% egg production and healthier flocks.'},
+  barn  :{name:'Barn',           w:8,h:6, cost:1500, cap:9,  kinds:['cow','horse','pig','sheep'], prod:.20, hp:10, d:'Big stock only. +20% production, keeps them healthy.'},
+  trough:{name:'Feed Trough',    w:2,h:1, cost:140,  d:'Drop it inside a pen: that pen eats 25% less feed.'},
+  water :{name:'Water Trough',   w:2,h:1, cost:100,  d:'Drop it inside a pen: animals there recover health much faster.'},
+  pond  :{name:'Duck Pond',      w:5,h:4, cost:460,  d:'+30% duck production across the whole farm.'},
+  silo  :{name:'Feed Silo',      w:3,h:3, cost:950,  d:'+300 feed storage.'},
+  shed  :{name:'Storage Shed',   w:5,h:4, cost:600,  d:'+400 product storage.'},
+  abat  :{name:'Slaughterhouse', w:7,h:5, cost:2600, d:'+12 meat quality and +10% yield on every slaughter.'},
+  cold  :{name:'Cold Store',     w:5,h:4, cost:1400, d:'Meat stops losing quality while it sits in your store.'},
+  vet   :{name:'Vet Station',    w:5,h:4, cost:1900, d:'Sick animals recover. Almost nothing dies on you.'}
+};
+const STKEYS=Object.keys(STRUCTS);
+
+/* Every structure can be improved after it is standing. Walk up to it and press E or G.
+   Costs scale by 75% per level already bought, and by the location's build modifier. */
+const UPG={
+  pen_s:[
+    {id:'space',name:'Extra Fencing',      cost:240, max:3, d:'+2 head of capacity per level.'},
+    {id:'shade',name:'Shade & Windbreak',  cost:320, max:2, d:'+8% production and healthier stock in this pen.'},
+    {id:'breed',name:'Breeding Program',   cost:420, max:3, d:'Females here give birth 14% sooner per level.'},
+    {id:'auto', name:'Hired Hand',         cost:950, max:1, d:'Collects produce from this pen for you, around the clock.'}
+  ],
+  pen_l:[
+    {id:'space',name:'Extra Fencing',      cost:420, max:3, d:'+2 head of capacity per level.'},
+    {id:'shade',name:'Shade & Windbreak',  cost:480, max:2, d:'+8% production and healthier stock in this pen.'},
+    {id:'breed',name:'Breeding Program',   cost:640, max:3, d:'Females here give birth 14% sooner per level.'},
+    {id:'auto', name:'Hired Hand',         cost:1250,max:1, d:'Collects produce from this pen for you, around the clock.'}
+  ],
+  coop:[
+    {id:'nest', name:'Nesting Boxes',      cost:440, max:2, d:'+15% eggs laid per level.'},
+    {id:'space',name:'Extra Perches',      cost:340, max:2, d:'+3 birds of capacity per level.'},
+    {id:'incub',name:'Incubator',          cost:560, max:2, d:'Eggs hatch 22% sooner per level.'},
+    {id:'auto', name:'Egg Belt',           cost:780, max:1, d:'Eggs run straight into storage. No more walking the coop.'}
+  ],
+  barn:[
+    {id:'space',name:'Extra Stalls',       cost:640, max:2, d:'+3 head of capacity per level.'},
+    {id:'feed', name:'Automatic Feeders',  cost:580, max:2, d:'Stock in this barn eats 18% less per level.'},
+    {id:'heat', name:'Heat Lamps & Bedding',cost:720,max:2, d:'+10 health regen, and animals here grow up 10% faster per level.'},
+    {id:'auto', name:'Milking Rig',        cost:1200,max:1, d:'Milks and collects from everything in the barn automatically.'}
+  ],
+  trough:[
+    {id:'hopper',name:'Auto-Refill Hopper',cost:260, max:2, d:'Another 8% off this pen&rsquo;s feed use per level.'},
+    {id:'lick', name:'Mineral Lick',       cost:220, max:1, d:'+6 health regen for the whole pen.'}
+  ],
+  water:[
+    {id:'filter',name:'Filtered Supply',   cost:240, max:1, d:'+8 more health regen for the pen.'},
+    {id:'mist', name:'Misting Sprinklers', cost:380, max:2, d:'+6% production in this pen per level.'}
+  ],
+  pond:[
+    {id:'reeds',name:'Reed Beds',          cost:520, max:2, d:'+10% duck production farm-wide per level.'},
+    {id:'fish', name:'Stock It With Fish', cost:900, max:2, d:'Quietly sells $55 of fish every morning, per level.'}
+  ],
+  silo:[
+    {id:'rings',name:'Extension Rings',    cost:420, max:3, d:'+200 feed storage per level.'},
+    {id:'seal', name:'Sealed & Dried',     cost:820, max:2, d:'The entire herd eats 7% less per level.'},
+    {id:'order',name:'Standing Feed Order',cost:1300,max:1, d:'Tops the silo up each morning when it runs low. Charges 10% over counter price.'}
+  ],
+  shed:[
+    {id:'rack', name:'Racking',            cost:380, max:3, d:'+300 produce storage per level.'},
+    {id:'order',name:'Standing Produce Order',cost:1500,max:1,d:'A truck takes every scrap of produce each morning at 92% of the going rate.'}
+  ],
+  abat:[
+    {id:'blade',name:'Precision Line',     cost:980, max:2, d:'+6 meat quality on every slaughter, per level.'},
+    {id:'yield',name:'Full Carcass Use',   cost:860, max:2, d:'+8% meat weight off every carcass, per level.'},
+    {id:'cull', name:'Standing Cull Order',cost:1600,max:1, toggle:true, d:'Each morning, any pen that is full has its oldest grown animal culled. Never touches young stock.'}
+  ],
+  cold:[
+    {id:'age',  name:'Dry Ageing Room',    cost:1250,max:1, d:'Meat gains quality while it hangs instead of losing it, up to +14 over what it came in at.'},
+    {id:'pack', name:'Vacuum Packing',     cost:1150,max:2, d:'+5% on every meat price you are offered, per level.'}
+  ],
+  vet:[
+    {id:'care', name:'Round-the-Clock Care',cost:980,max:2, d:'+10 health regen for every animal you own, per level.'},
+    {id:'fert', name:'Fertility Program',  cost:1300,max:2, d:'Every female on the farm breeds 12% sooner, per level.'},
+    {id:'growth',name:'Growth Supplements',cost:1500,max:2, d:'Everything on the farm grows up 12% faster, per level.'}
+  ]
+};
+
+const WEAPONS={
+  fists  :{name:'Fists',   dmg:6,  cd:.34, reach:30,  kind:'melee', illegal:false, cost:0,    d:'Free. Embarrassing.'},
+  knife  :{name:'Knife',   dmg:11, cd:.16, reach:34,  kind:'melee', illegal:false, cost:180,  d:'Very fast, very low damage per hit. Legal to carry.'},
+  bat    :{name:'Bat',     dmg:34, cd:.78, reach:46,  kind:'melee', illegal:false, cost:260,  d:'Slow, heavy swing. Drops most people in two. Legal.'},
+  handgun:{name:'Handgun', dmg:28, cd:.42, reach:520, kind:'gun',   illegal:true,  cost:1400, ammo:'pistol', d:'ILLEGAL. Accurate. Cops chase you on sight if they spot it.'},
+  shotgun:{name:'Shotgun', dmg:20, cd:1.1, reach:250, kind:'gun',   illegal:true,  cost:2600, ammo:'shell', pellets:5, spread:.30, d:'ILLEGAL. Five pellets. Devastating up close, useless far off.'}
+};
+const WKEYS=['fists','knife','bat','handgun','shotgun'];
+
+const LOCS=[
+  {id:'green',name:'Green Valley',cash:2400,rep:55,
+   d:'Rolling pasture, fair prices, neighbours who wave. Nothing is cheap, nothing is broken.',
+   mods:{build:1,feed:1,prod:1,meat:1,animal:1,heat:1,gun:1}},
+  {id:'dust',name:'Dustbowl Flats',cash:3600,rep:44,
+   d:'Cheap dirt and hungry stock. Land is nearly free, feed vanishes, and butchers pay a premium for whatever survives.',
+   mods:{build:.78,feed:1.3,prod:.9,meat:1.16,animal:.88,heat:.95,gun:1}},
+  {id:'river',name:'Riverbend',cash:1600,rep:62,
+   d:'Lush, green and expensive. Animals thrive here and the town already trusts you. You just start broke.',
+   mods:{build:1.32,feed:.82,prod:1.28,meat:1,animal:1.18,heat:1.15,gun:1.3}},
+  {id:'hwy',name:'Old Highway Ranch',cash:3000,rep:30,
+   d:'The rough end of the county. Guns are cheap, the sheriff is slow, and nobody trusts your meat until you make them.',
+   mods:{build:.95,feed:1,prod:.95,meat:.9,animal:1,heat:.55,gun:.6}}
+];
+
+const FIRST=['Hal','Doreen','Cletus','Marla','Bud','Renata','Odis','Junie','Wade','Sylvia','Dale','Ruthie','Gus','Pearl','Enid','Rex','Loretta','Merle','Verna','Chuck','Bonnie','Silas','Faye','Roy','Nadine','Buck','Opal','Travis','Lurleen','Hank'];
+const LAST=['Prewitt','Baskin','Dooley','Kettleman','Vance','Corliss','Rutter','Fenn','Musgrave','Halstead','Beauchamp','Purdy','Stack','Ainsley','Grubb','Waddell','Crow','Mimms','Yarrow','Tandy','Sowell','Nix'];
+const npcName=()=>pick(FIRST)+' '+pick(LAST);
+
+const RIVALDEF=[
+  {id:'duke',name:'Duke Halloran',col:'#c05a2e',likes:'cow',title:'Beef baron',
+   d:'Owns half the cattle west of town and wants the other half.',
+   lines:['"You still playing at this, or are you actually farming?"','"I move more beef before breakfast than you do in a season."','"Prices are up. Not that it helps a man with nothing to sell."','"My buyers ask for me by name. Yours ask for a discount."']},
+  {id:'mira',name:'Mira Vance',col:'#8b5fbe',likes:'chicken',title:'Poultry queen',
+   d:'Every egg crate in the county has her stamp on it somewhere.',
+   lines:['"Birds are honest money. Slow, but honest."','"Heard you were out at the market. Heard you took a bad price, too."','"I could move your stock in a morning. For a cut."','"Feed prices are climbing. Buy early, cry less."']},
+  {id:'otis',name:'Otis Brandt',col:'#2f8a72',likes:'pig',title:'Pork and mutton',
+   d:'Quiet, careful, and somehow always knows what you sold last week.',
+   lines:['"Pigs pay. People just do not like admitting it."','"You kill them too young, you know. It shows in the meat."','"Reputation is the only thing in this business you cannot buy."','"Partner up and I stop undercutting you. Simple as that."']}
+];
+
+const LAND=[
+  {name:'Starter Plot',       w:26,h:16, cost:0},
+  {name:'The Back Forty',     w:36,h:22, cost:2400},
+  {name:'North Ridge',        w:46,h:28, cost:7000},
+  {name:'The Whole Valley',   w:54,h:34, cost:16000}
+];
+const FARM_W=1920, FARM_H=1408, FARM_OX=3*TILE, FARM_OY=5*TILE;
+const TOWN_W=1760, TOWN_H=1280;
+
+/* --------------------------------------------------------------- elements */
+const CV=document.getElementById('cv'), X=CV.getContext('2d');
+const EL=id=>document.getElementById(id);
+const $hud=EL('hud'), $bot=EL('bottomhud'), $hint=EL('keyhint'), $toasts=EL('toasts'),
+      $prompt=EL('prompt'), $modal=EL('modal'), $start=EL('start'), $locs=EL('locs');
+let VW=0,VH=0;
+function resize(){VW=CV.width=window.innerWidth;VH=CV.height=window.innerHeight;}
+window.addEventListener('resize',resize); resize();
+
+/* ------------------------------------------------------------------ state */
+const G={
+  scene:'menu', map:'farm',
+  loc:null, mods:null,
+  day:1, tmin:7*60, dayLen:100,
+  cash:0, rep:50, feed:150,
+  prods:{milk:0,egg:0,wool:0,truffle:0,manure:0,duckegg:0},
+  meats:[], animals:[], structs:[], npcs:[], bullets:[], fx:[],
+  ammo:{pistol:0,shell:0},
+  owned:{fists:true}, weapon:'fists', holster:false,
+  tools:{bucket:false,quad:false,vest:false},
+  land:0,
+  wanted:0, chaseT:0, sirenT:0,
+  rivals:[],
+  bank:{balance:0,rate:.018,sec:0,robbedDay:-99,loan:0,due:0,heist:false},
+  autoDay:{},
+  stats:{sold:0,earned:0,killed:0,mugged:0,arrests:0,slaughtered:0,born:0,robs:0},
+  player:{x:300,y:220,vx:0,vy:0,hp:100,max:100,r:11,face:0,atk:0,swing:0,anim:0,dead:0},
+  cam:{x:0,y:0},
+  build:null, ui:null, market:null, dialog:null, animalSel:null,
+  msgT:0, dayFlash:0,
+  cheatOpen:false, godmode:false, noHeat:false
+};
+const P=G.player;
+const M=()=>G.mods;
+
+/* ------------------------------------------------------------- town world */
+const TOWN=[
+  {k:'auction', name:'LIVESTOCK AUCTION', x:130,  y:150, w:330, h:210, c:'#7a5233', roof:'#5d3d26'},
+  {k:'store',   name:'GENERAL STORE',     x:640,  y:170, w:270, h:190, c:'#5f6f7a', roof:'#43525c'},
+  {k:'market',  name:'MEAT MARKET',       x:1080, y:140, w:370, h:230, c:'#8a4a44', roof:'#6a3733'},
+  {k:'realtor', name:'COUNTY REALTOR',    x:200,  y:830, w:300, h:200, c:'#4f6a58', roof:'#3a5041'},
+  {k:'diner',   name:'THE FEEDLOT DINER', x:640,  y:850, w:260, h:180, c:'#8a7a3f', roof:'#665a2c'},
+  {k:'guns',    name:'PAWN & SPORTING',   x:1120, y:860, w:250, h:170, c:'#3f3a44', roof:'#2c2830'},
+  {k:'police',  name:'SHERIFF',           x:1470, y:150, w:230, h:190, c:'#4a5a76', roof:'#35435a'},
+  {k:'bank',    name:'COUNTY BANK',       x:1440, y:840, w:270, h:200, c:'#6f6a5a', roof:'#4e4a3e'}
+];
+TOWN.forEach(b=>{b.door={x:b.x+b.w/2, y:b.y+b.h+16};});
+const CARSPOT={town:{x:830,y:600}, farm:{x:430,y:96}};
+
+function structsSolid(s){return ['silo','shed','abat','cold','vet'].indexOf(s.k)>=0;}
+function farmRect(){const L=LAND[G.land];return {x:FARM_OX,y:FARM_OY,w:L.w*TILE,h:L.h*TILE};}
+function worldW(){return G.map==='farm'?FARM_W:TOWN_W;}
+function worldH(){return G.map==='farm'?FARM_H:TOWN_H;}
+
+/* ------------------------------------------------------------------ toast */
+function toast(msg,cls){
+  const d=document.createElement('div'); d.className='toast '+(cls||''); d.innerHTML=msg;
+  $toasts.appendChild(d);
+  setTimeout(()=>{d.style.transition='opacity .4s';d.style.opacity=0;},2300);
+  setTimeout(()=>d.remove(),2800);
+  while($toasts.children.length>6) $toasts.firstChild.remove();
+}
+function fx(x,y,text,col){G.fx.push({x,y,t:0,text,col:col||'#fff'});}
+
+/* ------------------------------------------------------------------ input */
+const K={};
+addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase();
+  if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright',' '].indexOf(k)>=0) e.preventDefault();
+  if(K[k]) return; K[k]=true;
+  if(G.scene!=='play') return;
+  if(k==='`'||k==='~'){ toggleCheat(); return; }
+  if(k==='escape'){ if(G.cheatOpen) toggleCheat(); else if(G.ui) closeUI(); else if(G.build) cancelBuild(); else openUI('pause'); return; }
+  if(G.ui){ return; }
+  if(k==='e') interact();
+  else if(k==='c') collectNearby();
+  else if(k==='b'){ if(G.map==='farm') openUI('build'); else toast('You can only build on your farm.','bad'); }
+  else if(k==='f') mug();
+  else if(k==='g') manageStruct();
+  else if(k==='h') openUI('help');
+  else if(k==='q') openUI('stock');
+  else if(k==='r') openUI('journal');
+  else if(k==='x'){ G.holster=!G.holster; toast(G.holster?'Weapon stowed away.':'Weapon in hand.'); }
+  else if(k>='1'&&k<='5'){ const w=WKEYS[+k-1]; if(G.owned[w]){G.weapon=w;G.holster=false;toast('Equipped: <b>'+WEAPONS[w].name+'</b>');} }
+});
+addEventListener('keyup',e=>{K[e.key.toLowerCase()]=false;});
+const MOUSE={x:0,y:0,down:false};
+CV.addEventListener('mousemove',e=>{const r=CV.getBoundingClientRect();MOUSE.x=e.clientX-r.left;MOUSE.y=e.clientY-r.top;});
+CV.addEventListener('mousedown',e=>{
+  if(G.scene!=='play'||G.ui) return;
+  if(e.button===0){ if(G.build) placeBuild(); else {MOUSE.down=true;attack();} }
+  if(e.button===2&&G.build) cancelBuild();
+});
+addEventListener('mouseup',()=>MOUSE.down=false);
+CV.addEventListener('contextmenu',e=>e.preventDefault());
+
+/* ------------------------------------------------------------- collisions */
+function solidsFor(map){
+  const out=[];
+  if(map==='town'){ for(const b of TOWN) out.push({x:b.x,y:b.y,w:b.w,h:b.h}); }
+  else{
+    out.push({x:64,y:64,w:150,h:110}); // farmhouse
+    for(const s of G.structs) if(structsSolid(s)) out.push({x:s.x,y:s.y,w:s.w,h:s.h});
+  }
+  return out;
+}
+function collide(ent,r){
+  const solids=solidsFor(G.map);
+  for(const s of solids){
+    const cx=clamp(ent.x,s.x,s.x+s.w), cy=clamp(ent.y,s.y,s.y+s.h);
+    const dx=ent.x-cx, dy=ent.y-cy, d=Math.hypot(dx,dy);
+    if(d<r){
+      if(d<0.001){ ent.y=s.y-r; continue; }
+      ent.x=cx+dx/d*r; ent.y=cy+dy/d*r;
+    }
+  }
+  ent.x=clamp(ent.x,r,worldW()-r); ent.y=clamp(ent.y,r,worldH()-r);
+}
+function blockedAt(x,y,r){
+  for(const s of solidsFor(G.map)){
+    const cx=clamp(x,s.x,s.x+s.w), cy=clamp(y,s.y,s.y+s.h);
+    if(Math.hypot(x-cx,y-cy)<r) return true;
+  }
+  return false;
+}
+
+/* ------------------------------------------------------------ world setup */
+function newNpc(type,x,y){
+  const n={id:uid(),type,x,y,hp:60,max:60,spd:52,tx:x,ty:y,t:rnd(0,3),
+           weapon:null,aggro:false,atk:0,r:10,face:0,col:'#9aa',dead:0,talkT:0,cash:ri(15,90)};
+  if(type==='civ'){ n.name=npcName(); n.col=pick(['#7d8fa8','#a88f7d','#8aa87d','#a87d94','#8f7da8','#a8a07d']); n.hp=n.max=62; }
+  if(type==='cop'){ n.name='Deputy '+pick(LAST); n.col='#3e5f9e'; n.hp=n.max=95; n.spd=62; n.weapon='bat'; }
+  return n;
+}
+function spawnTown(){
+  G.npcs=[];
+  for(let i=0;i<14;i++){
+    let x,y,tries=0;
+    do{ x=rnd(60,TOWN_W-60); y=rnd(60,TOWN_H-60); tries++; }while(blockedAt(x,y,14)&&tries<40);
+    G.npcs.push(newNpc('civ',x,y));
+  }
+  for(let i=0;i<4;i++){
+    let x,y,tries=0;
+    do{ x=rnd(60,TOWN_W-60); y=rnd(60,TOWN_H-60); tries++; }while(blockedAt(x,y,14)&&tries<40);
+    G.npcs.push(newNpc('cop',x,y));
+  }
+  for(const r of G.rivals){
+    if(r.dead) continue;
+    const n=newNpc('rival',rnd(200,TOWN_W-200),rnd(200,TOWN_H-200));
+    n.name=r.name; n.col=r.col; n.hp=n.max=140; n.rival=r.id; n.spd=46; n.weapon='bat';
+    G.npcs.push(n);
+  }
+}
+function startGame(loc){
+  G.loc=loc; G.mods=loc.mods; G.cash=loc.cash; G.rep=loc.rep;
+  G.rivals=RIVALDEF.map(d=>({id:d.id,name:d.name,col:d.col,likes:d.likes,rel:ri(20,40),partner:false,dead:false,talkT:0,tradeT:0}));
+  G.scene='play'; G.map='farm';
+  // wipe anything left over from a previous run in this session
+  G.bank={balance:0,rate:.018,sec:0,robbedDay:-99,loan:0,due:0,heist:false};
+  G.autoDay={}; G.day=1; G.tmin=7*60; G.feed=150; G.land=0;
+  G.prods={milk:0,egg:0,wool:0,truffle:0,manure:0,duckegg:0};
+  G.meats=[]; G.animals=[]; G.structs=[]; G.npcs=[]; G.bullets=[]; G.fx=[];
+  G.ammo={pistol:0,shell:0}; G.owned={fists:true}; G.weapon='fists'; G.holster=false;
+  G.tools={bucket:false,quad:false,vest:false};
+  G.wanted=0; G.chaseT=0; G.build=null; G.market=null;
+  G.stats={sold:0,earned:0,killed:0,mugged:0,arrests:0,slaughtered:0,born:0,robs:0};
+  rollPrices();
+  P.x=300;P.y=260;P.hp=P.max=100;P.dead=0;
+  // free starter pen + a couple of birds so the loop starts immediately
+  const r=farmRect();
+  const pen=addStruct('pen_s', Math.round((r.x+2*TILE)/TILE), Math.round((r.y+2*TILE)/TILE), true);
+  for(let i=0;i<3;i++) spawnAnimal('chicken','leghorn',pen,i<2?'F':'M',ri(2,4));
+  $start.classList.add('hidden');
+  toast('Welcome to <b>'+esc(loc.name)+'</b>. Press <b>H</b> for the rundown.','good');
+  save();
+}
+function buildStartScreen(){
+  $locs.innerHTML=LOCS.map((l,i)=>
+    '<div class="loc" data-i="'+i+'"><h3>'+esc(l.name)+'</h3><div class="d">'+esc(l.d)+'</div>'+
+    '<div class="stat"><s>Starting cash</s><b class="money">'+money(l.cash)+'</b></div>'+
+    '<div class="stat"><s>Starting reputation</s><b>'+l.rep+'/100</b></div>'+
+    '<div class="stat"><s>Build costs</s><b>'+Math.round(l.mods.build*100)+'%</b></div>'+
+    '<div class="stat"><s>Feed use</s><b>'+Math.round(l.mods.feed*100)+'%</b></div>'+
+    '<div class="stat"><s>Production</s><b>'+Math.round(l.mods.prod*100)+'%</b></div>'+
+    '<div class="stat"><s>Meat prices</s><b>'+Math.round(l.mods.meat*100)+'%</b></div>'+
+    '<div class="stat"><s>Sheriff pressure</s><b>'+Math.round(l.mods.heat*100)+'%</b></div>'+
+    '<div class="stat"><s>Weapon prices</s><b>'+Math.round(l.mods.gun*100)+'%</b></div></div>').join('');
+  [...$locs.children].forEach(el=>el.onclick=()=>startGame(LOCS[+el.dataset.i]));
+}
+
+/* ----------------------------------------------------------------- player */
+function playerSpeed(){
+  let s=152;
+  if(G.tools.quad) s*=1.35;
+  let hb=0;
+  for(const a of G.animals) if(a.sp==='horse'&&isAdult(a)) hb+=SPECIES.horse.breeds[a.br].spd;
+  s*=1+Math.min(.25,hb);
+  if(P.hp<30) s*=.8;
+  return s;
+}
+function updatePlayer(dt){
+  if(P.dead>0){ P.dead-=dt; if(P.dead<=0) revive(); return; }
+  let dx=0,dy=0;
+  if(K['w']||K['arrowup'])dy--; if(K['s']||K['arrowdown'])dy++;
+  if(K['a']||K['arrowleft'])dx--; if(K['d']||K['arrowright'])dx++;
+  const m=Math.hypot(dx,dy);
+  const sp=playerSpeed();
+  if(m>0){ dx/=m;dy/=m; P.x+=dx*sp*dt; P.y+=dy*sp*dt; P.anim+=dt*10; }
+  else P.anim=0;
+  collide(P,P.r);
+  const wx=P.x-G.cam.x, wy=P.y-G.cam.y;
+  P.face=Math.atan2(MOUSE.y-wy,MOUSE.x-wx);
+  P.atk=Math.max(0,P.atk-dt); P.swing=Math.max(0,P.swing-dt);
+  if(MOUSE.down&&P.atk<=0) attack();
+  // camera
+  const tx=clamp(P.x-VW/2,0,Math.max(0,worldW()-VW)), ty=clamp(P.y-VH/2,0,Math.max(0,worldH()-VH));
+  G.cam.x+=(tx-G.cam.x)*Math.min(1,dt*8); G.cam.y+=(ty-G.cam.y)*Math.min(1,dt*8);
+  if(worldW()<VW) G.cam.x=(worldW()-VW)/2;
+  if(worldH()<VH) G.cam.y=(worldH()-VH)/2;
+}
+function hurtPlayer(n,src){
+  if(P.dead>0) return;
+  if(G.godmode){ fx(P.x,P.y-18,'BLOCKED','#8fd6ff'); return; }
+  P.hp-=n; fx(P.x,P.y-18,'-'+Math.round(n),'#ff8a6a');
+  if(P.hp<=0){ P.hp=0; P.dead=2.6; die(src); }
+}
+function die(src){
+  const lost=Math.round(G.cash*.18);
+  G.cash=Math.max(0,G.cash-lost);
+  let lostA='';
+  if(G.animals.length&&chance(.5)){ const a=pick(G.animals); removeAnimal(a); lostA=' A '+SPECIES[a.sp].name.toLowerCase()+' wandered off while you were out.'; }
+  toast('<b>You were beaten unconscious.</b> Hospital took '+money(lost)+'.'+lostA,'bad');
+  G.wanted=0; G.chaseT=0;
+}
+function revive(){
+  P.hp=P.max; G.map='farm'; P.x=300;P.y=260; spawnTownIfNeeded();
+  G.cam.x=clamp(P.x-VW/2,0,Math.max(0,FARM_W-VW)); G.cam.y=clamp(P.y-VH/2,0,Math.max(0,FARM_H-VH));
+}
+function spawnTownIfNeeded(){ if(G.map==='town') spawnTown(); else G.npcs=[]; }
+
+/* ------------------------------------------------------------------ clock */
+function timeStr(){
+  const h=Math.floor(G.tmin/60)%24, m=Math.floor(G.tmin%60);
+  const ap=h<12?'am':'pm'; const hh=h%12===0?12:h%12;
+  return hh+':'+(m<10?'0':'')+m+ap;
+}
+function nightAlpha(){
+  const h=G.tmin/60;
+  if(h>=7&&h<18) return 0;
+  if(h>=18&&h<21) return (h-18)/3*.5;
+  if(h>=21||h<4) return .5;
+  return .5*(1-(h-4)/3);
+}
+
+/* =========================================================================
+   FARM: structures, animals, production, slaughter
+   ========================================================================= */
+const brOf=a=>SPECIES[a.sp].breeds[a.br];
+const ageRatio=a=>clamp(a.age/brOf(a).grow,0,1);
+const isAdult=a=>a.age>=brOf(a).grow;
+const hasStruct=k=>G.structs.some(s=>s.k===k);
+function countStruct(k){return G.structs.filter(s=>s.k===k).length;}
+/* ---- upgrades ---- */
+function ulvl(s,id){ return (s&&s.up&&s.up[id])||0; }
+function upgList(s){ return UPG[s.k]||[]; }
+function upgDef(s,id){ return upgList(s).find(u=>u.id===id); }
+function upgCost(s,u){ return Math.round(u.cost*(1+.75*ulvl(s,u.id))*M().build); }
+function farmUp(k,id){ let n=0; for(const s of G.structs) if(s.k===k) n=Math.max(n,ulvl(s,id)); return n; }
+
+function feedCap(){ let c=220; for(const s of G.structs) if(s.k==='silo') c+=300+200*ulvl(s,'rings'); return c; }
+function prodCap(){ let c=320; for(const s of G.structs) if(s.k==='shed') c+=400+300*ulvl(s,'rack'); return c; }
+function prodTotal(){let t=0;for(const k in G.prods)t+=G.prods[k];return t;}
+function isPen(s){return STRUCTS[s.k].cap>0;}
+function penCap(s){
+  const d=STRUCTS[s.k]; if(!d.cap) return 0;
+  return d.cap+(s.k==='pen_s'||s.k==='pen_l'?2:3)*ulvl(s,'space');
+}
+function penAnimals(s){return G.animals.filter(a=>a.pen===s.id);}
+function penSpecies(s){const a=penAnimals(s);return a.length?a[0].sp:null;}
+function penAccepts(s,sp){
+  const def=STRUCTS[s.k]; if(!def.cap) return false;
+  if(def.kinds!=='*' && def.kinds.indexOf(sp)<0) return false;
+  const cur=penSpecies(s); if(cur&&cur!==sp) return false;
+  return penAnimals(s).length<penCap(s);
+}
+function penFor(sp){
+  // prefer a pen already holding this species (fullest first), then the smallest empty one
+  const ok=G.structs.filter(s=>penAccepts(s,sp));
+  if(!ok.length) return null;
+  ok.sort((a,b)=>{
+    const sa=penSpecies(a)===sp?0:1, sb=penSpecies(b)===sp?0:1;
+    if(sa!==sb) return sa-sb;
+    if(sa===0) return (penCap(b)-penAnimals(b).length)-(penCap(a)-penAnimals(a).length);
+    return penCap(a)-penCap(b);
+  });
+  return ok[0];
+}
+function inRect(s,x,y){return x>=s.x&&x<=s.x+s.w&&y>=s.y&&y<=s.y+s.h;}
+function penGet(pen,k){ return G.structs.find(s=>s.k===k && s.x>=pen.x-8 && s.x+s.w<=pen.x+pen.w+8 && s.y>=pen.y-8 && s.y+s.h<=pen.y+pen.h+8)||null; }
+function penHas(pen,k){ return !!penGet(pen,k); }
+
+/* every per-pen number funnels through these, so upgrades apply everywhere at once */
+function penFeedMult(pen){
+  const t=penGet(pen,'trough');
+  let m=t?.75-.08*ulvl(t,'hopper'):1;
+  m*=1-.18*ulvl(pen,'feed');
+  m*=1-.07*farmUp('silo','seal');
+  return Math.max(.2,m);
+}
+function penHeal(pen){
+  const w=penGet(pen,'water'), t=penGet(pen,'trough');
+  let h=7+(STRUCTS[pen.k].hp||0);
+  if(w) h+=9+8*ulvl(w,'filter');
+  if(t) h+=6*ulvl(t,'lick');
+  h+=4*ulvl(pen,'shade')+10*ulvl(pen,'heat');
+  if(hasStruct('vet')) h+=14+10*farmUp('vet','care');
+  return h;
+}
+function penProdMult(pen){
+  const w=penGet(pen,'water');
+  let m=1+(STRUCTS[pen.k].prod||0)+.08*ulvl(pen,'shade')+.15*ulvl(pen,'nest');
+  if(w) m+=.06*ulvl(w,'mist');
+  return m;
+}
+function penBreedMult(pen){ return 1+.14*ulvl(pen,'breed')+.22*ulvl(pen,'incub')+.12*farmUp('vet','fert'); }
+function penGrowMult(pen){ return 1+.10*ulvl(pen,'heat')+.12*farmUp('vet','growth'); }
+function pondBonus(){ let b=0; for(const s of G.structs) if(s.k==='pond') b=Math.max(b,.30+.10*ulvl(s,'reeds')); return b; }
+function packMult(){ return 1+.05*farmUp('cold','pack'); }
+
+function addStruct(k,tx,ty,free){
+  const d=STRUCTS[k];
+  const s={id:uid(),k,tx,ty,x:tx*TILE,y:ty*TILE,w:d.w*TILE,h:d.h*TILE,up:{}};
+  G.structs.push(s);
+  if(!free) G.cash-=Math.round(d.cost*M().build);
+  return s;
+}
+function structFits(k,tx,ty){
+  const d=STRUCTS[k], r=farmRect();
+  const x=tx*TILE,y=ty*TILE,w=d.w*TILE,h=d.h*TILE;
+  if(x<r.x||y<r.y||x+w>r.x+r.w||y+h>r.y+r.h) return false;
+  const house={x:64,y:64,w:150,h:110};
+  if(x<house.x+house.w&&x+w>house.x&&y<house.y+house.h&&y+h>house.y) return false;
+  const small=(d.w<=2&&d.h<=1); // troughs may sit inside pens
+  for(const s of G.structs){
+    const sd=STRUCTS[s.k];
+    if(small&&sd.cap) continue;
+    if(sd.w<=2&&sd.h<=1&&d.cap) continue;
+    if(x<s.x+s.w&&x+w>s.x&&y<s.y+s.h&&y+h>s.y) return false;
+  }
+  return true;
+}
+function startBuild(k){ G.build={k}; closeUI(); toast('Placing <b>'+STRUCTS[k].name+'</b>. Left click to build, right click or Esc to cancel.'); }
+function cancelBuild(){ G.build=null; }
+function buildGhost(){
+  if(!G.build) return null;
+  const d=STRUCTS[G.build.k];
+  const wx=MOUSE.x+G.cam.x, wy=MOUSE.y+G.cam.y;
+  const tx=Math.round((wx-d.w*TILE/2)/TILE), ty=Math.round((wy-d.h*TILE/2)/TILE);
+  return {tx,ty,x:tx*TILE,y:ty*TILE,w:d.w*TILE,h:d.h*TILE,ok:structFits(G.build.k,tx,ty)&&G.cash>=Math.round(d.cost*M().build)};
+}
+function placeBuild(){
+  const g=buildGhost(); if(!g) return;
+  const d=STRUCTS[G.build.k];
+  const cost=Math.round(d.cost*M().build);
+  if(!structFits(G.build.k,g.tx,g.ty)){ toast('It will not fit there.','bad'); return; }
+  if(G.cash<cost){ toast('You cannot afford that.','bad'); return; }
+  addStruct(G.build.k,g.tx,g.ty,false);
+  toast('Built <b>'+d.name+'</b> for '+money(cost)+'.','good');
+  if(!K['shift']) G.build=null;
+}
+
+/* ---------------------------------------------------------------- animals */
+function animalName(sp){
+  const N={cow:['Bessie','Dot','Clover','Moonpie','Duchess','Rump','Tank','Nugget'],
+           pig:['Truffle','Hamlet','Bacon','Pickle','Sausage','Muddy','Chops'],
+           sheep:['Cotton','Baabra','Fluff','Mutton','Cloud','Woolly'],
+           chicken:['Nugget','Pecky','Omelette','Feathers','Colonel','Drumstick'],
+           duck:['Quackers','Puddle','Bill','Waddles','Drake','Splash'],
+           horse:['Comet','Dusty','Bandit','Whisper','Thunder','Biscuit']};
+  return pick(N[sp]);
+}
+function spawnAnimal(sp,br,pen,sex,age){
+  const b=SPECIES[sp].breeds[br];
+  const px=rnd(pen.x+16,pen.x+pen.w-16), py=rnd(pen.y+20,pen.y+pen.h-16);
+  const a={id:uid(),sp,br,name:animalName(sp),sex:sex||(chance(.5)?'M':'F'),
+    age:age===undefined?b.grow:age, pen:pen.id, x:px,y:py, tx:px,ty:py, t:rnd(0,3),
+    full:88, hp:96, prod:0, breedT:rnd(0,b.breed*.4), flip:chance(.5)};
+  G.animals.push(a);
+  return a;
+}
+function removeAnimal(a){ const i=G.animals.indexOf(a); if(i>=0) G.animals.splice(i,1); }
+
+function updateAnimals(dt,dd){
+  const pond=pondBonus();
+  const vet=hasStruct('vet');
+  for(let i=G.animals.length-1;i>=0;i--){
+    const a=G.animals[i], b=brOf(a), pen=G.structs.find(s=>s.id===a.pen);
+    if(!pen){ removeAnimal(a); continue; }
+    const pd=STRUCTS[pen.k];
+    a.age+=dd*penGrowMult(pen);
+    // --- feed
+    const need=b.feed*dd*M().feed*penFeedMult(pen);
+    if(G.feed>=need){ G.feed-=need; a.full=Math.min(100,a.full+55*dd); }
+    else { G.feed=0; a.full=Math.max(0,a.full-48*dd); }
+    // --- health
+    const heal=penHeal(pen);
+    if(a.full<25) a.hp-=(vet?4:11)*dd; else a.hp=Math.min(100,a.hp+heal*dd);
+    if(a.hp<=0){
+      if(vet){a.hp=6;}
+      else{ toast('<b>'+esc(a.name)+'</b> the '+b.name.toLowerCase()+' starved to death.','bad'); removeAnimal(a); continue; }
+    }
+    // --- production
+    if(isAdult(a)){
+      let f=(.35+.65*a.full/100)*(.45+.55*a.hp/100)*M().prod*penProdMult(pen);
+      if(a.sp==='duck') f*=1+pond;
+      if(a.sex==='M'&&(a.sp==='cow')) f*=.15;
+      a.prod+=b.prod*dd*f;
+      // --- a Hired Hand / Egg Belt / Milking Rig empties this pen for you
+      if(ulvl(pen,'auto')&&a.prod>=1){
+        const res=SPECIES[a.sp].res, space=prodCap()-prodTotal();
+        const n=Math.min(Math.floor(a.prod),space);
+        if(n>0){ a.prod-=n; G.prods[res]+=n; G.autoDay[res]=(G.autoDay[res]||0)+n; }
+      }
+      // --- breeding
+      if(a.sex==='F'){
+        const mate=penAnimals(pen).some(o=>o.sex==='M'&&isAdult(o));
+        if(mate){
+          a.breedT+=dd*penBreedMult(pen);
+          if(a.breedT>=b.breed){
+            a.breedT=0;
+            const lit=ri(SPECIES[a.sp].litter[0],SPECIES[a.sp].litter[1]);
+            let born=0;
+            for(let n=0;n<lit;n++){ if(penAnimals(pen).length<penCap(pen)){ spawnAnimal(a.sp,a.br,pen,undefined,0); born++; } }
+            if(born){ G.stats.born+=born; toast('<b>'+esc(a.name)+'</b> gave birth to '+born+' '+(born>1?'young':'one')+'.','good'); }
+            else toast('<b>'+esc(a.name)+'</b> is ready to breed but the pen is full.','bad');
+          }
+        }
+      }
+    }
+    // --- wander
+    a.t-=dt;
+    if(a.t<=0){ a.t=rnd(1.4,4.2); a.tx=rnd(pen.x+14,pen.x+pen.w-14); a.ty=rnd(pen.y+18,pen.y+pen.h-14); }
+    const dx=a.tx-a.x, dy=a.ty-a.y, dm=Math.hypot(dx,dy);
+    if(dm>3){ const sp=(SPECIES[a.sp].sz>14?15:22)*(isAdult(a)?1:1.3); a.x+=dx/dm*sp*dt; a.y+=dy/dm*sp*dt; a.flip=dx<0; }
+  }
+  // meat: rots in the open, holds in a cold store, improves in a dry ageing room
+  const cold=G.structs.find(s=>s.k==='cold');
+  for(const m of G.meats){
+    if(m.q0===undefined) m.q0=m.q;
+    if(!cold) m.q=Math.max(4,m.q-1.7*dd);
+    else if(ulvl(cold,'age')) m.q=Math.min(99,Math.min(m.q0+14,m.q+1.1*dd));
+  }
+}
+
+function collectRadius(){return G.tools.bucket?190:115;}
+function collectNearby(){
+  if(G.map!=='farm'){ toast('Nothing to collect in town.','bad'); return; }
+  const R=collectRadius(); let got={}, any=0, full=false;
+  for(const a of G.animals){
+    if(a.prod<1||dist(a,P)>R) continue;
+    const res=SPECIES[a.sp].res;
+    const space=prodCap()-prodTotal();
+    if(space<=0){ full=true; break; }
+    const n=Math.min(Math.floor(a.prod),space);
+    if(n<1){ full=true; break; }
+    a.prod-=n; G.prods[res]+=n; got[res]=(got[res]||0)+n; any+=n;
+    fx(a.x,a.y-16,'+'+n+' '+RES[res].name,RES[res].col);
+  }
+  if(!any){ toast(full?'Your storage is full. Sell some produce.':'Nothing ready within reach.','bad'); return; }
+  toast('Collected '+Object.keys(got).map(k=>got[k]+' '+RES[k].name).join(', ')+'.','good');
+  if(full) toast('Storage is now full.','bad');
+}
+function qLabel(q){
+  if(q>=85)return['PRIME','q4'];
+  if(q>=68)return['GOOD','q3'];
+  if(q>=45)return['FAIR','q2'];
+  return['POOR','q1'];
+}
+/* one formula, used by both the slaughter itself and the preview on the animal panel */
+function meatEstimate(a){
+  const b=brOf(a), ar=ageRatio(a);
+  const abat=G.structs.find(s=>s.k==='abat');
+  const kg=Math.max(.4, b.meat*(.12+.88*ar)*(abat?1.1+.08*ulvl(abat,'yield'):1));
+  const q=clamp(6+58*Math.pow(ar,1.4)+(a.hp-70)*.20+(a.full-60)*.10+(b.q||0)*.8+
+                (abat?10+6*ulvl(abat,'blade'):0),4,99);
+  return {kg,q};
+}
+function slaughter(a,quiet){
+  const b=brOf(a), ar=ageRatio(a);
+  const e=meatEstimate(a), kg=e.kg, q=e.q;
+  G.meats.push({id:uid(),sp:a.sp,br:a.br,kg:Math.round(kg*10)/10,q:Math.round(q),day:G.day,
+                name:MEAT[a.sp].name+' ('+b.name+')'});
+  G.stats.slaughtered++;
+  removeAnimal(a);
+  if(quiet) return;
+  const L=qLabel(q);
+  toast('Slaughtered <b>'+esc(a.name)+'</b> &rarr; '+Math.round(kg)+'kg of '+MEAT[a.sp].name.toLowerCase()+', quality <b>'+L[0]+'</b> ('+Math.round(q)+').',ar<.85?'bad':'good');
+  if(ar<.85) toast('Killed young. That meat will be hard to sell.','bad');
+}
+function liveValue(a){
+  const b=brOf(a);
+  const base=b.live||b.price*1.15;
+  return Math.round(base*(.35+.65*ageRatio(a))*(.7+.3*a.hp/100)*M().animal);
+}
+
+/* =========================================================================
+   PEOPLE: civilians, rivals, cops, violence, crime
+   ========================================================================= */
+function carrying(){ return !G.holster && WEAPONS[G.weapon].illegal; }
+function nearestNpc(maxd,f){
+  let best=null,bd=maxd;
+  for(const n of G.npcs){ if(n.dead)continue; if(f&&!f(n))continue; const d=dist(n,P); if(d<bd){bd=d;best=n;} }
+  return best;
+}
+function witnesses(x,y,r){ return G.npcs.filter(n=>!n.dead&&n.type==='cop'&&Math.hypot(n.x-x,n.y-y)<r); }
+function raiseWanted(n,why){
+  if(G.noHeat) return;
+  const old=G.wanted;
+  G.wanted=Math.max(G.wanted,n); G.chaseT=0;
+  if(G.wanted>old) toast('<b>SHERIFF ALERTED</b> &mdash; '+why,'cop');
+}
+function updateNpcs(dt){
+  if(G.map!=='town'){ return; }
+  const gunCops=G.wanted>=3;
+  for(let i=G.npcs.length-1;i>=0;i--){
+    const n=G.npcs[i];
+    if(n.dead){ n.dead-=dt; if(n.dead<=0) G.npcs.splice(i,1); continue; }
+    n.atk=Math.max(0,n.atk-dt);
+    const dp=dist(n,P);
+
+    if(n.type==='cop'){
+      // spot illegal weapon
+      if(!G.wanted && carrying() && dp<230*M().heat && P.dead<=0) raiseWanted(1,'a deputy spotted your '+WEAPONS[G.weapon].name.toLowerCase()+'.');
+      if(G.wanted>0&&P.dead<=0){
+        const dx=P.x-n.x,dy=P.y-n.y,dm=Math.hypot(dx,dy)||1;
+        n.x+=dx/dm*(78+G.wanted*7)*dt; n.y+=dy/dm*(78+G.wanted*7)*dt; n.face=Math.atan2(dy,dx);
+        if(gunCops&&dm<330&&n.atk<=0){ n.atk=1.3; shoot(n,P.x,P.y,13,300,'#ffd27a'); }
+        if(dm<26) arrest();
+      } else patrol(n,dt);
+      collide(n,10); continue;
+    }
+    if(n.aggro&&P.dead<=0){
+      const dx=P.x-n.x,dy=P.y-n.y,dm=Math.hypot(dx,dy)||1;
+      const w=WEAPONS[n.weapon||'fists'];
+      n.face=Math.atan2(dy,dx);
+      const want=w.kind==='gun'?190:22;
+      if(dm>want){ n.x+=dx/dm*72*dt; n.y+=dy/dm*72*dt; }
+      if(n.atk<=0&&dm<(w.kind==='gun'?340:34)){
+        n.atk=w.cd*1.5;
+        if(w.kind==='gun') shoot(n,P.x,P.y,w.dmg*.6,340,'#ffcf7a');
+        else { hurtPlayer(w.dmg*.7,n.name); fx(P.x,P.y-24,w.name+'!','#ff9a7a'); }
+      }
+    } else patrol(n,dt);
+    collide(n,10);
+  }
+  // losing the cops on foot
+  if(G.wanted>0){
+    const close=G.npcs.some(n=>!n.dead&&n.type==='cop'&&dist(n,P)<470);
+    if(close) G.chaseT=0; else { G.chaseT+=dt; if(G.chaseT>12){ G.wanted=0; G.chaseT=0; toast('You lost them.','cop'); } }
+  }
+}
+function patrol(n,dt){
+  n.t-=dt;
+  if(n.t<=0){ n.t=rnd(2,6); n.tx=clamp(n.x+rnd(-260,260),40,TOWN_W-40); n.ty=clamp(n.y+rnd(-260,260),40,TOWN_H-40); }
+  const dx=n.tx-n.x,dy=n.ty-n.y,dm=Math.hypot(dx,dy);
+  if(dm>4){ n.x+=dx/dm*n.spd*dt; n.y+=dy/dm*n.spd*dt; n.face=Math.atan2(dy,dx); }
+}
+function shoot(from,tx,ty,dmg,spd,col,spread){
+  const a=Math.atan2(ty-from.y,tx-from.x)+rnd(-(spread||.05),(spread||.05));
+  G.bullets.push({x:from.x,y:from.y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,dmg,life:1.6,
+                  own:from===P?'p':'n',col:col||'#ffe6a0'});
+}
+function updateBullets(dt){
+  for(let i=G.bullets.length-1;i>=0;i--){
+    const b=G.bullets[i];
+    b.x+=b.vx*dt; b.y+=b.vy*dt; b.life-=dt;
+    let gone=b.life<=0||blockedAt(b.x,b.y,2)||b.x<0||b.y<0||b.x>worldW()||b.y>worldH();
+    if(!gone){
+      if(b.own==='p'){
+        for(const n of G.npcs){ if(n.dead)continue; if(Math.hypot(n.x-b.x,n.y-b.y)<13){ damageNpc(n,b.dmg); gone=true; break; } }
+      }else if(P.dead<=0&&Math.hypot(P.x-b.x,P.y-b.y)<12){ hurtPlayer(b.dmg*(G.tools.vest?.6:1)); gone=true; }
+    }
+    if(gone) G.bullets.splice(i,1);
+  }
+}
+function attack(){
+  if(P.dead>0||P.atk>0) return;
+  const w=WEAPONS[G.weapon];
+  G.holster=false;
+  if(w.kind==='gun'){
+    if(G.ammo[w.ammo]<=0){ toast('Out of '+(w.ammo==='shell'?'shells':'rounds')+'.','bad'); P.atk=.4; return; }
+    G.ammo[w.ammo]--; P.atk=w.cd; P.swing=.12;
+    const tx=MOUSE.x+G.cam.x, ty=MOUSE.y+G.cam.y;
+    const pel=w.pellets||1;
+    for(let i=0;i<pel;i++) shoot(P,tx,ty,w.dmg,w.reach*2.2,'#ffe6a0',w.spread||.035);
+    if(G.map==='town'){
+      const wit=witnesses(P.x,P.y,520);
+      if(wit.length) raiseWanted(3,'shots fired in town.');
+      else raiseWanted(2,'someone called in gunfire.');
+    }
+    return;
+  }
+  P.atk=w.cd; P.swing=.18;
+  let hit=0;
+  for(const n of G.npcs){
+    if(n.dead) continue;
+    const d=dist(n,P); if(d>w.reach+10) continue;
+    let da=Math.atan2(n.y-P.y,n.x-P.x)-P.face;
+    while(da>Math.PI)da-=Math.PI*2; while(da<-Math.PI)da+=Math.PI*2;
+    if(Math.abs(da)>1.1) continue;
+    damageNpc(n,w.dmg); hit++;
+  }
+  if(hit&&G.map==='town'){
+    if(witnesses(P.x,P.y,360).length) raiseWanted(2,'a deputy watched you swing at somebody.');
+  }
+}
+function damageNpc(n,dmg){
+  n.hp-=dmg; n.aggro=true; n.hitT=.14;
+  fx(n.x,n.y-20,'-'+Math.round(dmg),'#ffb27a');
+  if(n.type==='civ'&&!n.weapon&&chance(.5)) n.weapon=pick(['fists','knife','bat']);
+  if(n.type==='cop') raiseWanted(3,'you assaulted a deputy.');
+  if(n.hp<=0) npcDeath(n);
+}
+function npcDeath(n){
+  n.dead=6; n.aggro=false; G.stats.killed++;
+  const drop=n.type==='civ'?ri(20,120):(n.type==='rival'?ri(300,900):ri(40,160));
+  G.cash+=drop; fx(n.x,n.y-26,'+'+money(drop),'#8fd66a');
+  G.rep=clamp(G.rep-(n.type==='rival'?9:4),0,100);
+  if(n.rival){ const r=G.rivals.find(r=>r.id===n.rival); if(r){r.dead=true;r.partner=false;}
+    toast('<b>'+esc(n.name)+' is dead.</b> Word travels fast in this county.','bad'); }
+  else toast(esc(n.name)+' is dead. You took '+money(drop)+' off them.','bad');
+  if(G.map==='town'){ if(witnesses(n.x,n.y,600).length) raiseWanted(3,'a killing was witnessed.'); else raiseWanted(2,'a body was found.'); }
+}
+function mug(){
+  if(G.map!=='town'){ toast('Nobody out here to rob.','bad'); return; }
+  const n=nearestNpc(52,t=>t.type==='civ'&&!t.aggro);
+  if(!n){ toast('Get closer to somebody first.','bad'); return; }
+  G.stats.mugged++;
+  const seen=witnesses(n.x,n.y,420).length>0;
+  if(chance(.65)){
+    const take=Math.round(n.cash*rnd(.8,1.6))+ri(10,40);
+    G.cash+=take; n.cash=0; n.t=0; n.tx=n.x+rnd(-300,300); n.ty=n.y+rnd(-300,300); n.spd=110;
+    G.rep=clamp(G.rep-1.6,0,100);
+    fx(n.x,n.y-26,'+'+money(take),'#8fd66a');
+    toast('<b>'+esc(n.name)+'</b> handed over '+money(take)+' and ran.','bad');
+  }else{
+    const roll=Math.random();
+    n.weapon = roll<.25?'handgun' : (roll<.75?'knife':'bat');
+    n.aggro=true; n.spd=86; n.hp=n.max=Math.round(n.max*1.2);
+    toast('<b>'+esc(n.name)+' fights back</b> &mdash; they have a '+WEAPONS[n.weapon].name.toLowerCase()+'!','bad');
+  }
+  if(seen) raiseWanted(2,'a deputy saw the robbery.');
+}
+function arrest(){
+  if(P.dead>0) return;
+  const fine=Math.round(G.cash*rnd(.12,.22))+ri(60,180);
+  G.cash=Math.max(0,G.cash-fine);
+  let seized=0;
+  const n=ri(1,2);
+  for(let i=0;i<n;i++){ if(G.animals.length&&chance(.75)){ removeAnimal(pick(G.animals)); seized++; } }
+  G.wanted=0; G.chaseT=0; G.stats.arrests++;
+  // confiscate illegal weapons
+  let lost=[];
+  for(const k of ['handgun','shotgun']) if(G.owned[k]){ delete G.owned[k]; lost.push(WEAPONS[k].name); }
+  G.weapon='fists';
+  G.ammo.pistol=0; G.ammo.shell=0;
+  let vault='';
+  if(G.bank.heist){
+    const held=G.bank.balance; G.bank.balance=0; G.bank.heist=false;
+    G.rep=clamp(G.rep-6,0,100);
+    vault=held>=1?', and the bank seized the '+money(held)+' you had on deposit':', and the bank closed your account';
+  }
+  const st=TOWN.find(t=>t.k==='police');
+  P.x=st.door.x; P.y=st.door.y+40;
+  toast('<b>BOOKED.</b> Fine of '+money(fine)+(seized?', '+seized+' head of stock seized':'')+
+        (lost.length?', '+lost.join(' and ')+' confiscated':'')+vault+'.','bad');
+}
+
+/* -------------------------------------------------------------- interact */
+function nearCar(){
+  const c=CARSPOT[G.map];
+  return Math.hypot(P.x-c.x,P.y-c.y)<52;
+}
+function nearBuilding(){
+  if(G.map!=='town') return null;
+  for(const b of TOWN) if(Math.hypot(P.x-b.door.x,P.y-b.door.y)<58) return b;
+  return null;
+}
+function nearAnimal(){
+  if(G.map!=='farm') return null;
+  let best=null,bd=52;
+  for(const a of G.animals){ const d=dist(a,P); if(d<bd){bd=d;best=a;} }
+  return best;
+}
+function openAnimal(a){ openUI('animal',{id:a.id}); }
+function interact(){
+  if(P.dead>0) return;
+  if(nearCar()){ travel(); return; }
+  const b=nearBuilding();
+  if(b){ enterBuilding(b); return; }
+  const n=nearestNpc(50,t=>!t.dead);
+  if(n){
+    if(n.type==='rival'){ openRival(n); return; }
+    if(n.type==='cop'){ toast(G.wanted? '"Stop right there!"' : '"Keep it clean today."','cop'); return; }
+    toast('<b>'+esc(n.name)+':</b> '+pick(['"Morning."','"Hot one today."','"Heard the market is moving."','"You are the one with the farm out east?"','"Mind yourself."']));
+    return;
+  }
+  const a=nearAnimal();
+  if(a){ openAnimal(a); return; }
+  const s=nearStruct();
+  if(s){ openStruct(s); return; }
+  toast('Nothing to interact with here.','bad');
+}
+function manageStruct(){
+  if(G.map!=='farm'){ toast('Your buildings are back at the farm.','bad'); return; }
+  const s=nearStruct();
+  if(s) openStruct(s); else toast('Stand next to one of your structures.','bad');
+}
+function travel(){
+  const to=G.map==='farm'?'town':'farm';
+  if(G.wanted>0&&G.map==='town'){
+    toast('<b>You floor it out of town.</b> No charges, no witnesses.','cop');
+    if(G.bank.heist){ G.bank.heist=false; toast('You got clean away with the bank job.','bad'); }
+  }
+  G.wanted=0; G.chaseT=0; G.bullets=[];
+  G.map=to;
+  if(to==='town'){ spawnTown(); P.x=CARSPOT.town.x; P.y=CARSPOT.town.y+56; }
+  else { G.npcs=[]; P.x=CARSPOT.farm.x; P.y=CARSPOT.farm.y+56; }
+  G.cam.x=clamp(P.x-VW/2,0,Math.max(0,worldW()-VW));
+  G.cam.y=clamp(P.y-VH/2,0,Math.max(0,worldH()-VH));
+  toast(to==='town'?'Drove into town.':'Back at the farm.');
+  save();
+}
+
+/* =========================================================================
+   UI
+   ========================================================================= */
+function openUI(name,data){ G.ui={name,data:data||{}}; renderUI(); $modal.classList.remove('hidden'); }
+function closeUI(){ G.ui=null; G.market=null; $modal.classList.add('hidden'); $modal.innerHTML=''; }
+function renderUI(){ if(!G.ui) return; const f=UIS[G.ui.name]; if(f) $modal.innerHTML=f(G.ui.data); }
+function panel(title,sub,body,foot,cls){
+  return '<div class="panel '+(cls||'')+'"><div class="ph"><h2>'+title+'</h2><div class="sub">'+(sub||'')+
+    '</div><button class="x" onclick="closeUI()">CLOSE  ESC</button></div><div class="pb">'+body+'</div>'+
+    (foot?'<div class="pf">'+foot+'</div>':'')+'</div>';
+}
+function walletFoot(extra){
+  return 'Cash <b class="money">'+money(G.cash)+'</b> &nbsp;·&nbsp; Reputation <b>'+Math.round(G.rep)+'/100</b>'+(extra?' &nbsp;·&nbsp; '+extra:'');
+}
+function repWord(){
+  const r=G.rep;
+  if(r>=85)return'Legendary';if(r>=70)return'Trusted';if(r>=55)return'Respected';
+  if(r>=40)return'Known';if(r>=25)return'Doubted';if(r>=12)return'Distrusted';return'Blacklisted';
+}
+function enterBuilding(b){
+  if(b.k==='police'&&G.wanted>0){ surrender(); return; }
+  if(b.k==='auction') openUI('auction',{sp:'cow',tab:'buy'});
+  else if(b.k==='store') openUI('store');
+  else if(b.k==='market') openMarket();
+  else if(b.k==='realtor') openUI('realtor');
+  else if(b.k==='diner') openUI('diner');
+  else if(b.k==='guns') openUI('guns');
+  else if(b.k==='bank') openUI('bank');
+  else if(b.k==='police') openUI('police');
+}
+
+/* ------------------------------------------------------------------ panels */
+const UIS={};
+
+UIS.help=()=>panel('HOW THIS WORKS','',
+  '<div class="help"><div class="cols"><div>'+
+  '<div class="h4">CONTROLS</div><ul>'+
+  '<li><b>WASD</b> walk &nbsp; <b>Mouse</b> aim &nbsp; <b>Left click</b> attack</li>'+
+  '<li><b>E</b> interact: car, shop doors, animals, people, your own buildings</li>'+
+  '<li><b>C</b> collect from every animal near you</li>'+
+  '<li><b>G</b> upgrade the structure you are standing at</li>'+
+  '<li><b>B</b> build menu (farm only). Hold <b>Shift</b> to keep placing.</li>'+
+  '<li><b>Q</b> stock and storage &nbsp; <b>R</b> ledger</li>'+
+  '<li><b>F</b> mug the nearest civilian (town only)</li>'+
+  '<li><b>1-5</b> equip fists / knife / bat / handgun / shotgun</li>'+
+  '<li><b>X</b> stow your weapon out of sight &nbsp; <b>Esc</b> menu</li></ul>'+
+  '<div class="h4" style="margin-top:14px">THE LOOP</div><ul>'+
+  '<li>Build a pen, buy stock at the auction, keep feed in the silo.</li>'+
+  '<li>Animals grow, produce milk/eggs/wool/truffles and breed on their own.</li>'+
+  '<li>Press C to collect. Sell produce at the General Store for steady cash.</li>'+
+  '<li>Slaughter grown animals for meat, then haggle it off at the Meat Market.</li>'+
+  '<li>Reinvest: bigger pens, barns, silos, a slaughterhouse, more land.</li></ul>'+
+  '<div class="h4" style="margin-top:14px">UPGRADES</div><ul>'+
+  '<li>Everything you build can be improved. Walk up to it and press <b>E</b> or <b>G</b>.</li>'+
+  '<li>A coop takes an <b>Egg Belt</b>, a barn takes a <b>Milking Rig</b>, a pen takes a <b>Hired Hand</b> &mdash; all of them collect for you automatically, forever.</li>'+
+  '<li>Others change the animals instead: faster breeding, faster growth, more capacity, less feed, better health.</li>'+
+  '<li>Silos and sheds can place standing orders that buy feed and sell produce every morning without you.</li>'+
+  '<li>A slaughterhouse can run a standing cull on full pens. A cold store can dry-age meat <i>up</i> in quality.</li>'+
+  '<li>Costs rise 75% per level bought, and follow your location&rsquo;s build modifier. Demolishing refunds 40%.</li></ul>'+
+  '</div><div>'+
+  '<div class="h4">MEAT, QUALITY AND REPUTATION</div><ul>'+
+  '<li>An animal killed before it matures gives <b>less meat at poor quality</b>. Let them grow.</li>'+
+  '<li>Health and fullness at the moment of slaughter also move quality.</li>'+
+  '<li>Selling prime meat lifts your reputation. Selling poor meat wrecks it.</li>'+
+  '<li>High reputation: more buyers turn up, they open higher, and they will go further when you push them.</li>'+
+  '<li>Low reputation: fewer buyers, insulting offers, and some refuse to deal at all.</li>'+
+  '<li>Meat left lying around loses quality every day. A Cold Store stops that.</li></ul>'+
+  '<div class="h4" style="margin-top:14px">TROUBLE</div><ul>'+
+  '<li>Knife: fast, weak. Bat: slow, brutal. Both legal.</li>'+
+  '<li>Handgun and shotgun are <b>illegal</b>. If a deputy sees one in your hand, they chase.</li>'+
+  '<li>Caught: heavy fine, some stock seized, guns confiscated.</li>'+
+  '<li>Reach your car and drive off and there are no consequences at all.</li>'+
+  '<li>Press <b>X</b> to stow a gun so deputies stop noticing it.</li>'+
+  '<li>Mugging: about two thirds hand it over. The rest pull a weapon and do not stop.</li>'+
+  '<li>The County Bank pays 1.8% a day on deposits and lends against your reputation. Miss a loan deadline and they take cash, then livestock.</li>'+
+  '<li>Walk into the bank with a gun drawn and you can rob it. Every deputy comes at once, the vault gets harder each time, and an arrest during the getaway costs you your deposits too.</li></ul>'+
+  '</div></div></div>', walletFoot());
+
+UIS.pause=()=>panel('RANCH EMPIRE','Paused',
+  '<div class="grid">'+
+  '<div class="item"><h3>Day '+G.day+', '+timeStr()+'</h3><div class="d">'+esc(G.loc.name)+'</div>'+
+  '<div class="stat"><s>Cash</s><b class="money">'+money(G.cash)+'</b></div>'+
+  '<div class="stat"><s>Reputation</s><b>'+Math.round(G.rep)+' &mdash; '+repWord()+'</b></div>'+
+  '<div class="stat"><s>Livestock</s><b>'+G.animals.length+'</b></div>'+
+  '<div class="stat"><s>Meat lots</s><b>'+G.meats.length+'</b></div></div>'+
+  '<div class="item"><h3>Options</h3><div class="d">Your farm saves automatically each morning.</div>'+
+  '<button class="btn" style="width:100%;margin-bottom:6px" onclick="save();closeUI()">SAVE NOW</button>'+
+  '<button class="btn" style="width:100%;margin-bottom:6px" onclick="openUI(\'help\')">HELP</button>'+
+  '<button class="btn dang" style="width:100%" onclick="wipe()">ABANDON FARM (new game)</button></div>'+
+  '</div>', walletFoot());
+
+UIS.journal=()=>{
+  const s=G.stats;
+  const rows=[['Meat deals closed',s.sold],['Total earned at market',money(s.earned)],
+    ['Animals slaughtered',s.slaughtered],['Animals born on your land',s.born],
+    ['People robbed',s.mugged],['People killed',s.killed],['Bank jobs',s.robs||0],['Times arrested',s.arrests]];
+  return panel('THE LEDGER','Day '+G.day,
+    '<div class="cols"><div><div class="h4">RECORD</div>'+
+    rows.map(r=>'<div class="stat"><s>'+r[0]+'</s><b>'+r[1]+'</b></div>').join('')+
+    '</div><div><div class="h4">STANDING</div>'+
+    '<div class="stat"><s>Reputation</s><b>'+Math.round(G.rep)+' &mdash; '+repWord()+'</b></div>'+
+    G.rivals.map(r=>'<div class="stat"><s>'+esc(r.name)+'</s><b>'+(r.dead?'<span class="bad">dead</span>':(r.partner?'<span class="money">PARTNER</span>':'relation '+Math.round(r.rel)))+'</b></div>').join('')+
+    '<div class="h4" style="margin-top:14px">PROPERTY</div>'+
+    '<div class="stat"><s>Land</s><b>'+LAND[G.land].name+'</b></div>'+
+    '<div class="stat"><s>Structures</s><b>'+G.structs.length+'</b></div>'+
+    '<div class="stat"><s>Upgrades installed</s><b>'+G.structs.reduce((t,s)=>t+Object.keys(s.up||{}).reduce((n,k)=>n+s.up[k],0),0)+'</b></div>'+
+    '<div class="stat"><s>On deposit</s><b class="money">'+money(G.bank.balance)+'</b></div>'+
+    (G.bank.loan>=1?'<div class="stat"><s>Owed to the bank</s><b class="bad">'+money(G.bank.loan)+'</b></div>':'')+
+    '<div class="stat"><s>Feed</s><b>'+Math.round(G.feed)+' / '+feedCap()+'</b></div>'+
+    '<div class="stat"><s>Produce stored</s><b>'+Math.round(prodTotal())+' / '+prodCap()+'</b></div>'+
+    '</div></div>', walletFoot());
+};
+
+UIS.stock=()=>{
+  const bySp={};
+  for(const a of G.animals){ (bySp[a.sp]=bySp[a.sp]||[]).push(a); }
+  let herd='';
+  for(const sp of SPKEYS){
+    if(!bySp[sp]) continue;
+    const byBr={}; bySp[sp].forEach(a=>{const k=a.br;(byBr[k]=byBr[k]||[]).push(a);});
+    herd+='<div class="h4">'+SPECIES[sp].plural.toUpperCase()+' &mdash; '+bySp[sp].length+'</div>';
+    for(const br in byBr){
+      const list=byBr[br], ad=list.filter(isAdult).length;
+      herd+='<div class="row"><b>'+SPECIES[sp].breeds[br].name+'</b> &times;'+list.length+
+        '<span class="spacer"></span><s style="color:#8a9a78">'+ad+' grown, '+(list.length-ad)+' young, '+
+        list.filter(a=>a.sex==='F').length+'F / '+list.filter(a=>a.sex==='M').length+'M</s></div>';
+    }
+  }
+  if(!herd) herd='<div class="empty">You do not own a single animal.</div>';
+  let prod='';
+  for(const k in G.prods){ if(G.prods[k]<=0) continue;
+    prod+='<div class="stat"><s>'+RES[k].name+'</s><b>'+Math.round(G.prods[k])+' '+RES[k].unit+' &nbsp;<span class="money">'+money(G.prods[k]*RES[k].base)+'</span></b></div>'; }
+  if(!prod) prod='<div class="empty">Nothing collected yet. Stand near your animals and press C.</div>';
+  let meat=G.meats.length? G.meats.map(m=>{const L=qLabel(m.q);
+      return '<div class="row"><b>'+esc(m.name)+'</b> <span class="q '+L[1]+'">'+L[0]+' '+Math.round(m.q)+'</span>'+
+      '<span class="spacer"></span>'+m.kg.toFixed(1)+'kg</div>';}).join('')
+    : '<div class="empty">Cold store is empty.</div>';
+  return panel('STOCK &amp; STORES','Farm inventory',
+    '<div class="cols"><div><div class="h4">LIVESTOCK</div>'+herd+'</div><div>'+
+    '<div class="h4">PRODUCE &nbsp;('+Math.round(prodTotal())+'/'+prodCap()+')</div>'+prod+
+    '<div class="h4" style="margin-top:14px">COLD STORE'+(hasStruct('cold')?'':' <span class="warn">(no cold store &mdash; quality is dropping)</span>')+'</div>'+meat+
+    '</div></div>',
+    walletFoot('Feed <b>'+Math.round(G.feed)+'</b>/'+feedCap()));
+};
+
+UIS.build=()=>{
+  const r=farmRect();
+  const body='<div class="grid">'+STKEYS.map(k=>{
+    const d=STRUCTS[k], cost=Math.round(d.cost*M().build), can=G.cash>=cost;
+    return '<div class="item"><h3>'+d.name+'</h3><div class="d">'+d.d+'</div>'+
+      '<div class="stat"><s>Footprint</s><b>'+d.w+' &times; '+d.h+'</b></div>'+
+      (d.cap?'<div class="stat"><s>Capacity</s><b>'+d.cap+' head</b></div>':'')+
+      (d.kinds&&d.kinds!=='*'?'<div class="stat"><s>Takes</s><b>'+d.kinds.map(s=>SPECIES[s].plural).join(', ')+'</b></div>':'')+
+      '<div class="stat"><s>Cost</s><b class="money">'+money(cost)+'</b></div>'+
+      '<div class="stat"><s>You own</s><b>'+countStruct(k)+'</b></div>'+
+      '<button class="btn buy" style="margin-top:8px" '+(can?'':'disabled')+' onclick="startBuild(\''+k+'\')">'+(can?'PLACE':'TOO EXPENSIVE')+'</button></div>';
+  }).join('')+'</div>';
+  return panel('BUILD','Your land: '+LAND[G.land].name+' ('+(r.w/TILE)+' &times; '+(r.h/TILE)+' tiles). Buy more from the County Realtor.',
+    body, walletFoot('Build cost modifier <b>'+Math.round(M().build*100)+'%</b>'));
+};
+
+UIS.animal=d=>{
+  const a=G.animals.find(x=>x.id===d.id);
+  if(!a) return panel('GONE','','<div class="empty">That animal is no longer here.</div>');
+  const b=brOf(a), ar=ageRatio(a), res=SPECIES[a.sp].res;
+  const est=meatEstimate(a);
+  const L=qLabel(est.q);
+  const pens=G.structs.filter(s=>isPen(s)&&s.id!==a.pen&&penAccepts(s,a.sp));
+  return panel(esc(a.name.toUpperCase()),b.name+' '+SPECIES[a.sp].name.toLowerCase()+' &middot; '+(a.sex==='F'?'female':'male'),
+    '<div class="cols"><div><div class="h4">CONDITION</div>'+
+    '<div class="stat"><s>Maturity</s><b>'+Math.round(ar*100)+'% '+(isAdult(a)?'(grown)':'(<span class="warn">still growing</span>)')+'</b></div>'+
+    '<div class="stat"><s>Age</s><b>'+a.age.toFixed(1)+' / '+b.grow+' days</b></div>'+
+    '<div class="stat"><s>Health</s><b>'+Math.round(a.hp)+'%</b></div>'+
+    '<div class="stat"><s>Fullness</s><b>'+Math.round(a.full)+'%</b></div>'+
+    '<div class="stat"><s>'+RES[res].name+' ready</s><b>'+Math.floor(a.prod)+' '+RES[res].unit+'</b></div>'+
+    (a.sex==='F'&&isAdult(a)?'<div class="stat"><s>Next birth in</s><b>'+Math.max(0,b.breed-a.breedT).toFixed(1)+' days</b> </div>':'')+
+    '<div class="stat"><s>Live value</s><b class="money">'+money(liveValue(a))+'</b></div>'+
+    '</div><div><div class="h4">IF SLAUGHTERED NOW</div>'+
+    '<div class="stat"><s>Yield</s><b>'+est.kg.toFixed(1)+' kg</b></div>'+
+    '<div class="stat"><s>Quality</s><b><span class="q '+L[1]+'">'+L[0]+' '+Math.round(est.q)+'</span></b></div>'+
+    '<div class="stat"><s>Rough market value</s><b class="money">'+money(est.kg*MEAT[a.sp].base*(.45+.75*est.q/100)*(.6+.7*G.rep/100)*M().meat)+'</b></div>'+
+    (ar<1?'<div class="dlg" style="margin-top:10px">Not grown yet. Wait '+(b.grow-a.age).toFixed(1)+' more days and the carcass is worth far more &mdash; and your name stays clean.</div>':'')+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">'+
+    (a.prod>=1?'<button class="btn buy" onclick="aCollect('+a.id+')">COLLECT '+Math.floor(a.prod)+' '+RES[res].unit.toUpperCase()+'</button>':'')+
+    '<button class="btn dang" onclick="aSlaughter('+a.id+')">SLAUGHTER</button>'+
+    '</div>'+
+    (pens.length?'<div class="h4" style="margin-top:14px">MOVE TO</div>'+pens.map(p=>'<button class="btn sm" style="margin:0 5px 5px 0" onclick="aMove('+a.id+','+p.id+')">'+STRUCTS[p.k].name+' ('+penAnimals(p).length+'/'+penCap(p)+')</button>').join(''):'')+
+    '</div></div>', walletFoot(), 'sm');
+};
+function aCollect(id){
+  const a=G.animals.find(x=>x.id===id); if(!a) return;
+  const res=SPECIES[a.sp].res, space=prodCap()-prodTotal();
+  const n=Math.min(Math.floor(a.prod),space);
+  if(n<1){ toast('Storage is full.','bad'); return; }
+  a.prod-=n; G.prods[res]+=n; toast('+'+n+' '+RES[res].name,'good'); renderUI();
+}
+function aSlaughter(id){
+  const a=G.animals.find(x=>x.id===id); if(!a) return;
+  slaughter(a); closeUI();
+}
+function aMove(id,pid){
+  const a=G.animals.find(x=>x.id===id), p=G.structs.find(s=>s.id===pid);
+  if(!a||!p||!penAccepts(p,a.sp)) return;
+  a.pen=p.id; a.x=a.tx=rnd(p.x+16,p.x+p.w-16); a.y=a.ty=rnd(p.y+20,p.y+p.h-16);
+  toast(esc(a.name)+' moved to the '+STRUCTS[p.k].name.toLowerCase()+'.'); renderUI();
+}
+
+/* ----------------------------------------------------- structure upgrades */
+function nearStruct(){
+  if(G.map!=='farm') return null;
+  let best=null,bd=1e9;
+  for(const s of G.structs){
+    const cx=clamp(P.x,s.x,s.x+s.w), cy=clamp(P.y,s.y,s.y+s.h);
+    const d=Math.hypot(P.x-cx,P.y-cy);
+    if(d<42&&d<bd){ bd=d; best=s; }
+  }
+  return best;
+}
+function openStruct(s){ openUI('struct',{id:s.id}); }
+function togOn(s,id){ return !(s.tog&&s.tog[id]===false); }
+function structEffects(s){
+  const L=[];
+  if(isPen(s)){
+    const list=penAnimals(s), sp=penSpecies(s);
+    L.push(['Occupancy',list.length+' / '+penCap(s)+(sp?' '+SPECIES[sp].plural.toLowerCase():'')]);
+    L.push(['Production',Math.round(penProdMult(s)*100)+'%']);
+    L.push(['Feed use',Math.round(penFeedMult(s)*100)+'%']);
+    L.push(['Health regen',Math.round(penHeal(s))+'/day']);
+    L.push(['Breeding speed',Math.round(penBreedMult(s)*100)+'%']);
+    L.push(['Growth speed',Math.round(penGrowMult(s)*100)+'%']);
+    L.push(['Collecting',ulvl(s,'auto')?'<span class="money">automatic</span>':'by hand (walk up, press C)']);
+    if(list.length) L.push(['Waiting to collect',Math.floor(list.reduce((t,a)=>t+a.prod,0))+' units']);
+  }
+  else if(s.k==='silo'){ L.push(['Feed held',Math.round(G.feed)+' / '+feedCap()]);
+    L.push(['This silo adds',(300+200*ulvl(s,'rings'))+' storage']);
+    L.push(['Herd eats',(dailyFeed()).toFixed(1)+'/day']);
+    L.push(['Standing order',ulvl(s,'order')?'<span class="money">active</span>':'none']); }
+  else if(s.k==='shed'){ L.push(['Produce stored',Math.round(prodTotal())+' / '+prodCap()]);
+    L.push(['This shed adds',(400+300*ulvl(s,'rack'))+' storage']);
+    L.push(['Standing order',ulvl(s,'order')?'<span class="money">sells every morning</span>':'none']); }
+  else if(s.k==='abat'){ L.push(['Meat quality bonus','+'+(10+6*ulvl(s,'blade'))]);
+    L.push(['Carcass yield','+'+Math.round((10+8*ulvl(s,'yield')))+'%']);
+    L.push(['Standing cull order',ulvl(s,'cull')?(togOn(s,'cull')?'<span class="money">ON</span>':'<span class="warn">paused</span>'):'not bought']); }
+  else if(s.k==='cold'){ L.push(['Meat lots held',G.meats.length]);
+    L.push(['Quality over time',ulvl(s,'age')?'<span class="money">improves, up to +14</span>':'held steady']);
+    L.push(['Price bonus','+'+Math.round((packMult()-1)*100)+'%']); }
+  else if(s.k==='vet'){ L.push(['Health regen','+'+(14+10*ulvl(s,'care'))+'/day, every animal']);
+    L.push(['Breeding','-'+Math.round(12*ulvl(s,'fert'))+'% time, farm-wide']);
+    L.push(['Growth','+'+Math.round(12*ulvl(s,'growth'))+'% speed, farm-wide']);
+    L.push(['Deaths','prevented']); }
+  else if(s.k==='pond'){ L.push(['Duck production','+'+Math.round(pondBonus()*100)+'% farm-wide']);
+    L.push(['Fish income',ulvl(s,'fish')?money(55*ulvl(s,'fish'))+'/day':'none']); }
+  else if(s.k==='trough'||s.k==='water'){
+    const owner=G.structs.find(p=>isPen(p)&&penGet(p,s.k)===s);
+    L.push(['Serving',owner?STRUCTS[owner.k].name:'<span class="warn">no pen &mdash; place it inside one</span>']);
+    if(owner){ L.push(['That pen&rsquo;s feed use',Math.round(penFeedMult(owner)*100)+'%']);
+               L.push(['That pen&rsquo;s health regen',Math.round(penHeal(owner))+'/day']);
+               L.push(['That pen&rsquo;s production',Math.round(penProdMult(owner)*100)+'%']); }
+  }
+  return L;
+}
+UIS.struct=d=>{
+  const s=G.structs.find(x=>x.id===d.id);
+  if(!s) return panel('GONE','','<div class="empty">There is nothing there any more.</div>');
+  const def=STRUCTS[s.k], list=upgList(s);
+  const eff=structEffects(s).map(r=>'<div class="stat"><s>'+r[0]+'</s><b>'+r[1]+'</b></div>').join('');
+  const empty=!isPen(s)||penAnimals(s).length===0;
+  const refund=Math.round(def.cost*M().build*.4);
+  const cards=list.map(u=>{
+    const lv=ulvl(s,u.id), maxed=lv>=u.max, cost=upgCost(s,u), can=G.cash>=cost;
+    const pips=Array.from({length:u.max},(_,i)=>'<span style="color:'+(i<lv?'#9dbd6d':'#4a553c')+'">&#9679;</span>').join('');
+    return '<div class="item"><h3>'+u.name+' '+pips+'</h3><div class="d">'+u.d+'</div>'+
+      (u.max>1?'<div class="stat"><s>Level</s><b>'+lv+' / '+u.max+'</b></div>':'')+
+      (maxed
+        ? (u.toggle
+            ? '<button class="btn '+(togOn(s,u.id)?'on':'')+'" style="margin-top:8px;width:100%" onclick="togUpg('+s.id+',\''+u.id+'\')">'+(togOn(s,u.id)?'ACTIVE &mdash; CLICK TO PAUSE':'PAUSED &mdash; CLICK TO RESUME')+'</button>'
+            : '<button class="btn" style="margin-top:8px;width:100%" disabled>INSTALLED</button>')
+        : '<button class="btn buy" style="margin-top:8px;width:100%" '+(can?'':'disabled')+' onclick="buyUpg('+s.id+',\''+u.id+'\')">'+
+          (lv?'UPGRADE':'INSTALL')+' &mdash; '+money(cost)+'</button>')+'</div>';
+  }).join('');
+  return panel(def.name.toUpperCase(),def.d,
+    '<div class="cols"><div><div class="h4">RIGHT NOW</div>'+eff+
+    '<div class="h4" style="margin-top:16px">DEMOLISH</div>'+
+    '<div style="font-size:11.5px;color:#8a9a78;line-height:1.5;margin-bottom:8px">Tear it down and get 40% of the build cost back. Upgrades are not refunded'+
+    (isPen(s)?', and the pen has to be empty first':'')+'.</div>'+
+    '<button class="btn dang" '+(empty?'':'disabled')+' onclick="demolish('+s.id+')">'+
+      (empty?'DEMOLISH &mdash; refund '+money(refund):'MOVE THE STOCK OUT FIRST')+'</button>'+
+    '</div><div><div class="h4">IMPROVEMENTS</div>'+
+    (list.length?'<div class="grid" style="grid-template-columns:1fr">'+cards+'</div>':'<div class="empty">Nothing to add to this one.</div>')+
+    '</div></div>', walletFoot('Upgrade prices follow this location&rsquo;s build modifier ('+Math.round(M().build*100)+'%)'));
+};
+function buyUpg(sid,id){
+  const s=G.structs.find(x=>x.id===sid); if(!s) return;
+  const u=upgDef(s,id); if(!u) return;
+  const lv=ulvl(s,id); if(lv>=u.max) return;
+  const cost=upgCost(s,u);
+  if(G.cash<cost){ toast('Not enough cash.','bad'); return; }
+  G.cash-=cost; s.up=s.up||{}; s.up[id]=lv+1;
+  toast('<b>'+u.name+'</b> installed on the '+STRUCTS[s.k].name.toLowerCase()+' for '+money(cost)+'.','good');
+  renderUI(); save();
+}
+function togUpg(sid,id){
+  const s=G.structs.find(x=>x.id===sid); if(!s) return;
+  s.tog=s.tog||{}; s.tog[id]=!togOn(s,id);
+  renderUI();
+}
+function demolish(sid){
+  const s=G.structs.find(x=>x.id===sid); if(!s) return;
+  if(isPen(s)&&penAnimals(s).length){ toast('Move the animals out first.','bad'); return; }
+  const refund=Math.round(STRUCTS[s.k].cost*M().build*.4);
+  G.cash+=refund; G.structs.splice(G.structs.indexOf(s),1);
+  toast('Pulled down the '+STRUCTS[s.k].name.toLowerCase()+'. Got '+money(refund)+' back.','good');
+  closeUI(); save();
+}
+
+/* ------------------------------------------------------- livestock auction */
+UIS.auction=d=>{
+  const sex=d.sex||'F';
+  if(d.tab==='sell'){
+    const rows=G.animals.length? G.animals.map(a=>{
+      const b=brOf(a);
+      return '<div class="row"><b>'+esc(a.name)+'</b> <s style="color:#8a9a78">'+b.name+' '+SPECIES[a.sp].name.toLowerCase()+
+      ' &middot; '+(a.sex==='F'?'&#9792;':'&#9794;')+' &middot; '+Math.round(ageRatio(a)*100)+'% grown</s>'+
+      '<span class="spacer"></span><b class="money">'+money(liveValue(a))+'</b>'+
+      '<button class="btn sell sm" onclick="sellLive('+a.id+')">SELL LIVE</button></div>';
+    }).join('') : '<div class="empty">No livestock to sell.</div>';
+    return panel('LIVESTOCK AUCTION','Selling ring &mdash; live animals only',
+      '<div class="tabs">'+SPKEYS.map(s=>'<button class="btn" onclick="openUI(\'auction\',{sp:\''+s+'\',tab:\'buy\',sex:\''+sex+'\'})">'+SPECIES[s].plural.toUpperCase()+'</button>').join('')+
+      '<button class="btn on">SELL LIVE</button></div>'+rows, walletFoot());
+  }
+  const sp=d.sp||'cow', S=SPECIES[sp];
+  const body='<div class="tabs">'+SPKEYS.map(s=>'<button class="btn '+(s===sp?'on':'')+'" onclick="openUI(\'auction\',{sp:\''+s+'\',tab:\'buy\',sex:\''+sex+'\'})">'+SPECIES[s].plural.toUpperCase()+'</button>').join('')+
+    '<button class="btn" onclick="openUI(\'auction\',{tab:\'sell\'})">SELL LIVE</button>'+
+    '<span class="spacer"></span><span style="font-size:12px;color:#9db089;align-self:center">Buying:</span>'+
+    '<button class="btn '+(sex==='F'?'on':'')+'" onclick="openUI(\'auction\',{sp:\''+sp+'\',tab:\'buy\',sex:\'F\'})">&#9792; FEMALE</button>'+
+    '<button class="btn '+(sex==='M'?'on':'')+'" onclick="openUI(\'auction\',{sp:\''+sp+'\',tab:\'buy\',sex:\'M\'})">&#9794; MALE</button></div>'+
+    '<div class="grid">'+Object.keys(S.breeds).map(k=>{
+      const b=S.breeds[k], price=Math.round(b.price*M().animal), young=Math.round(price*.55);
+      const pen=penFor(sp);
+      return '<div class="item"><h3>'+b.name+'</h3><div class="d">'+b.d+'</div>'+
+        '<div class="stat"><s>'+RES[S.res].name+'</s><b>'+b.prod.toFixed(2)+' '+RES[S.res].unit+'/day</b></div>'+
+        '<div class="stat"><s>Grows up in</s><b>'+b.grow+' days</b></div>'+
+        '<div class="stat"><s>Births every</s><b>'+b.breed+' days'+(S.litter[1]>1?' ('+S.litter[0]+'-'+S.litter[1]+' young)':'')+'</b></div>'+
+        '<div class="stat"><s>Meat at maturity</s><b>'+b.meat+' kg</b></div>'+
+        '<div class="stat"><s>Feed use</s><b>'+b.feed.toFixed(2)+'/day</b></div>'+
+        '<div class="stat"><s>Meat quality</s><b>'+(b.q>=10?'excellent':b.q>=5?'good':'average')+'</b></div>'+
+        (b.live?'<div class="stat"><s>Resale live</s><b class="money">'+money(b.live)+'</b></div>':'')+
+        '<div style="display:flex;gap:5px;margin-top:8px">'+
+        '<button class="btn buy" style="flex:1" '+(pen&&G.cash>=price?'':'disabled')+' onclick="buyAnimal(\''+sp+'\',\''+k+'\',\''+sex+'\',1)">GROWN '+money(price)+'</button>'+
+        '<button class="btn buy" style="flex:1" '+(pen&&G.cash>=young?'':'disabled')+' onclick="buyAnimal(\''+sp+'\',\''+k+'\',\''+sex+'\',0)">YOUNG '+money(young)+'</button>'+
+        '</div>'+(pen?'':'<div class="stat" style="margin-top:5px"><s class="warn">No pen with room for '+S.plural.toLowerCase()+'</s></div>')+'</div>';
+    }).join('')+'</div>';
+  const cap=G.structs.filter(isPen).map(s=>STRUCTS[s.k].name+' '+penAnimals(s).length+'/'+penCap(s)+(penSpecies(s)?' ('+SPECIES[penSpecies(s)].plural+')':' (empty)')).join(' &nbsp;·&nbsp; ')||'no pens built';
+  return panel('LIVESTOCK AUCTION','Stock prices at '+Math.round(M().animal*100)+'% of book',body, walletFoot('Pens: '+cap));
+};
+function buyAnimal(sp,br,sex,grown){
+  const b=SPECIES[sp].breeds[br];
+  const price=Math.round(b.price*M().animal*(grown?1:.55));
+  const pen=penFor(sp);
+  if(!pen){ toast('Build a pen with room for '+SPECIES[sp].plural.toLowerCase()+' first.','bad'); return; }
+  if(G.cash<price){ toast('Not enough cash.','bad'); return; }
+  G.cash-=price;
+  const a=spawnAnimal(sp,br,pen,sex,grown?b.grow:0);
+  toast('Bought <b>'+esc(a.name)+'</b>, a '+(grown?'grown':'young')+' '+b.name+' '+SPECIES[sp].name.toLowerCase()+', for '+money(price)+'.','good');
+  renderUI();
+}
+function sellLive(id){
+  const a=G.animals.find(x=>x.id===id); if(!a) return;
+  const v=liveValue(a); G.cash+=v; removeAnimal(a);
+  toast('Sold <b>'+esc(a.name)+'</b> live for '+money(v)+'.','good');
+  renderUI();
+}
+
+/* ---------------------------------------------------------- general store */
+function feedPrice(){return 4.4*(G.priceMult.feed||1);}
+UIS.store=()=>{
+  let prod='';
+  for(const k in G.prods){
+    const q=Math.floor(G.prods[k]);
+    const per=RES[k].base*(G.priceMult[k]||1);
+    prod+='<div class="row"><b>'+RES[k].name+'</b> <s style="color:#8a9a78">'+q+' '+RES[k].unit+' @ '+money(per)+'</s>'+
+      '<span class="spacer"></span><b class="money">'+money(q*per)+'</b>'+
+      '<button class="btn sell sm" '+(q>0?'':'disabled')+' onclick="sellProduct(\''+k+'\',0)">SELL ALL</button></div>';
+  }
+  const total=Object.keys(G.prods).reduce((t,k)=>t+Math.floor(G.prods[k])*RES[k].base*(G.priceMult[k]||1),0);
+  const fp=feedPrice();
+  const tools=[['bucket','Wide Bucket Rig',420,'Collect from a much larger radius around you.'],
+               ['quad','Quad Bike',1350,'Move 35% faster everywhere.'],
+               ['vest','Kevlar Vest',900,'Take 40% less damage from bullets.']];
+  return panel('GENERAL STORE','Produce prices move a little every day',
+    '<div class="cols"><div><div class="h4">SELL PRODUCE</div>'+(prod||'<div class="empty">Nothing to sell.</div>')+
+    (total>0?'<button class="btn sell" style="width:100%;margin-top:4px" onclick="sellProduct(\'*\',0)">SELL EVERYTHING &mdash; '+money(total)+'</button>':'')+
+    '<div class="h4" style="margin-top:16px">FEED &nbsp;<s style="color:#8a9a78;font-size:11px">'+Math.round(G.feed)+'/'+feedCap()+' stored, '+money(fp)+' a unit</s></div>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap">'+
+    [50,150,400].map(n=>'<button class="btn buy" '+(G.cash>=n*fp?'':'disabled')+' onclick="buyFeed('+n+')">+'+n+' &mdash; '+money(n*fp)+'</button>').join('')+
+    '<button class="btn buy" onclick="buyFeed(-1)">FILL THE SILO</button></div>'+
+    '<div class="stat" style="margin-top:8px"><s>Your herd eats</s><b>'+dailyFeed().toFixed(1)+' units a day</b></div>'+
+    '</div><div><div class="h4">EQUIPMENT</div>'+
+    tools.map(t=>'<div class="item" style="margin-bottom:8px"><h3>'+t[1]+'</h3><div class="d" style="min-height:0">'+t[3]+'</div>'+
+      (G.tools[t[0]]?'<button class="btn" disabled>OWNED</button>':
+      '<button class="btn buy" '+(G.cash>=t[2]?'':'disabled')+' onclick="buyTool(\''+t[0]+'\','+t[2]+')">BUY '+money(t[2])+'</button>')+'</div>').join('')+
+    '</div></div>', walletFoot());
+};
+function dailyFeed(){ let t=0; for(const a of G.animals) t+=brOf(a).feed*M().feed; return t; }
+function sellProduct(k,n){
+  let tot=0,lines=[];
+  const keys=k==='*'?Object.keys(G.prods):[k];
+  for(const key of keys){
+    const q=Math.floor(G.prods[key]); if(q<=0) continue;
+    const amt=n>0?Math.min(n,q):q;
+    const per=RES[key].base*(G.priceMult[key]||1);
+    G.prods[key]-=amt; tot+=amt*per; lines.push(amt+' '+RES[key].name);
+  }
+  if(!tot){ toast('Nothing to sell.','bad'); return; }
+  G.cash+=tot; G.stats.earned+=tot;
+  G.rep=clamp(G.rep+.15,0,100);
+  toast('Sold '+lines.join(', ')+' for <b class="money">'+money(tot)+'</b>.','good');
+  renderUI();
+}
+function buyFeed(n){
+  const fp=feedPrice();
+  if(n<0) n=Math.floor(feedCap()-G.feed);
+  n=Math.min(n,Math.floor(feedCap()-G.feed),Math.floor(G.cash/fp));
+  if(n<=0){ toast(G.feed>=feedCap()-1?'Silo is full.':'Not enough cash.','bad'); return; }
+  G.cash-=n*fp; G.feed+=n;
+  toast('Bought '+n+' feed for '+money(n*fp)+'.','good'); renderUI();
+}
+function buyTool(k,c){
+  if(G.cash<c||G.tools[k]) return;
+  G.cash-=c; G.tools[k]=true;
+  if(k==='vest') P.max=150,P.hp=Math.min(P.max,P.hp+50);
+  toast('Bought it.','good'); renderUI();
+}
+
+/* --------------------------------------------------------------- realtor */
+UIS.realtor=()=>{
+  const cur=LAND[G.land], nxt=LAND[G.land+1];
+  return panel('COUNTY REALTOR','Land, deeds and paperwork',
+    '<div class="dlg">"Everybody starts with a paddock and a dream. Whether you end up with a valley is between you and the bank."</div>'+
+    '<div class="cols"><div><div class="h4">YOUR HOLDING</div>'+
+    '<div class="stat"><s>Deed</s><b>'+cur.name+'</b></div>'+
+    '<div class="stat"><s>Buildable</s><b>'+cur.w+' &times; '+cur.h+' tiles</b></div>'+
+    '<div class="stat"><s>Structures standing</s><b>'+G.structs.length+'</b></div>'+
+    '<div class="stat"><s>Location</s><b>'+esc(G.loc.name)+'</b></div>'+
+    '<div class="stat"><s>Build cost here</s><b>'+Math.round(M().build*100)+'%</b></div>'+
+    '</div><div><div class="h4">FOR SALE</div>'+
+    (nxt? '<div class="item"><h3>'+nxt.name+'</h3><div class="d">Extends your buildable land to '+nxt.w+' &times; '+nxt.h+' tiles. Room for barns, silos and a proper slaughterhouse.</div>'+
+      '<div class="stat"><s>Price</s><b class="money">'+money(nxt.cost)+'</b></div>'+
+      '<button class="btn buy" style="width:100%;margin-top:8px" '+(G.cash>=nxt.cost?'':'disabled')+' onclick="buyLand()">BUY THE DEED</button></div>'
+      : '<div class="empty">You already own everything from the creek to the ridge.</div>')+
+    '</div></div>', walletFoot());
+};
+function buyLand(){
+  const nxt=LAND[G.land+1]; if(!nxt||G.cash<nxt.cost) return;
+  G.cash-=nxt.cost; G.land++;
+  toast('You now own <b>'+nxt.name+'</b>.','good'); renderUI(); save();
+}
+
+/* ----------------------------------------------------------------- diner */
+UIS.diner=()=>panel('THE FEEDLOT DINER','Coffee, gossip, and a place to sit',
+  '<div class="dlg">'+pick([
+    '"Word is the market has been soft on young meat. Buyers can taste it, you know."',
+    '"Reputation is the only currency out here that you cannot counterfeit."',
+    '"Deputy Purdy has been checking coats down by the pawn shop. Just so you know."',
+    '"Them rivals will partner with anybody who is worth partnering with. Be worth it."',
+    '"Cheapest cattle in the county are the ones that raise themselves. Buy young, wait."'])+'</div>'+
+  '<div class="grid">'+
+  '<div class="item"><h3>Hot meal</h3><div class="d">Patch yourself up. Back to full health.</div>'+
+  '<div class="stat"><s>Health</s><b>'+Math.round(P.hp)+' / '+P.max+'</b></div>'+
+  '<button class="btn buy" style="margin-top:8px" '+(G.cash>=45&&P.hp<P.max?'':'disabled')+' onclick="dinerHeal()">EAT &mdash; $45</button></div>'+
+  '<div class="item"><h3>Sit until morning</h3><div class="d">Nurse a coffee while the stock feeds itself. Time skips ahead to 7am.</div>'+
+  '<div class="stat"><s>Now</s><b>Day '+G.day+', '+timeStr()+'</b></div>'+
+  '<button class="btn buy" style="margin-top:8px" '+(G.cash>=30?'':'disabled')+' onclick="dinerWait()">WAIT &mdash; $30</button></div>'+
+  '</div>', walletFoot());
+function dinerHeal(){ if(G.cash<45)return; G.cash-=45; P.hp=P.max; toast('Back on your feet.','good'); renderUI(); }
+function dinerWait(){
+  if(G.cash<30)return; G.cash-=30;
+  let mins=(7*60-G.tmin+1440)%1440; if(mins<30)mins+=1440;
+  advanceTime(mins); toast('You sit until morning.','good'); renderUI();
+}
+
+/* --------------------------------------------------------- weapons dealer */
+UIS.guns=()=>{
+  const g=M().gun;
+  return panel('PAWN &amp; SPORTING GOODS','Out back, no receipts',
+    '<div class="dlg">"Knife and bat, those are tools, and I will sell them to anyone. The other two you never bought here."</div>'+
+    '<div class="grid">'+['knife','bat','handgun','shotgun'].map(k=>{
+      const w=WEAPONS[k], cost=Math.round(w.cost*g);
+      return '<div class="item"><h3>'+w.name+(w.illegal?' <span class="bad" style="font-size:11px">ILLEGAL</span>':'')+'</h3>'+
+        '<div class="d">'+w.d+'</div>'+
+        '<div class="stat"><s>Damage</s><b>'+(w.pellets?w.dmg+' &times;'+w.pellets:w.dmg)+'</b></div>'+
+        '<div class="stat"><s>Speed</s><b>'+(w.cd<=.2?'lightning':w.cd<=.5?'quick':w.cd<=.85?'slow':'very slow')+'</b></div>'+
+        '<div class="stat"><s>Range</s><b>'+(w.kind==='gun'?(w.reach>400?'long':'short'):'melee')+'</b></div>'+
+        (G.owned[k]?'<button class="btn" style="margin-top:8px" disabled>OWNED</button>':
+         '<button class="btn buy" style="margin-top:8px" '+(G.cash>=cost?'':'disabled')+' onclick="buyWeapon(\''+k+'\')">BUY '+money(cost)+'</button>')+'</div>';
+    }).join('')+
+    '<div class="item"><h3>Ammunition</h3><div class="d">Pistol rounds and shotgun shells. Nobody counts them.</div>'+
+    '<div class="stat"><s>Pistol rounds</s><b>'+G.ammo.pistol+'</b></div>'+
+    '<div class="stat"><s>Shells</s><b>'+G.ammo.shell+'</b></div>'+
+    '<div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">'+
+    '<button class="btn buy sm" onclick="buyAmmo(\'pistol\',24)">24 ROUNDS '+money(Math.round(70*g))+'</button>'+
+    '<button class="btn buy sm" onclick="buyAmmo(\'shell\',12)">12 SHELLS '+money(Math.round(90*g))+'</button></div></div>'+
+    '</div>', walletFoot('Weapon prices here: <b>'+Math.round(g*100)+'%</b>'));
+};
+function buyWeapon(k){
+  const cost=Math.round(WEAPONS[k].cost*M().gun);
+  if(G.cash<cost||G.owned[k]) return;
+  G.cash-=cost; G.owned[k]=true; G.weapon=k; G.holster=WEAPONS[k].illegal;
+  toast('Bought a <b>'+WEAPONS[k].name+'</b>.'+(WEAPONS[k].illegal?' Stowed out of sight &mdash; press <b>X</b> to draw it.':''),'good');
+  renderUI();
+}
+function buyAmmo(kind,n){
+  const cost=Math.round((kind==='pistol'?70:90)*M().gun);
+  if(G.cash<cost){ toast('Not enough cash.','bad'); return; }
+  G.cash-=cost; G.ammo[kind]+=n; toast('+'+n+' '+(kind==='pistol'?'rounds':'shells'),'good'); renderUI();
+}
+
+/* ------------------------------------------------------------------ bank */
+function loanCap(){ return Math.round(1800+G.rep*70); }
+function bankDay(notes){
+  const b=G.bank;
+  if(b.balance>0){
+    const int=b.balance*b.rate; b.balance+=int;
+    if(int>=1) notes.push('Savings earned '+money(int)+' in interest.');
+  }
+  if(b.loan>0){
+    b.loan*=1.06; b.due--;
+    if(b.due<=0){
+      const grab=Math.min(G.cash,b.loan);
+      G.cash-=grab; b.loan-=grab;
+      let seized=0;
+      while(b.loan>1&&G.animals.length&&seized<3){ const a=pick(G.animals); b.loan-=liveValue(a); removeAnimal(a); seized++; }
+      if(b.loan<0) b.loan=0;
+      G.rep=clamp(G.rep-3,0,100);
+      notes.push('<span class="bad">The bank called your loan &mdash; took '+money(grab)+
+        (seized?' and '+seized+' head of stock':'')+'.</span>');
+      if(b.loan<=1){ b.loan=0; notes.push('Loan settled.'); } else b.due=3;
+    } else if(b.due<=3) notes.push('<span class="warn">Loan of '+money(b.loan)+' falls due in '+b.due+' day'+(b.due===1?'':'s')+'.</span>');
+  }
+}
+function spawnCopsAt(x,y,n){
+  for(let i=0;i<n;i++){
+    const c=newNpc('cop',clamp(x+rnd(-260,260),40,TOWN_W-40),clamp(y+rnd(-260,260),40,TOWN_H-40));
+    G.npcs.push(c);
+  }
+}
+UIS.bank=()=>{
+  const b=G.bank, armed=carrying(), cooling=G.day-b.robbedDay<3;
+  const dep=[['25%',.25],['50%',.5],['All',1]];
+  return panel('COUNTY BANK','Savings, loans, and a very old vault',
+    '<div class="dlg">'+(armed
+      ? '<span class="bad">You are holding a '+WEAPONS[G.weapon].name.toLowerCase()+' in plain view. The teller has not looked up yet.</span>'
+      : '"Morning. Depositing, or were you after a loan?"')+'</div>'+
+    '<div class="cols"><div><div class="h4">SAVINGS &mdash; '+Math.round(b.rate*100)+'% A DAY, COMPOUNDING</div>'+
+    '<div class="stat"><s>On deposit</s><b class="money">'+money(b.balance)+'</b></div>'+
+    '<div class="stat"><s>Earns tomorrow</s><b>'+money(b.balance*b.rate)+'</b></div>'+
+    '<div class="stat"><s>In your pocket</s><b>'+money(G.cash)+'</b></div>'+
+    '<div style="display:flex;gap:5px;flex-wrap:wrap;margin:9px 0">'+
+    dep.map(d=>'<button class="btn buy sm" '+(G.cash>=10?'':'disabled')+' onclick="bankDeposit('+d[1]+')">DEPOSIT '+d[0]+'</button>').join('')+'</div>'+
+    '<div style="display:flex;gap:5px;flex-wrap:wrap">'+
+    dep.map(d=>'<button class="btn sell sm" '+(b.balance>=1?'':'disabled')+' onclick="bankWithdraw('+d[1]+')">WITHDRAW '+d[0]+'</button>').join('')+'</div>'+
+    '<div style="font-size:11.5px;color:#8a9a78;line-height:1.5;margin-top:10px">Money on deposit grows while you sleep and cannot be taken off you by a mugger or a deputy. '+
+    'It <b>can</b> be seized if they arrest you for robbing this bank.</div>'+
+    '</div><div><div class="h4">CREDIT</div>'+
+    (b.loan>0
+      ? '<div class="stat"><s>Outstanding</s><b class="bad">'+money(b.loan)+'</b></div>'+
+        '<div class="stat"><s>Interest</s><b>6% a day</b></div>'+
+        '<div class="stat"><s>Due in</s><b>'+Math.max(0,b.due)+' days</b></div>'+
+        '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:9px">'+
+        '<button class="btn buy sm" '+(G.cash>=Math.min(b.loan,G.cash)&&G.cash>0?'':'disabled')+' onclick="bankRepay(1)">REPAY IN FULL '+money(b.loan)+'</button>'+
+        '<button class="btn sm" '+(G.cash>0?'':'disabled')+' onclick="bankRepay(.5)">REPAY HALF</button></div>'
+      : '<div class="stat"><s>You can borrow up to</s><b class="money">'+money(loanCap())+'</b></div>'+
+        '<div class="stat"><s>Terms</s><b>6% a day, due in 10 days</b></div>'+
+        '<div style="font-size:11.5px;color:#8a9a78;line-height:1.5;margin:8px 0">Miss the deadline and they take it out of your cash, then out of your herd, and your name takes the hit.</div>'+
+        '<div style="display:flex;gap:5px;flex-wrap:wrap">'+
+        [.34,.67,1].map(f=>'<button class="btn buy sm" onclick="bankLoan('+f+')">BORROW '+money(loanCap()*f)+'</button>').join('')+'</div>')+
+    '<div class="h4" style="margin-top:18px">THE VAULT</div>'+
+    '<div class="stat"><s>Security</s><b>'+(b.sec===0?'a bored guard and a camera':b.sec===1?'new locks, alert staff':b.sec===2?'armed guard on the door':'a fortress now')+'</b></div>'+
+    '<div class="stat"><s>Holdups pulled</s><b>'+(G.stats.robs||0)+'</b></div>'+
+    (armed&&!cooling
+      ? '<button class="btn dang" style="width:100%;margin-top:9px;padding:9px" onclick="bankRob()">ROB THE BANK</button>'+
+        '<div style="font-size:11.5px;color:#e0a55a;line-height:1.5;margin-top:7px">Every deputy in the county comes at once. Reach your car and it is clean money. '+
+        'Get caught and they take the fine, your stock, your guns <b>and everything on deposit</b>.</div>'
+      : '<div style="font-size:11.5px;color:#8a9a78;line-height:1.5;margin-top:9px">'+
+        (cooling?'The drawers were emptied '+(G.day-b.robbedDay)+' day(s) ago. Nothing worth taking yet.'
+                :'Nothing you could do here unarmed. A gun in your hand would change the conversation.')+'</div>')+
+    '</div></div>', walletFoot('Deposits '+money(b.balance)+(b.loan?' &nbsp;·&nbsp; <span class="bad">debt '+money(b.loan)+'</span>':'')));
+};
+function bankDeposit(f){
+  const n=Math.floor(G.cash*f); if(n<1){ toast('Nothing to deposit.','bad'); return; }
+  G.cash-=n; G.bank.balance+=n; toast('Deposited '+money(n)+'.','good'); renderUI(); save();
+}
+function bankWithdraw(f){
+  const n=Math.floor(G.bank.balance*f); if(n<1){ toast('Nothing on deposit.','bad'); return; }
+  G.bank.balance-=n; G.cash+=n; toast('Withdrew '+money(n)+'.','good'); renderUI(); save();
+}
+function bankLoan(f){
+  if(G.bank.loan>0){ toast('Settle the loan you already have.','bad'); return; }
+  const n=Math.round(loanCap()*f);
+  G.bank.loan=n; G.bank.due=10; G.cash+=n;
+  toast('Borrowed <b>'+money(n)+'</b>. Due in 10 days at 6% a day.','good'); renderUI(); save();
+}
+function bankRepay(f){
+  const b=G.bank;
+  const n=Math.min(G.cash,f>=1?b.loan:b.loan*f);
+  if(n<1){ toast('You have nothing to pay with.','bad'); return; }
+  G.cash-=n; b.loan-=n;
+  if(b.loan<=1){ b.loan=0; b.due=0; G.rep=clamp(G.rep+2,0,100); toast('Loan cleared. The bank likes you a little more.','good'); }
+  else toast('Paid '+money(n)+' off the loan.','good');
+  renderUI(); save();
+}
+function bankRob(){
+  const b=G.bank;
+  if(!carrying()){ toast('You would need a gun in your hand for that.','bad'); return; }
+  if(G.day-b.robbedDay<3){ toast('Nothing left in the drawers yet.','bad'); return; }
+  const take=Math.round((1500+G.day*95+ri(0,900))*Math.max(.3,1-b.sec*.22)*(G.weapon==='shotgun'?1.25:1));
+  G.cash+=take; b.robbedDay=G.day; b.sec++; b.heist=true;
+  G.rep=clamp(G.rep-12,0,100);
+  G.stats.robs=(G.stats.robs||0)+1;
+  closeUI();
+  const bd=TOWN.find(t=>t.k==='bank');
+  P.x=bd.door.x; P.y=bd.door.y+34;
+  raiseWanted(3,'you just held up the county bank.');
+  spawnCopsAt(bd.door.x,bd.door.y,4);
+  toast('<b>'+money(take)+' out of the drawers.</b> Get to the car.','bad');
+}
+
+/* --------------------------------------------------------------- sheriff */
+UIS.police=()=>panel('COUNTY SHERIFF','Public records',
+  '<div class="dlg">"Farm all you like. Just do not make my afternoon interesting."</div>'+
+  '<div class="cols"><div><div class="h4">YOUR RECORD</div>'+
+  '<div class="stat"><s>Arrests</s><b>'+G.stats.arrests+'</b></div>'+
+  '<div class="stat"><s>Reported robberies</s><b>'+G.stats.mugged+'</b></div>'+
+  '<div class="stat"><s>Bodies</s><b>'+G.stats.killed+'</b></div>'+
+  '<div class="stat"><s>Bank jobs</s><b>'+(G.stats.robs||0)+'</b></div>'+
+  '<div class="stat"><s>Currently wanted</s><b>'+(G.wanted?'<span class="bad">YES</span>':'no')+'</b></div>'+
+  '</div><div><div class="h4">NOTICE</div>'+
+  '<div style="font-size:12.5px;color:#c3cfb2;line-height:1.6">Handguns and shotguns are prohibited in the county. '+
+  'Deputies who see one will pursue. If they take you, expect a fine, seizure of stock, and confiscation of the weapon. '+
+  'Reaching your vehicle and leaving ends a pursuit with no charges filed.</div></div></div>', walletFoot());
+function surrender(){
+  const fine=Math.round(G.cash*.1)+ri(40,120);
+  G.cash=Math.max(0,G.cash-fine); G.wanted=0; G.chaseT=0; G.stats.arrests++;
+  let lost=[]; for(const k of ['handgun','shotgun']) if(G.owned[k]){delete G.owned[k];lost.push(WEAPONS[k].name);}
+  G.weapon='fists'; G.ammo.pistol=0; G.ammo.shell=0;
+  toast('You turned yourself in. Fine of '+money(fine)+(lost.length?' and they kept your '+lost.join(' and '):'')+'. No stock seized.','cop');
+}
+
+/* ----------------------------------------------------------------- rivals */
+function openRival(n){ const r=G.rivals.find(r=>r.id===n.rival); if(r) openUI('rival',{id:r.id}); }
+function rivalDef(id){ return RIVALDEF.find(d=>d.id===id); }
+function rivalMeatOffer(r,m){
+  const d=rivalDef(r.id);
+  return MEAT[m.sp].base*(.45+.7*m.q/100)*(.86+r.rel/400)*M().meat*packMult()*(d.likes===m.sp?1.18:.9);
+}
+UIS.rival=d=>{
+  const r=G.rivals.find(x=>x.id===d.id), def=rivalDef(d.id);
+  if(!r) return panel('NOBODY','','<div class="empty">They are not here.</div>');
+  const canPartner=!r.partner&&r.rel>=60&&G.rep>=45;
+  const meatRows=G.meats.length? G.meats.map(m=>{
+    const per=rivalMeatOffer(r,m), L=qLabel(m.q);
+    return '<div class="row"><b>'+esc(m.name)+'</b> <span class="q '+L[1]+'">'+L[0]+'</span> <s style="color:#8a9a78">'+m.kg.toFixed(1)+'kg</s>'+
+    '<span class="spacer"></span><b class="money">'+money(per)+'/kg = '+money(per*m.kg)+'</b>'+
+    '<button class="btn sell sm" onclick="rivalBuyMeat(\''+r.id+'\','+m.id+')">SELL LOT</button></div>';
+  }).join('') : '<div class="empty">You have no meat on you.</div>';
+  const stockRows=G.animals.length? G.animals.slice(0,10).map(a=>
+    '<div class="row"><b>'+esc(a.name)+'</b> <s style="color:#8a9a78">'+brOf(a).name+' '+SPECIES[a.sp].name.toLowerCase()+'</s>'+
+    '<span class="spacer"></span><b class="money">'+money(Math.round(liveValue(a)*1.12))+'</b>'+
+    '<button class="btn sell sm" onclick="rivalBuyAnimal(\''+r.id+'\','+a.id+')">SELL</button></div>').join('')
+    : '<div class="empty">Nothing to trade.</div>';
+  const offers=r.offer||[];
+  return panel(esc(r.name.toUpperCase()),def.title+' &mdash; '+def.d,
+    '<div class="dlg">'+esc(r.line||pick(def.lines))+'</div>'+
+    '<div class="stat"><s>Relationship</s><b>'+Math.round(r.rel)+'/100 '+(r.partner?'<span class="money">&mdash; PARTNERS</span>':'')+'</b></div>'+
+    '<div class="bar" style="width:100%;margin:6px 0 14px"><i style="width:'+Math.round(r.rel)+'%;background:linear-gradient(90deg,#7a5,#bd6)"></i></div>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">'+
+    '<button class="btn" onclick="rivalTalk(\''+r.id+'\')">TALK</button>'+
+    '<button class="btn '+(canPartner?'buy':'')+'" '+(canPartner?'':'disabled')+' onclick="rivalPartner(\''+r.id+'\')">'+
+      (r.partner?'ALREADY PARTNERS':'PROPOSE PARTNERSHIP')+'</button>'+
+    '<button class="btn" onclick="rivalStock(\''+r.id+'\')">SEE THEIR STOCK</button>'+
+    '<button class="btn dang" onclick="rivalThreaten(\''+r.id+'\')">THREATEN</button></div>'+
+    (!r.partner&&r.rel<60?'<div class="stat"><s class="warn">Partnership needs relationship 60+ and reputation 45+. Trade with them to warm them up.</s></div>':'')+
+    '<div class="cols" style="margin-top:10px"><div><div class="h4">THEY WILL BUY YOUR MEAT</div>'+
+    '<div style="font-size:11.5px;color:#8a9a78;margin-bottom:8px">Flat rate, no haggling, and no damage to your reputation for poor cuts. They pay best for '+SPECIES[def.likes].plural.toLowerCase()+'.</div>'+meatRows+
+    '<div class="h4" style="margin-top:12px">THEY WILL BUY LIVE STOCK (+12%)</div>'+stockRows+
+    '</div><div><div class="h4">THEIR STOCK FOR SALE</div>'+
+    (offers.length? offers.map((o,i)=>{
+      const b=SPECIES[o.sp].breeds[o.br];
+      return '<div class="row"><b>'+b.name+' '+SPECIES[o.sp].name.toLowerCase()+'</b> <s style="color:#8a9a78">'+(o.grown?'grown':'young')+' '+(o.sex==='F'?'&#9792;':'&#9794;')+'</s>'+
+      '<span class="spacer"></span><b class="money">'+money(o.price)+'</b>'+
+      '<button class="btn buy sm" onclick="rivalSellTo(\''+r.id+'\','+i+')">BUY</button></div>';
+    }).join('') : '<div class="empty">Ask to see their stock.</div>')+
+    '</div></div>', walletFoot('Partners bring more buyers to the market and take an 8% cut.'));
+};
+function rivalTalk(id){
+  const r=G.rivals.find(x=>x.id===id), def=rivalDef(id);
+  r.line=pick(def.lines);
+  if(G.day!==r.talkT){ r.talkT=G.day; r.rel=clamp(r.rel+2,0,100); }
+  renderUI();
+}
+function rivalStock(id){
+  const r=G.rivals.find(x=>x.id===id), def=rivalDef(id);
+  r.offer=[];
+  for(let i=0;i<3;i++){
+    const sp=chance(.55)?def.likes:pick(SPKEYS);
+    const br=pick(Object.keys(SPECIES[sp].breeds));
+    const grown=chance(.5)?1:0;
+    const price=Math.round(SPECIES[sp].breeds[br].price*M().animal*(grown?1:.55)*(.85-r.rel/600));
+    r.offer.push({sp,br,grown,sex:chance(.5)?'F':'M',price});
+  }
+  r.line='"Have a look. Cash only, and I do not do refunds."';
+  renderUI();
+}
+function rivalSellTo(id,i){
+  const r=G.rivals.find(x=>x.id===id), o=r.offer[i];
+  if(!o) return;
+  const pen=penFor(o.sp);
+  if(!pen){ toast('No pen with room for that.','bad'); return; }
+  if(G.cash<o.price){ toast('Not enough cash.','bad'); return; }
+  G.cash-=o.price; spawnAnimal(o.sp,o.br,pen,o.sex,o.grown?SPECIES[o.sp].breeds[o.br].grow:0);
+  r.offer.splice(i,1); r.rel=clamp(r.rel+4,0,100);
+  toast('Bought from '+esc(r.name)+' for '+money(o.price)+'.','good'); renderUI();
+}
+function rivalBuyMeat(id,mid){
+  const r=G.rivals.find(x=>x.id===id), m=G.meats.find(x=>x.id===mid);
+  if(!m) return;
+  const tot=rivalMeatOffer(r,m)*m.kg;
+  G.cash+=tot; G.stats.earned+=tot; G.stats.sold++;
+  G.meats.splice(G.meats.indexOf(m),1);
+  r.rel=clamp(r.rel+5,0,100);
+  toast('Moved '+m.kg.toFixed(1)+'kg to '+esc(r.name)+' for <b class="money">'+money(tot)+'</b>.','good');
+  renderUI();
+}
+function rivalBuyAnimal(id,aid){
+  const r=G.rivals.find(x=>x.id===id), a=G.animals.find(x=>x.id===aid);
+  if(!a) return;
+  const v=Math.round(liveValue(a)*1.12);
+  G.cash+=v; removeAnimal(a); r.rel=clamp(r.rel+3,0,100);
+  toast('Sold '+esc(a.name)+' to '+esc(r.name)+' for '+money(v)+'.','good'); renderUI();
+}
+function rivalPartner(id){
+  const r=G.rivals.find(x=>x.id===id);
+  if(r.partner||r.rel<60||G.rep<45) return;
+  r.partner=true; r.rel=clamp(r.rel+10,0,100); G.rep=clamp(G.rep+4,0,100);
+  r.line='"All right. My buyers are your buyers. I take eight percent and we both sleep fine."';
+  toast('<b>'+esc(r.name)+' is now your partner.</b> More buyers at market, 8% off the top.','good');
+  renderUI();
+}
+function rivalThreaten(id){
+  const r=G.rivals.find(x=>x.id===id);
+  r.rel=clamp(r.rel-28,0,100); r.partner=false;
+  const n=G.npcs.find(n=>n.rival===id);
+  if(chance(.5)&&n){ n.aggro=true; n.weapon=chance(.4)?'handgun':'bat'; r.line='"You want to do this here?"'; toast('<b>'+esc(r.name)+' squares up.</b>','bad'); closeUI(); }
+  else { r.line='"...Say that again and see what happens."'; toast(esc(r.name)+' will not forget that.','bad'); renderUI(); }
+}
+
+/* =========================================================================
+   MEAT MARKET  -  listing, buyers arriving, haggling
+   ========================================================================= */
+function openMarket(){
+  G.market={listed:{},buyers:[],pending:[],phase:'idle',filter:true,note:'',tick:0,round:0};
+  // pre-list everything, it is what people want 90% of the time
+  for(const m of G.meats) G.market.listed[m.id]=1;
+  openUI('market');
+}
+function listedLots(){ return G.meats.filter(m=>G.market.listed[m.id]); }
+function mktToggle(id){ const m=G.market; if(m.listed[id]) delete m.listed[id]; else m.listed[id]=1; renderUI(); }
+function mktAll(on){ const m=G.market; m.listed={}; if(on) for(const l of G.meats) m.listed[l.id]=1; renderUI(); }
+function mktFilter(){ G.market.filter=!G.market.filter; renderUI(); }
+function partnerOf(){ return G.rivals.find(r=>r.partner&&!r.dead)||null; }
+
+function mktCall(){
+  const m=G.market, lots=listedLots();
+  if(!lots.length){ toast('Put something on the board first.','bad'); return; }
+  m.buyers=[]; m.pending=[]; m.note=''; m.round++;
+  const partners=G.rivals.filter(r=>r.partner&&!r.dead).length;
+  let n=2+Math.floor(G.rep/22)+partners+ri(0,1);
+  if(G.rep<20) n=ri(0,2);
+  n=clamp(n,0,7);
+  for(let i=0;i<n;i++) m.pending.push(rnd(1.4,5.0));
+  m.phase=n?'waiting':'done';
+  if(!n) m.note='Nobody came to the board. Word about your meat has gotten around.';
+  renderUI();
+}
+function makeBuyer(){
+  const m=G.market, lots=listedLots();
+  if(!lots.length) return null;
+  const b={id:uid(),name:npcName(),mult:1,patience:1+(G.rep>=55?1:0)+ri(0,1),mood:'',status:'',leave:rnd(18,34)};
+  if(!m.filter&&chance(.38)){
+    const sp=pick(Object.keys(MEAT)), match=lots.filter(l=>l.sp===sp);
+    if(!match.length){
+      b.miss=true; b.sp=sp; b.leave=rnd(7,12);
+      b.status='"You got any '+MEAT[sp].name.toLowerCase()+'? No? Then I am wasting both our time."';
+      b.mood='not interested in your stock';
+      return b;
+    }
+    b.lot=pick(match).id;
+  } else b.lot=pick(lots).id;
+  const lot=G.meats.find(x=>x.id===b.lot);
+  if(!lot) return null;
+  b.sp=lot.sp; b.q=lot.q;
+  if(lot.q<45&&chance(clamp(.3+(45-G.rep)/110,0,.8))) return {refused:true,q:lot.q,name:b.name};
+  let per=MEAT[lot.sp].base*M().meat*packMult();
+  per*=.45+.75*(lot.q/100);
+  per*=.6+.7*(G.rep/100);
+  if(partnerOf()) per*=1.08;
+  per*=rnd(.9,1.1);
+  if(lot.q<45){ per*=.62; b.mood='suspicious'; b.status='"That colour is not right. Half price or I walk."'; }
+  else if(G.rep<25){ per*=.82; b.mood='wary'; b.status='"I have heard things about your operation. That is my price."'; }
+  else if(lot.q>=85){ b.mood='keen'; b.status='"Now that is a proper carcass."'; }
+  else b.status=pick(['"That is my offer."','"Fair price for what it is."','"I can move that today."','"Take it or leave it."']);
+  b.base=per; b.per=per;
+  b.maxMult=1.04+G.rep/300+rnd(0,.18)+(lot.q>=85?.08:0);
+  b.qty=Math.max(1,Math.round(lot.kg*rnd(.3,1)*10)/10);
+  return b;
+}
+function updateMarket(dt){
+  const m=G.market; if(!m) return;
+  let dirty=false;
+  for(let i=m.pending.length-1;i>=0;i--){
+    m.pending[i]-=dt;
+    if(m.pending[i]<=0){
+      m.pending.splice(i,1);
+      const b=makeBuyer();
+      if(b&&b.refused){ m.note='A buyer took one look at your '+qLabel(b.q)[0].toLowerCase()+' cuts and kept walking.'; }
+      else if(b) m.buyers.push(b);
+      dirty=true;
+    }
+  }
+  for(let i=m.buyers.length-1;i>=0;i--){
+    const b=m.buyers[i]; b.leave-=dt;
+    if(!b.miss&&!G.meats.some(l=>l.id===b.lot)){ m.buyers.splice(i,1); dirty=true; continue; }
+    if(b.leave<=0){ m.buyers.splice(i,1); m.note=b.name+' got bored and left.'; dirty=true; }
+  }
+  if(m.phase==='waiting'&&!m.pending.length&&!m.buyers.length) { m.phase='done'; dirty=true; }
+  m.tick+=dt;
+  if(dirty||m.tick>.35){ m.tick=0; renderUI(); }
+}
+function mktRemove(id){ const m=G.market; const i=m.buyers.findIndex(b=>b.id===id); if(i>=0) m.buyers.splice(i,1); }
+function mktAccept(id){
+  const m=G.market, b=m.buyers.find(x=>x.id===id); if(!b||b.miss) return;
+  const lot=G.meats.find(x=>x.id===b.lot);
+  if(!lot){ mktRemove(id); renderUI(); return; }
+  const qty=Math.min(b.qty,lot.kg);
+  const gross=qty*b.per;
+  const partner=partnerOf();
+  const cut=partner?gross*.08:0;
+  G.cash+=gross-cut; G.stats.earned+=gross-cut; G.stats.sold++;
+  lot.kg=Math.round((lot.kg-qty)*10)/10;
+  if(lot.kg<=.05){ G.meats.splice(G.meats.indexOf(lot),1); delete m.listed[lot.id]; }
+  let dr = lot.q>=85?1.8 : lot.q>=68?1.0 : lot.q>=45?.1 : -3.2;
+  if(b.mult>1.28) dr-=.5;
+  G.rep=clamp(G.rep+dr,0,100);
+  m.note='Sold '+qty.toFixed(1)+'kg to '+b.name+' at '+money(b.per)+'/kg &mdash; <b class="money">'+money(gross-cut)+'</b>'+
+         (cut?' after '+esc(partner.name)+' took '+money(cut):'')+'. Reputation '+(dr>=0?'+':'')+dr.toFixed(1)+'.';
+  toast('Deal closed: <b class="money">'+money(gross-cut)+'</b>',dr>=0?'good':'bad');
+  mktRemove(id); renderUI();
+}
+function mktCounter(id,pct){
+  const m=G.market, b=m.buyers.find(x=>x.id===id); if(!b||b.miss) return;
+  const nm=b.mult*(1+pct/100);
+  if(nm<=b.maxMult){
+    b.mult=nm; b.per=b.base*nm; b.mood='agreeable';
+    b.status=pick(['"Fine. '+money(b.per)+' a kilo and we are done."','"You drive a hard bargain. Done."','"All right, all right. '+money(b.per)+'."']);
+  }else{
+    b.patience--;
+    if(b.patience<=0){
+      b.mood='leaving'; b.status='"Forget it. Somebody else will sell to me."'; b.leave=Math.min(b.leave,1.6);
+    }else{
+      b.mood='annoyed';
+      b.status=pick(['"That is robbery and you know it."','"No. My price stands."','"You are dreaming. Same offer."','"Try that again and I walk."']);
+    }
+  }
+  renderUI();
+}
+function mktDecline(id){
+  const m=G.market, b=m.buyers.find(x=>x.id===id);
+  if(b) m.note='You waved '+b.name+' off.';
+  mktRemove(id); renderUI();
+}
+UIS.market=()=>{
+  const m=G.market, partner=partnerOf();
+  const lots=G.meats.map(l=>{
+    const L=qLabel(l.q), on=!!m.listed[l.id];
+    const est=MEAT[l.sp].base*M().meat*packMult()*(.45+.75*l.q/100)*(.6+.7*G.rep/100);
+    return '<div class="row '+(on?'sel':'')+'"><b>'+esc(l.name)+'</b> <span class="q '+L[1]+'">'+L[0]+' '+Math.round(l.q)+'</span>'+
+      '<span class="spacer"></span><s style="color:#8a9a78">'+l.kg.toFixed(1)+'kg &middot; ~'+money(est)+'/kg</s>'+
+      '<button class="btn sm '+(on?'on':'')+'" onclick="mktToggle('+l.id+')">'+(on?'LISTED':'LIST')+'</button></div>';
+  }).join('')||'<div class="empty">Cold store is empty. Slaughter something first.</div>';
+
+  let right='';
+  if(m.phase==='idle') right='<div class="empty">List what you are selling, then call the floor.</div>';
+  else if(m.phase==='waiting'&&!m.buyers.length) right='<div class="empty">Word is going round the market... buyers are coming.</div>';
+  else if(m.phase==='done'&&!m.buyers.length) right='<div class="empty">The floor has cleared. Call again when you are ready.</div>';
+
+  right+=m.buyers.map(b=>{
+    if(b.miss) return '<div class="row" style="opacity:.65;display:block"><b>'+esc(b.name)+'</b> &mdash; wants <b>'+MEAT[b.sp].name+'</b>'+
+      '<div class="mood">'+esc(b.status)+'</div>'+
+      '<div style="margin-top:6px"><button class="btn sm" onclick="mktDecline('+b.id+')">WAVE THEM OFF</button></div></div>';
+    const lot=G.meats.find(x=>x.id===b.lot);
+    if(!lot) return '';
+    const L=qLabel(lot.q);
+    const total=Math.min(b.qty,lot.kg)*b.per;
+    return '<div class="row" style="display:block"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
+      '<b>'+esc(b.name)+'</b><span class="q '+L[1]+'">'+MEAT[b.sp].name+' '+L[0]+'</span>'+
+      '<span class="spacer"></span><s style="color:#8a9a78">wants '+Math.min(b.qty,lot.kg).toFixed(1)+'kg</s></div>'+
+      '<div style="display:flex;align-items:baseline;gap:10px;margin:6px 0 2px"><b class="money" style="font-size:17px">'+money(b.per)+'/kg</b>'+
+      '<span style="color:#c3cfb2">= '+money(total)+'</span>'+
+      (b.mult>1?'<span style="color:#8fd66a;font-size:11px">+'+Math.round((b.mult-1)*100)+'% from opening</span>':'')+
+      '<span class="spacer"></span><span class="mood">patience '+'&#9679;'.repeat(Math.max(0,b.patience))+'</span></div>'+
+      '<div class="mood" style="margin-bottom:7px">'+esc(b.status)+'</div>'+
+      '<div style="display:flex;gap:5px;flex-wrap:wrap">'+
+      '<button class="btn buy sm" onclick="mktAccept('+b.id+')">ACCEPT '+money(total)+'</button>'+
+      '<button class="btn sm" onclick="mktCounter('+b.id+',5)">ASK +5%</button>'+
+      '<button class="btn sm" onclick="mktCounter('+b.id+',15)">ASK +15%</button>'+
+      '<button class="btn sm" onclick="mktCounter('+b.id+',25)">ASK +25%</button>'+
+      '<button class="btn dang sm" onclick="mktDecline('+b.id+')">DECLINE</button></div></div>';
+  }).join('');
+
+  const listedKg=listedLots().reduce((t,l)=>t+l.kg,0);
+  return panel('MEAT MARKET','Reputation '+Math.round(G.rep)+' &mdash; '+repWord()+(partner?' &middot; partnered with '+esc(partner.name):''),
+    '<div class="cols"><div><div class="h4">YOUR COLD STORE</div>'+lots+
+    '<div style="display:flex;gap:6px;margin:10px 0;flex-wrap:wrap">'+
+    '<button class="btn sm" onclick="mktAll(1)">LIST ALL</button>'+
+    '<button class="btn sm" onclick="mktAll(0)">CLEAR</button>'+
+    '<div class="chk '+(m.filter?'on':'')+'" onclick="mktFilter()"><i></i> Only buyers for what I am selling</div></div>'+
+    '<div style="font-size:11.5px;color:#8a9a78;line-height:1.5">'+(m.filter
+      ? 'Filter on: every buyer who walks up will be after meat you actually have listed.'
+      : 'Filter off: strangers will turn up asking for cuts you are not selling. More footfall, more time wasted.')+'</div>'+
+    '<button class="btn buy" style="width:100%;margin-top:12px;padding:9px" '+(listedKg>0?'':'disabled')+' onclick="mktCall()">'+
+      (m.round?'CALL THE FLOOR AGAIN':'CALL THE FLOOR')+' &mdash; '+listedKg.toFixed(1)+'kg LISTED</button>'+
+    '</div><div><div class="h4">BUYERS</div>'+right+
+    (m.note?'<div class="dlg" style="margin-top:10px">'+m.note+'</div>':'')+
+    '</div></div>',
+    walletFoot('Prime meat and a good name are what move the price. '+(partner?'Your partner takes 8%.':'')));
+};
+
+/* =========================================================================
+   RENDERING
+   ========================================================================= */
+function makePattern(base,dots){
+  const c=document.createElement('canvas'); c.width=c.height=128;
+  const g=c.getContext('2d'); g.fillStyle=base; g.fillRect(0,0,128,128);
+  for(let i=0;i<420;i++){
+    g.fillStyle=dots[i%dots.length];
+    const x=Math.random()*128,y=Math.random()*128,w=Math.random()*3+1;
+    g.fillRect(x,y,w,w);
+  }
+  return X.createPattern(c,'repeat');
+}
+let PAT_GRASS=null,PAT_DIRT=null;
+function initPatterns(){
+  PAT_GRASS=makePattern('#4c6b34',['#56793c','#425c2c','#5d8241','#3c5528']);
+  PAT_DIRT =makePattern('#6d6555',['#7a7261','#5f584a','#837a68','#544e42']);
+}
+function roundRect(x,y,w,h,r){
+  X.beginPath();
+  X.moveTo(x+r,y); X.arcTo(x+w,y,x+w,y+h,r); X.arcTo(x+w,y+h,x,y+h,r);
+  X.arcTo(x,y+h,x,y,r); X.arcTo(x,y,x+w,y,r); X.closePath();
+}
+function shadow(x,y,w,h){ X.fillStyle='rgba(0,0,0,.24)'; X.beginPath(); X.ellipse(x,y,w,h,0,0,7); X.fill(); }
+
+function drawGround(){
+  X.save(); X.translate(-G.cam.x,-G.cam.y);
+  X.fillStyle=G.map==='farm'?PAT_GRASS:PAT_DIRT;
+  X.save(); X.translate(0,0);
+  X.fillRect(0,0,worldW(),worldH());
+  X.restore();
+  if(G.map==='farm'){
+    // road strip along the top
+    X.fillStyle='#6b6154'; X.fillRect(0,0,FARM_W,72);
+    X.strokeStyle='#8a7f6c'; X.setLineDash([18,16]); X.lineWidth=3;
+    X.beginPath(); X.moveTo(0,36); X.lineTo(FARM_W,36); X.stroke(); X.setLineDash([]);
+    // buildable plot
+    const r=farmRect();
+    X.fillStyle='rgba(90,120,60,.14)'; X.fillRect(r.x,r.y,r.w,r.h);
+    X.strokeStyle='rgba(210,220,160,.30)'; X.lineWidth=2; X.strokeRect(r.x,r.y,r.w,r.h);
+    // farmhouse
+    X.fillStyle='#6b4a30'; X.fillRect(64,64,150,110);
+    X.fillStyle='#8a5f3c'; X.fillRect(64,64,150,26);
+    X.fillStyle='#3a2a1c'; X.fillRect(122,132,34,42);
+    X.fillStyle='#c8b06a'; X.fillRect(80,100,26,22); X.fillRect(172,100,26,22);
+    X.fillStyle='rgba(255,255,255,.9)'; X.font='bold 11px Verdana'; X.textAlign='center';
+    X.fillText('HOME',139,58);
+  }else{
+    X.fillStyle='#43413c';
+    X.fillRect(0,430,TOWN_W,70); X.fillRect(0,700,TOWN_W,70);
+    X.fillRect(520,0,70,TOWN_H); X.fillRect(980,0,70,TOWN_H);
+    X.strokeStyle='#c9bd7a'; X.lineWidth=3; X.setLineDash([22,20]);
+    X.beginPath();
+    X.moveTo(0,465); X.lineTo(TOWN_W,465); X.moveTo(0,735); X.lineTo(TOWN_W,735);
+    X.moveTo(555,0); X.lineTo(555,TOWN_H); X.moveTo(1015,0); X.lineTo(1015,TOWN_H);
+    X.stroke(); X.setLineDash([]);
+    // plaza
+    X.fillStyle='#7d7466'; X.fillRect(700,520,300,170);
+    for(const b of TOWN) drawBuilding(b);
+  }
+  X.restore();
+}
+function drawBuilding(b){
+  X.fillStyle='rgba(0,0,0,.3)'; X.fillRect(b.x+6,b.y+10,b.w,b.h);
+  X.fillStyle=b.c; X.fillRect(b.x,b.y,b.w,b.h);
+  X.fillStyle=b.roof; X.fillRect(b.x,b.y,b.w,34);
+  X.fillStyle='rgba(255,255,255,.10)'; X.fillRect(b.x,b.y+34,b.w,6);
+  // windows
+  X.fillStyle='#d8c98a';
+  const n=Math.floor(b.w/90);
+  for(let i=0;i<n;i++) X.fillRect(b.x+22+i*90,b.y+56,44,32);
+  // door
+  X.fillStyle='#2a2119'; X.fillRect(b.x+b.w/2-22,b.y+b.h-46,44,46);
+  X.fillStyle='#c9a24a'; X.fillRect(b.x+b.w/2+10,b.y+b.h-26,5,5);
+  // sign
+  X.fillStyle='rgba(0,0,0,.55)'; X.fillRect(b.x+8,b.y+6,b.w-16,22);
+  X.fillStyle='#f0dfa8'; X.font='bold 13px Verdana'; X.textAlign='center';
+  X.fillText(b.name,b.x+b.w/2,b.y+22);
+  // doormat marker
+  X.fillStyle='rgba(240,223,168,.25)'; X.beginPath(); X.ellipse(b.door.x,b.door.y,30,14,0,0,7); X.fill();
+}
+function drawStruct(s){
+  const d=STRUCTS[s.k];
+  if(isPen(s)){
+    X.fillStyle='rgba(120,95,55,.20)'; X.fillRect(s.x,s.y,s.w,s.h);
+    if(s.k==='coop'||s.k==='barn'){
+      const bh=s.k==='barn'?70:48;
+      X.fillStyle='rgba(0,0,0,.28)'; X.fillRect(s.x+5,s.y+8,s.w,bh);
+      X.fillStyle=s.k==='barn'?'#8c3f31':'#7a6242'; X.fillRect(s.x,s.y,s.w,bh);
+      X.fillStyle=s.k==='barn'?'#6a2e24':'#5c4831'; X.fillRect(s.x,s.y,s.w,18);
+      X.fillStyle='#2a2119'; X.fillRect(s.x+s.w/2-18,s.y+bh-30,36,30);
+      X.fillStyle='rgba(255,255,255,.85)'; X.font='bold 10px Verdana'; X.textAlign='center';
+      X.fillText(d.name.toUpperCase(),s.x+s.w/2,s.y+13);
+    }
+    // fence
+    X.strokeStyle='#8a6b40'; X.lineWidth=3;
+    X.strokeRect(s.x,s.y,s.w,s.h);
+    X.strokeStyle='rgba(160,125,75,.75)'; X.lineWidth=2;
+    X.strokeRect(s.x+5,s.y+5,s.w-10,s.h-10);
+    X.fillStyle='#9c7a48';
+    for(let x=s.x;x<=s.x+s.w;x+=TILE){ X.fillRect(x-2,s.y-3,5,7); X.fillRect(x-2,s.y+s.h-4,5,7); }
+    for(let y=s.y;y<=s.y+s.h;y+=TILE){ X.fillRect(s.x-3,y-2,7,5); X.fillRect(s.x+s.w-4,y-2,7,5); }
+    const list=penAnimals(s);
+    X.fillStyle='rgba(0,0,0,.45)'; X.fillRect(s.x+2,s.y+s.h-15,86,14);
+    X.fillStyle='#d8e0c8'; X.font='10px Verdana'; X.textAlign='left';
+    X.fillText(list.length+'/'+penCap(s)+(penSpecies(s)?' '+SPECIES[penSpecies(s)].plural:'')+(ulvl(s,'auto')?' ⚙':''),s.x+6,s.y+s.h-4);
+    return;
+  }
+  const col={trough:'#7a5c38',water:'#3f6f86',pond:'#2f6f8a',silo:'#9aa2a8',shed:'#7a6242',abat:'#8a4a44',cold:'#6f8a96',vet:'#4f7a68'}[s.k]||'#6a6a5a';
+  if(s.k==='pond'){
+    X.fillStyle='#2f6f8a'; X.beginPath(); X.ellipse(s.x+s.w/2,s.y+s.h/2,s.w/2,s.h/2,0,0,7); X.fill();
+    X.strokeStyle='#7a9a6a'; X.lineWidth=4; X.stroke();
+    X.fillStyle='rgba(255,255,255,.22)'; X.beginPath(); X.ellipse(s.x+s.w/2-12,s.y+s.h/2-8,18,8,0,0,7); X.fill();
+    return;
+  }
+  X.fillStyle='rgba(0,0,0,.28)'; X.fillRect(s.x+4,s.y+7,s.w,s.h);
+  X.fillStyle=col; X.fillRect(s.x,s.y,s.w,s.h);
+  X.fillStyle='rgba(255,255,255,.12)'; X.fillRect(s.x,s.y,s.w,Math.min(14,s.h/3));
+  if(s.w>=64){
+    X.fillStyle='rgba(0,0,0,.4)'; X.fillRect(s.x+3,s.y+s.h-17,s.w-6,15);
+    X.fillStyle='#e8e0c8'; X.font='bold 10px Verdana'; X.textAlign='center';
+    X.fillText(d.name.toUpperCase(),s.x+s.w/2,s.y+s.h-6);
+  }
+}
+function drawCar(x,y){
+  shadow(x,y+16,30,10);
+  X.fillStyle='#8a3a30'; roundRect(x-30,y-18,60,38,7); X.fill();
+  X.fillStyle='#6a2a22'; X.fillRect(x-30,y-4,60,10);
+  X.fillStyle='#9fc6d8'; X.fillRect(x-22,y-14,44,14);
+  X.fillStyle='#1a1a1a';
+  X.fillRect(x-33,y-12,7,12); X.fillRect(x+26,y-12,7,12);
+  X.fillRect(x-33,y+6,7,12); X.fillRect(x+26,y+6,7,12);
+  X.fillStyle='#e8d9a8'; X.fillRect(x-28,y+16,8,4); X.fillRect(x+20,y+16,8,4);
+}
+function drawAnimal(a){
+  const b=brOf(a), S=SPECIES[a.sp];
+  const grown=ageRatio(a), sc=(.55+.45*grown)*(S.sz/16);
+  const x=a.x,y=a.y;
+  shadow(x,y+7*sc,10*sc,4.5*sc);
+  const f=a.flip?-1:1;
+  X.save(); X.translate(x,y); X.scale(f*sc,sc);
+  // legs
+  X.fillStyle='#4a3a2a';
+  if(a.sp==='cow'||a.sp==='horse'||a.sp==='pig'||a.sp==='sheep'){
+    X.fillRect(-9,2,3,8); X.fillRect(-3,2,3,8); X.fillRect(4,2,3,8); X.fillRect(9,2,3,8);
+  }else{ X.fillStyle='#c9922e'; X.fillRect(-3,3,2,6); X.fillRect(2,3,2,6); }
+  // body
+  X.fillStyle=b.c1;
+  if(a.sp==='sheep'){
+    for(const p of [[-7,-3],[0,-6],[7,-3],[0,0],[-5,2],[5,2]]){ X.beginPath(); X.arc(p[0],p[1],6,0,7); X.fill(); }
+  }else{
+    X.beginPath(); X.ellipse(0,-2,12,7,0,0,7); X.fill();
+  }
+  // markings
+  X.fillStyle=b.c2;
+  if(a.sp==='cow'){ X.beginPath(); X.ellipse(-4,-4,4,3,0,0,7); X.fill(); X.beginPath(); X.ellipse(5,0,3.5,2.5,0,0,7); X.fill(); }
+  if(a.sp==='pig'){ X.beginPath(); X.ellipse(3,-4,3,2,0,0,7); X.fill(); }
+  if(a.sp==='horse'){ X.fillRect(-2,-10,3,8); }
+  // head
+  X.fillStyle=a.sp==='sheep'?b.c2:b.c1;
+  X.beginPath(); X.arc(12,-4,a.sp==='chicken'||a.sp==='duck'?4:5.5,0,7); X.fill();
+  if(a.sp==='cow'||a.sp==='sheep'||a.sp==='horse'){ X.fillStyle='#e8e0d0'; X.fillRect(15,-9,2,4); X.fillRect(10,-10,2,4); }
+  if(a.sp==='pig'){ X.fillStyle='#e8a898'; X.beginPath(); X.arc(16,-3,2.4,0,7); X.fill(); }
+  if(a.sp==='chicken'||a.sp==='duck'){
+    X.fillStyle=a.sp==='duck'?'#e8a92e':'#e0a030'; X.beginPath(); X.moveTo(15,-4); X.lineTo(21,-3); X.lineTo(15,-1); X.fill();
+    if(a.sp==='chicken'){ X.fillStyle='#d84a3a'; X.fillRect(11,-10,4,3); }
+  }
+  X.fillStyle='#1a1a1a'; X.beginPath(); X.arc(13.5,-5,1,0,7); X.fill();
+  X.restore();
+  // ready indicator
+  if(a.prod>=1){
+    const t=Math.sin(performance.now()/300)*2;
+    const res=SPECIES[a.sp].res;
+    X.fillStyle='rgba(0,0,0,.45)'; X.beginPath(); X.arc(x,y-20*sc+t,8,0,7); X.fill();
+    X.fillStyle=RES[res].col; X.beginPath(); X.arc(x,y-20*sc+t,5,0,7); X.fill();
+  }
+  if(a.full<25){
+    X.fillStyle='#e07a5a'; X.font='bold 12px Verdana'; X.textAlign='center';
+    X.fillText('!',x,y-24*sc);
+  }
+}
+function drawPerson(n){
+  const dead=n.dead>0;
+  X.save();
+  if(dead){ X.globalAlpha=Math.min(1,n.dead/6*1.4); X.translate(n.x,n.y); X.rotate(1.4); X.translate(-n.x,-n.y); }
+  shadow(n.x,n.y+9,9,4);
+  X.fillStyle=n.hitT>0?'#ffd0c0':n.col;
+  roundRect(n.x-7,n.y-9,14,19,4); X.fill();
+  X.fillStyle='#d9b48c'; X.beginPath(); X.arc(n.x,n.y-13,6,0,7); X.fill();
+  if(n.type==='cop'){ X.fillStyle='#22345c'; X.fillRect(n.x-7,n.y-19,14,5); X.fillStyle='#e8c85a'; X.fillRect(n.x-3,n.y-4,6,4); }
+  if(n.type==='rival'){ X.fillStyle='#3a2a1c'; X.fillRect(n.x-9,n.y-19,18,4); X.fillStyle='#3a2a1c'; X.beginPath(); X.arc(n.x,n.y-17,5,0,7); X.fill(); }
+  if(!dead&&n.weapon&&n.aggro){
+    X.strokeStyle='#d8d8d8'; X.lineWidth=3; X.beginPath();
+    X.moveTo(n.x,n.y); X.lineTo(n.x+Math.cos(n.face)*16,n.y+Math.sin(n.face)*16); X.stroke();
+  }
+  X.restore();
+  if(!dead){
+    if(n.hp<n.max){
+      X.fillStyle='rgba(0,0,0,.6)'; X.fillRect(n.x-15,n.y-26,30,4);
+      X.fillStyle=n.aggro?'#d85a44':'#7ac05a'; X.fillRect(n.x-15,n.y-26,30*clamp(n.hp/n.max,0,1),4);
+    }
+    if(n.type==='rival'||n.aggro){
+      X.fillStyle=n.aggro?'#ffb0a0':'#e8dfc0'; X.font='bold 10px Verdana'; X.textAlign='center';
+      X.fillText(n.name,n.x,n.y-30);
+    }
+  }
+  n.hitT=Math.max(0,(n.hitT||0)-.02);
+}
+function drawPlayer(){
+  if(P.dead>0){
+    X.save(); X.globalAlpha=.6; X.translate(P.x,P.y); X.rotate(1.4);
+    X.fillStyle='#c8b48c'; roundRect(-7,-9,14,19,4); X.fill(); X.restore(); return;
+  }
+  shadow(P.x,P.y+9,10,4.5);
+  const bob=Math.sin(P.anim)*1.5;
+  X.fillStyle='#3f5f7a'; roundRect(P.x-8,P.y-9+bob,16,19,4); X.fill();
+  X.fillStyle='#d9b48c'; X.beginPath(); X.arc(P.x,P.y-13+bob,6.5,0,7); X.fill();
+  X.fillStyle='#6b4a30'; X.beginPath(); X.ellipse(P.x,P.y-17+bob,11,4.5,0,0,7); X.fill();
+  X.beginPath(); X.arc(P.x,P.y-18+bob,6,0,7); X.fill();
+  // weapon
+  const w=WEAPONS[G.weapon];
+  if(G.weapon!=='fists'&&!G.holster){
+    const a=P.face, ex=P.x+Math.cos(a), ey=P.y+Math.sin(a)+bob;
+    const len=w.kind==='gun'?(G.weapon==='shotgun'?22:15):(G.weapon==='bat'?20:12);
+    const sw=P.swing>0?.8:0;
+    X.strokeStyle=w.kind==='gun'?'#3a3a3a':(G.weapon==='bat'?'#9a7040':'#d8d8d8');
+    X.lineWidth=w.kind==='gun'?5:(G.weapon==='bat'?6:3);
+    X.beginPath(); X.moveTo(ex+Math.cos(a+sw)*7,ey+Math.sin(a+sw)*7);
+    X.lineTo(ex+Math.cos(a+sw)*(7+len),ey+Math.sin(a+sw)*(7+len)); X.stroke();
+    if(P.swing>0&&w.kind==='gun'){
+      X.fillStyle='rgba(255,220,120,.9)';
+      X.beginPath(); X.arc(ex+Math.cos(a)*(9+len),ey+Math.sin(a)*(9+len),6,0,7); X.fill();
+    }
+  }
+  if(P.swing>0&&WEAPONS[G.weapon].kind!=='gun'){
+    X.strokeStyle='rgba(255,255,255,.45)'; X.lineWidth=3;
+    X.beginPath(); X.arc(P.x,P.y,WEAPONS[G.weapon].reach,P.face-.9,P.face+.9); X.stroke();
+  }
+}
+function updateFx(dt){
+  for(let i=G.fx.length-1;i>=0;i--){ const f=G.fx[i]; f.t+=dt; f.y-=22*dt; if(f.t>1.2) G.fx.splice(i,1); }
+}
+function draw(){
+  X.clearRect(0,0,VW,VH);
+  drawGround();
+  X.save(); X.translate(-G.cam.x,-G.cam.y);
+  if(G.map==='farm'){
+    for(const s of G.structs) drawStruct(s);
+    drawCar(CARSPOT.farm.x,CARSPOT.farm.y);
+  } else drawCar(CARSPOT.town.x,CARSPOT.town.y);
+  // build ghost
+  const g=buildGhost();
+  if(g){
+    X.globalAlpha=.55; X.fillStyle=g.ok?'#7ac05a':'#d85a44'; X.fillRect(g.x,g.y,g.w,g.h);
+    X.globalAlpha=1; X.strokeStyle=g.ok?'#bfe08a':'#ff9a88'; X.lineWidth=2; X.strokeRect(g.x,g.y,g.w,g.h);
+  }
+  const ents=[];
+  if(G.map==='farm') for(const a of G.animals) ents.push({y:a.y,f:()=>drawAnimal(a)});
+  else for(const n of G.npcs) ents.push({y:n.y,f:()=>drawPerson(n)});
+  ents.push({y:P.y,f:drawPlayer});
+  ents.sort((a,b)=>a.y-b.y);
+  for(const e of ents) e.f();
+  for(const b of G.bullets){
+    X.fillStyle=b.col; X.beginPath(); X.arc(b.x,b.y,2.6,0,7); X.fill();
+    X.strokeStyle='rgba(255,230,160,.35)'; X.lineWidth=2;
+    X.beginPath(); X.moveTo(b.x,b.y); X.lineTo(b.x-b.vx*.02,b.y-b.vy*.02); X.stroke();
+  }
+  for(const f of G.fx){
+    X.globalAlpha=clamp(1.2-f.t,0,1); X.fillStyle=f.col;
+    X.font='bold 13px Verdana'; X.textAlign='center'; X.fillText(f.text,f.x,f.y);
+  }
+  X.globalAlpha=1;
+  X.restore();
+  const na=nightAlpha();
+  if(na>0){ X.fillStyle='rgba(18,24,48,'+na+')'; X.fillRect(0,0,VW,VH); }
+  if(G.wanted>0){
+    const p=(Math.sin(performance.now()/180)+1)/2;
+    X.strokeStyle='rgba(220,60,50,'+(.25+p*.35)+')'; X.lineWidth=10; X.strokeRect(0,0,VW,VH);
+  }
+  if(P.dead>0){ X.fillStyle='rgba(60,0,0,.45)'; X.fillRect(0,0,VW,VH);
+    X.fillStyle='#ffd8c8'; X.font='bold 30px Verdana'; X.textAlign='center';
+    X.fillText('YOU WENT DOWN',VW/2,VH/2); }
+  drawMinimap();
+}
+function drawMinimap(){
+  if(G.map!=='farm') return;
+  const w=150,h=110,x=VW-w-10,y=10;
+  X.fillStyle='rgba(10,14,10,.72)'; roundRect(x,y,w,h,6); X.fill();
+  X.strokeStyle='#4a5a3a'; X.lineWidth=1; X.stroke();
+  const sx=w/FARM_W, sy=h/FARM_H;
+  const r=farmRect();
+  X.fillStyle='rgba(120,160,80,.25)'; X.fillRect(x+r.x*sx,y+r.y*sy,r.w*sx,r.h*sy);
+  for(const s of G.structs){ X.fillStyle=isPen(s)?'#9c7a48':'#7a8a96'; X.fillRect(x+s.x*sx,y+s.y*sy,Math.max(2,s.w*sx),Math.max(2,s.h*sy)); }
+  X.fillStyle='#8a3a30'; X.fillRect(x+CARSPOT.farm.x*sx-2,y+CARSPOT.farm.y*sy-2,5,4);
+  X.fillStyle='#ffe08a'; X.fillRect(x+P.x*sx-2,y+P.y*sy-2,4,4);
+}
+
+/* -------------------------------------------------------------------- HUD */
+let hudT=0;
+function hud(dt){
+  hudT-=dt; if(hudT>0) return; hudT=.15;
+  const feedLow=G.feed<dailyFeed()*1.5;
+  $hud.innerHTML=
+    '<div class="card">Day <b>'+G.day+'</b> &nbsp; '+timeStr()+'<br><s style="color:#8a9a78">'+(G.map==='farm'?esc(G.loc.name):'Town')+'</s></div>'+
+    '<div class="card">Cash<br><b class="money" style="font-size:15px">'+money(G.cash)+'</b></div>'+
+    '<div class="card">Reputation <b>'+Math.round(G.rep)+'</b> '+repWord()+'<br><span class="bar"><i style="width:'+Math.round(G.rep)+'%;background:linear-gradient(90deg,#b85,#cd6)"></i></span></div>'+
+    '<div class="card">Feed <b'+(feedLow?' style="color:#e07a5a"':'')+'>'+Math.round(G.feed)+'</b>/'+feedCap()+
+      '<br><s style="color:#8a9a78">herd eats '+dailyFeed().toFixed(1)+'/day</s></div>'+
+    '<div class="card">Stock <b>'+G.animals.length+'</b> &nbsp; Meat <b>'+G.meats.length+'</b><br><s style="color:#8a9a78">produce '+Math.round(prodTotal())+'/'+prodCap()+'</s></div>'+
+    (G.bank.balance>=1||G.bank.loan>=1?'<div class="card">Bank <b class="money">'+money(G.bank.balance)+'</b>'+
+      (G.bank.loan>=1?'<br><s style="color:#e07a5a">debt '+money(G.bank.loan)+', '+Math.max(0,G.bank.due)+'d</s>':'<br><s style="color:#8a9a78">+'+money(G.bank.balance*G.bank.rate)+'/day</s>')+'</div>':'')+
+    (G.wanted?'<div class="card" style="border-color:#a04030;color:#ffb0a0"><b>WANTED</b> '+'&#9733;'.repeat(G.wanted)+'<br><s>get to your car</s></div>':'');
+  const w=WEAPONS[G.weapon];
+  $bot.innerHTML='<div class="card">Health<br><span class="bar" style="width:150px"><i style="width:'+Math.round(P.hp/P.max*100)+'%;background:linear-gradient(90deg,#a33,#6c4)"></i></span> <b>'+Math.round(P.hp)+'</b></div>'+
+    '<div class="card">'+(G.holster&&G.weapon!=='fists'?'<s style="color:#8a9a78">stowed: </s>':'')+'<b>'+w.name+'</b>'+
+    (w.ammo?' <s style="color:#8a9a78">'+G.ammo[w.ammo]+'</s>':'')+(w.illegal?' <span style="color:#e07a5a">illegal</span>':'')+
+    '<br><s style="color:#8a9a78">'+WKEYS.filter(k=>G.owned[k]).map((k,i)=>(WKEYS.indexOf(k)+1)+':'+WEAPONS[k].name).join('  ')+'</s></div>';
+  $hint.innerHTML=(G.map==='farm'
+    ?'C collect &nbsp; B build &nbsp; G upgrade &nbsp; E use'
+    :'E use &nbsp; F mug &nbsp; click attack')+'<br>Q stock &nbsp; R ledger &nbsp; H help &nbsp; X stow';
+  // contextual prompt
+  let p='';
+  if(G.build) p='<b>Left click</b> to build here &nbsp;·&nbsp; <b>Shift</b> keep placing &nbsp;·&nbsp; <b>Esc</b> cancel';
+  else if(nearCar()) p='<b>E</b> &mdash; drive to '+(G.map==='farm'?'town':'the farm');
+  else{
+    const b=nearBuilding();
+    if(b) p='<b>E</b> &mdash; '+b.name;
+    else{
+      const n=nearestNpc(50,t=>!t.dead);
+      if(n) p='<b>E</b> &mdash; talk to '+esc(n.name)+(n.type==='civ'?' &nbsp;·&nbsp; <b>F</b> &mdash; rob them':'');
+      else{
+        const a=nearAnimal(), st=nearStruct();
+        if(a) p='<b>E</b> &mdash; '+esc(a.name)+' the '+brOf(a).name.toLowerCase()+
+          (a.prod>=1?' &nbsp;·&nbsp; <b>C</b> collect':'')+(st?' &nbsp;·&nbsp; <b>G</b> &mdash; upgrade the '+STRUCTS[st.k].name.toLowerCase():'');
+        else if(st) p='<b>E</b> or <b>G</b> &mdash; upgrade the '+STRUCTS[st.k].name.toLowerCase();
+      }
+    }
+  }
+  if(p){ $prompt.innerHTML=p; $prompt.classList.remove('hidden'); } else $prompt.classList.add('hidden');
+  if(G.cheatOpen) renderCheat();
+}
+
+/* ----------------------------------------------------------- time & loop */
+function stepWorld(dt){
+  const mins=dt*(1440/G.dayLen);
+  G.tmin+=mins;
+  while(G.tmin>=1440){ G.tmin-=1440; newDay(); }
+  updateAnimals(dt,dt/G.dayLen);
+}
+function newDay(){
+  G.day++;
+  rollPrices();
+  for(const r of G.rivals) if(!r.dead) r.rel=clamp(r.rel+(r.partner?1:0)-.3,0,100);
+  const notes=[];
+  // what the hired hands / egg belts / milking rigs brought in overnight
+  const auto=Object.keys(G.autoDay||{}).filter(k=>G.autoDay[k]>=1);
+  if(auto.length) notes.push('Your hands brought in '+auto.map(k=>Math.floor(G.autoDay[k])+' '+RES[k].name).join(', ')+'.');
+  G.autoDay={};
+  // stocked pond
+  let fish=0; for(const s of G.structs) if(s.k==='pond') fish+=55*ulvl(s,'fish');
+  if(fish){ G.cash+=fish; notes.push('The pond sold '+money(fish)+' of fish.'); }
+  // standing feed order
+  const silo=G.structs.find(s=>s.k==='silo'&&ulvl(s,'order'));
+  if(silo&&G.feed<feedCap()*.35){
+    const price=feedPrice()*1.1;
+    const n=Math.min(Math.floor(feedCap()-G.feed),Math.floor(G.cash/price));
+    if(n>0){ G.cash-=n*price; G.feed+=n; notes.push('Feed order delivered '+n+' units for '+money(n*price)+'.'); }
+    else notes.push('<span class="warn">Your standing feed order bounced &mdash; no cash.</span>');
+  }
+  // standing produce order
+  if(G.structs.some(s=>s.k==='shed'&&ulvl(s,'order'))){
+    let tot=0;
+    for(const k in G.prods){ const q=Math.floor(G.prods[k]); if(q>0){ tot+=q*RES[k].base*(G.priceMult[k]||1)*.92; G.prods[k]-=q; } }
+    if(tot>0){ G.cash+=tot; G.stats.earned+=tot; notes.push('The produce truck paid '+money(tot)+'.'); }
+  }
+  // standing cull order: only ever thins pens that are already full, never young stock
+  const abat=G.structs.find(s=>s.k==='abat'&&ulvl(s,'cull')&&togOn(s,'cull'));
+  if(abat){
+    let culled=0;
+    for(const pen of G.structs){
+      if(!isPen(pen)||penAnimals(pen).length<penCap(pen)) continue;
+      const grown=penAnimals(pen).filter(isAdult).sort((a,b)=>b.age-a.age);
+      if(grown.length){ slaughter(grown[0],true); culled++; }
+    }
+    if(culled) notes.push('The cull order took '+culled+' head out of full pens.');
+  }
+  bankDay(notes);
+  save();
+  toast('<b>Day '+G.day+'.</b> '+pick(['The herd is stirring.','Frost on the fence posts.','Trucks are already rolling into town.','Quiet morning.','Feed prices moved overnight.']));
+  for(const n of notes) toast(n);
+}
+function rollPrices(){
+  G.priceMult={feed:rnd(.85,1.2)};
+  for(const k in RES) G.priceMult[k]=rnd(.85,1.18);
+}
+function advanceTime(mins){
+  const secs=mins/(1440/G.dayLen);
+  let left=secs;
+  while(left>0){ const step=Math.min(left,.4); stepWorld(step); left-=step; }
+}
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(.05,(now-last)/1000); last=now;
+  if(G.scene==='play'){
+    const open=!!G.ui;
+    if(!open){ updatePlayer(dt); updateNpcs(dt); updateBullets(dt); }
+    if(!open||G.ui.name==='market') stepWorld(dt);
+    if(open&&G.ui.name==='market') updateMarket(dt);
+    updateFx(dt);
+    draw();
+    hud(dt);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ============================================================ cheat menu */
+const $cheat=EL('cheat'), $cheatTab=EL('cheatTab');
+function toggleCheat(){
+  G.cheatOpen=!G.cheatOpen;
+  $cheatTab.classList.toggle('active',G.cheatOpen);
+  $cheat.classList.toggle('hidden',!G.cheatOpen);
+  if(G.cheatOpen) renderCheat();
+}
+function cbtn(label,fn,on){ return '<button class="'+(on?'on':'')+'" onclick="'+fn+'">'+label+'</button>'; }
+function renderCheat(){
+  if(!G.cheatOpen) return;
+  const wStr=WKEYS.filter(k=>G.owned[k]).length+'/'+WKEYS.length+' weapons';
+  $cheat.innerHTML=
+    '<div class="stat2"><s>Cash</s><b>'+money(G.cash)+'</b></div>'+
+    '<div class="stat2"><s>Reputation</s><b>'+Math.round(G.rep)+'</b></div>'+
+    '<div class="stat2"><s>Wanted</s><b>'+G.wanted+'</b></div>'+
+    '<div class="stat2"><s>Day</s><b>'+G.day+', '+timeStr()+'</b></div>'+
+
+    '<h4>MONEY</h4><div class="row2">'+
+    cbtn('+$1,000',"cheatCash(1000)")+cbtn('+$10,000',"cheatCash(10000)")+cbtn('+$100,000',"cheatCash(100000)")+
+    '</div><div class="row2">'+cbtn('+$5,000 bank',"cheatBank(5000)")+cbtn('Clear loan',"cheatClearLoan()")+'</div>'+
+
+    '<h4>REPUTATION</h4><div class="row2">'+
+    cbtn('Max (100)',"cheatRep(100)")+cbtn('Good (75)',"cheatRep(75)")+cbtn('Zero (0)',"cheatRep(0)")+'</div>'+
+
+    '<h4>FARM</h4><div class="row2">'+
+    cbtn('Fill feed',"cheatFillFeed()")+cbtn('Fill storage',"cheatFillStorage()")+'</div>'+
+    '<div class="row2">'+cbtn('Grow all animals up',"cheatGrowAll()")+cbtn('Heal &amp; feed all',"cheatHealAll()")+'</div>'+
+    '<div class="row2">'+cbtn('Force births',"cheatForceBirths()")+cbtn('+1 Prime meat lot',"cheatAddMeat(95)")+'</div>'+
+    '<div class="row2">'+cbtn('Own all land',"cheatAllLand()")+cbtn('Max every upgrade',"cheatMaxUpgrades()")+'</div>'+
+
+    '<h4>PLAYER</h4><div class="row2">'+
+    cbtn('Full health',"cheatFullHP()")+cbtn('All weapons + ammo',"cheatAllWeapons()")+'</div>'+
+    '<div class="row2">'+cbtn('All tools',"cheatAllTools()")+'</div>'+
+    '<div class="row2">'+cbtn('God mode: '+(G.godmode?'ON':'off'),"cheatToggleGod()",G.godmode)+'</div>'+
+    '<div class="row2">'+cbtn('Cops ignore you: '+(G.noHeat?'ON':'off'),"cheatToggleHeat()",G.noHeat)+'</div>'+
+
+    '<h4>CRIME</h4><div class="row2">'+
+    cbtn('Clear wanted',"cheatClearWanted()")+cbtn('Max wanted',"cheatMaxWanted()")+'</div>'+
+
+    '<h4>TIME</h4><div class="row2">'+
+    cbtn('Skip to morning',"cheatSkipDay()")+cbtn('Skip 7 days',"cheatSkipDays(7)")+'</div>'+
+
+    '<h4>SAVE</h4><div class="row2">'+
+    cbtn('Save now',"save()")+cbtn('Wipe save',"wipe()")+'</div>';
+}
+function cheatCash(n){ G.cash+=n; toast('Cheat: +'+money(n),'good'); renderCheat(); save(); }
+function cheatBank(n){ G.bank.balance+=n; toast('Cheat: +'+money(n)+' on deposit','good'); renderCheat(); }
+function cheatClearLoan(){ G.bank.loan=0; G.bank.due=0; toast('Cheat: loan cleared','good'); renderCheat(); }
+function cheatRep(n){ G.rep=n; toast('Cheat: reputation set to '+n,'good'); renderCheat(); }
+function cheatFillFeed(){ G.feed=feedCap(); toast('Cheat: silo filled','good'); renderCheat(); }
+function cheatFillStorage(){
+  let left=prodCap()-prodTotal();
+  const keys=Object.keys(RES);
+  while(left>0.5){
+    let any=false;
+    for(const k of keys){ if(left<=0) break; const add=Math.min(30,left); G.prods[k]+=add; left-=add; any=true; }
+    if(!any) break;
+  }
+  toast('Cheat: produce storage filled','good'); renderCheat();
+}
+function cheatGrowAll(){
+  let n=0; for(const a of G.animals){ const g=brOf(a).grow; if(a.age<g){ a.age=g; n++; } }
+  toast('Cheat: '+n+' animal(s) grown to maturity','good'); renderCheat();
+}
+function cheatHealAll(){
+  for(const a of G.animals){ a.hp=100; a.full=100; }
+  toast('Cheat: whole herd healed and fed','good'); renderCheat();
+}
+function cheatForceBirths(){
+  let n=0;
+  for(const a of G.animals){
+    if(a.sex!=='F'||!isAdult(a)) continue;
+    const pen=G.structs.find(s=>s.id===a.pen); if(!pen) continue;
+    if(!penAnimals(pen).some(o=>o.sex==='M'&&isAdult(o))) continue;
+    a.breedT=brOf(a).breed; n++;
+  }
+  toast('Cheat: '+n+' female(s) primed to give birth next tick','good'); renderCheat();
+}
+function cheatAddMeat(q){
+  const sp=pick(SPKEYS), br=pick(Object.keys(SPECIES[sp].breeds));
+  G.meats.push({id:uid(),sp,br,kg:rnd(20,80),q,q0:q,day:G.day,name:MEAT[sp].name+' ('+SPECIES[sp].breeds[br].name+')'});
+  toast('Cheat: added a meat lot','good'); renderCheat();
+}
+function cheatAllLand(){ G.land=LAND.length-1; toast('Cheat: you now own '+LAND[G.land].name,'good'); renderCheat(); }
+function cheatMaxUpgrades(){
+  let n=0;
+  for(const s of G.structs){ s.up=s.up||{}; for(const u of upgList(s)){ if(ulvl(s,u.id)<u.max){ s.up[u.id]=u.max; n++; } } }
+  toast('Cheat: maxed '+n+' upgrade line(s)','good'); renderCheat();
+}
+function cheatFullHP(){ P.hp=P.max; toast('Cheat: full health','good'); renderCheat(); }
+function cheatAllWeapons(){
+  for(const k of WKEYS) G.owned[k]=true;
+  G.ammo.pistol=999; G.ammo.shell=999;
+  toast('Cheat: every weapon and full ammo','good'); renderCheat();
+}
+function cheatAllTools(){
+  G.tools.bucket=true; G.tools.quad=true;
+  if(!G.tools.vest){ G.tools.vest=true; P.max=150; P.hp=Math.min(P.max,P.hp+50); }
+  toast('Cheat: every tool owned','good'); renderCheat();
+}
+function cheatToggleGod(){ G.godmode=!G.godmode; toast('Cheat: god mode '+(G.godmode?'ON':'off'),G.godmode?'good':'bad'); renderCheat(); }
+function cheatToggleHeat(){ G.noHeat=!G.noHeat; toast('Cheat: cops '+(G.noHeat?'will ignore you':'back to normal'),G.noHeat?'good':'bad'); renderCheat(); }
+function cheatClearWanted(){ G.wanted=0; G.chaseT=0; toast('Cheat: wanted cleared','good'); renderCheat(); }
+function cheatMaxWanted(){ G.wanted=5; G.chaseT=0; toast('Cheat: wanted maxed','bad'); renderCheat(); }
+function cheatSkipDay(){
+  let mins=(7*60-G.tmin+1440)%1440; if(mins<30) mins+=1440;
+  advanceTime(mins); toast('Cheat: skipped to morning','good'); renderCheat();
+}
+function cheatSkipDays(n){ advanceTime(1440*n); toast('Cheat: skipped '+n+' days','good'); renderCheat(); }
+
+/* ------------------------------------------------------------ save / load */
+const SKEY='ranchempire.v1';
+function save(){
+  if(G.scene!=='play') return;
+  try{
+    localStorage.setItem(SKEY,JSON.stringify({
+      loc:G.loc.id,day:G.day,tmin:G.tmin,cash:G.cash,rep:G.rep,feed:G.feed,prods:G.prods,
+      meats:G.meats,animals:G.animals,structs:G.structs,ammo:G.ammo,owned:G.owned,weapon:G.weapon,
+      tools:G.tools,land:G.land,rivals:G.rivals,stats:G.stats,map:G.map,bank:G.bank,autoDay:G.autoDay,
+      px:P.x,py:P.y,hp:P.hp,max:P.max,uid:UID,priceMult:G.priceMult
+    }));
+  }catch(e){}
+}
+function loadSave(){
+  try{ const s=JSON.parse(localStorage.getItem(SKEY)); return s&&s.loc?s:null; }catch(e){ return null; }
+}
+function doLoad(){
+  const s=loadSave(); if(!s) return;
+  G.loc=LOCS.find(l=>l.id===s.loc)||LOCS[0]; G.mods=G.loc.mods;
+  G.day=s.day; G.tmin=s.tmin; G.cash=s.cash; G.rep=s.rep; G.feed=s.feed;
+  G.prods=Object.assign({milk:0,egg:0,wool:0,truffle:0,manure:0,duckegg:0},s.prods);
+  G.meats=s.meats||[]; G.animals=s.animals||[]; G.structs=s.structs||[];
+  for(const st of G.structs){ st.up=st.up||{}; st.tog=st.tog||{}; }
+  G.bank=Object.assign({balance:0,rate:.018,sec:0,robbedDay:-99,loan:0,due:0,heist:false},s.bank||{});
+  G.bank.heist=false;
+  G.autoDay=s.autoDay||{};
+  G.ammo=s.ammo||{pistol:0,shell:0}; G.owned=s.owned||{fists:true}; G.weapon=s.weapon||'fists';
+  G.tools=s.tools||{}; G.land=s.land||0; G.stats=Object.assign(G.stats,s.stats||{});
+  G.rivals=RIVALDEF.map(d=>{
+    const f=(s.rivals||[]).find(r=>r.id===d.id)||{};
+    return {id:d.id,name:d.name,col:d.col,likes:d.likes,rel:f.rel!==undefined?f.rel:30,
+            partner:!!f.partner,dead:!!f.dead,talkT:0};
+  });
+  G.priceMult=s.priceMult||{}; if(!G.priceMult.feed) rollPrices();
+  UID=Math.max(s.uid||1,1000);
+  G.map=s.map||'farm'; P.x=s.px; P.y=s.py; P.hp=s.hp; P.max=s.max||100;
+  G.holster=WEAPONS[G.weapon].illegal;
+  G.scene='play';
+  if(G.map==='town') spawnTown(); else G.npcs=[];
+  G.cam.x=clamp(P.x-VW/2,0,Math.max(0,worldW()-VW));
+  G.cam.y=clamp(P.y-VH/2,0,Math.max(0,worldH()-VH));
+  $start.classList.add('hidden');
+  toast('Loaded &mdash; day '+G.day+' at '+esc(G.loc.name)+'.','good');
+}
+function wipe(){
+  if(!confirm('Abandon this farm and start over? Everything is lost.')) return;
+  try{ localStorage.removeItem(SKEY); }catch(e){}
+  location.reload();
+}
+
+/* ------------------------------------------------------------------- boot */
+function boot(){
+  initPatterns();
+  rollPrices();
+  buildStartScreen();
+  const s=loadSave();
+  if(s){
+    const d=document.createElement('div');
+    d.className='loc'; d.style.borderColor='#a5c273';
+    d.style.width='100%'; d.style.maxWidth='1020px'; d.style.marginBottom='12px';
+    d.innerHTML='<h3>&#9654; CONTINUE</h3><div class="d" style="min-height:0">'+
+      esc((LOCS.find(l=>l.id===s.loc)||{}).name||'Your farm')+' &mdash; day '+s.day+
+      ', '+money(s.cash)+', '+((s.animals||[]).length)+' head of stock.</div>';
+    d.onclick=doLoad;
+    $locs.parentNode.insertBefore(d,$locs);
+  }
+  requestAnimationFrame(frame);
+}
+boot();
+</script>
+</body>
+</html>
