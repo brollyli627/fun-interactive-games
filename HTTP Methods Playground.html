@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HTTP Methods Playground</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--tx:#1b1f2a;--mu:#667085;--bd:#e3e6ee;--code:#eef0f6;--hl:#fff1a8;--GET:#2563eb;--POST:#16a34a;--PUT:#d97706;--PATCH:#9333ea;--DELETE:#dc2626;--m:var(--GET);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1218;--card:#181c25;--tx:#e8ebf2;--mu:#98a2b3;--bd:#2a3040;--code:#11141b;--hl:#5c4d00}}
+:root[data-theme="dark"]{--bg:#0f1218;--card:#181c25;--tx:#e8ebf2;--mu:#98a2b3;--bd:#2a3040;--code:#11141b;--hl:#5c4d00}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:980px;margin:0 auto;padding:16px}
+h1{font-size:1.5rem;margin:.2em 0}h3{margin:0 0 8px;font-size:.95rem}
+.mu{color:var(--mu)}
+#tabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+#tabs button{flex:1;min-width:72px;padding:10px;border:2px solid var(--c);color:var(--c);background:transparent;border-radius:10px;font:700 .95rem ui-monospace,Menlo,monospace;cursor:pointer}
+#tabs button.on{background:var(--c);color:#fff}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:14px;min-width:0}
+.pill{background:var(--m);color:#fff;font:700 .85rem ui-monospace,Menlo,monospace;padding:3px 10px;border-radius:99px;margin-right:8px}
+.tags{display:flex;gap:8px;flex-wrap:wrap}.tags span{background:var(--code);padding:3px 10px;border-radius:8px;font-size:.82rem}
+.tip{border-left:4px solid var(--m);padding-left:10px;margin:10px 0 0}
+#form{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+label{display:flex;flex-direction:column;font-size:.75rem;color:var(--mu)}
+input{padding:8px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit;width:140px}
+#id{width:70px}
+button.b{border:0;padding:10px 22px;border-radius:10px;font:700 1rem system-ui;cursor:pointer;color:#fff;background:var(--m)}
+button.b:disabled{opacity:.5;cursor:wait}button.g{background:var(--code);color:var(--tx)}
+#stage{position:relative;margin-top:16px}
+.lane{position:absolute;top:13px;left:16%;right:16%;border-top:2px dashed var(--bd)}
+#pkt{position:absolute;top:0;left:0;transform:translateX(-50%);z-index:2;padding:3px 10px;border-radius:99px;color:#fff;font:700 .75rem ui-monospace,Menlo,monospace;white-space:nowrap;transition:left .8s ease,background .3s}
+.nodes{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:10px;padding-top:44px}
+.node{border:2px solid var(--bd);border-radius:12px;padding:10px;text-align:center;background:var(--bg);transition:.3s;min-width:0}
+.node.on{border-color:var(--m);box-shadow:0 0 0 3px color-mix(in srgb,var(--m) 25%,transparent)}
+.node.miss{border-color:var(--DELETE);animation:shake .4s}
+.node h4{margin:0 0 4px;font-size:.85rem}.node small{color:var(--mu);font-size:.72rem}
+.row{font-size:.76rem;padding:4px 6px;border-radius:6px;border:1px solid var(--bd);margin-top:4px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row.read{--k:var(--GET)}.row.new{--k:var(--POST)}.row.put{--k:var(--PUT)}.row.patch{--k:var(--PATCH)}.row.del{--k:var(--DELETE);text-decoration:line-through}
+.row.read,.row.new,.row.put,.row.patch,.row.del{border-color:var(--k);background:color-mix(in srgb,var(--k) 22%,transparent);animation:pop .5s}
+#steps{display:flex;gap:6px;flex-wrap:wrap;padding:0;margin:14px 0 0;list-style:none;counter-reset:s}
+#steps li{flex:1;min-width:130px;font-size:.76rem;padding:8px;border-radius:8px;background:var(--code);color:var(--mu);counter-increment:s}
+#steps li::before{content:counter(s) ". ";font-weight:700}
+#steps li.done{color:var(--tx)}#steps li.on{background:var(--m);color:#fff}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+pre{margin:0;background:var(--code);padding:10px;border-radius:8px;overflow-x:auto;font:.76rem/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;min-height:60px}
+.ln{display:block;padding:0 6px;margin:0 -6px;border-radius:4px}.ln.hl{background:var(--hl);font-weight:700}
+@keyframes pop{0%{transform:scale(.9);opacity:.3}100%{transform:none;opacity:1}}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+</style></head><body><main>
+<h1>🌐 HTTP Methods Playground</h1>
+<div class="mu">Pick a method, press <b>Send</b>, and watch the request travel to a tiny server and its database. Everything runs in your browser, so you can't break anything.</div>
+<div id="tabs"></div>
+<section class="card" id="info"></section>
+<section class="card">
+ <div id="form">
+  <label id="fid">user id<input id="id" value="1" inputmode="numeric"></label>
+  <label id="fnm" hidden>name<input id="nm"></label>
+  <label id="frl" hidden>role<input id="rl"></label>
+  <button class="b" id="go">Send ▶</button><button class="b g" id="rs">Reset data</button>
+ </div>
+ <div class="mu" id="hint" style="font-size:.8rem;margin-top:6px"></div>
+ <div id="stage"><div class="lane"></div><div id="pkt"></div>
+  <div class="nodes">
+   <div class="node" id="cl"><h4>💻 Client</h4><small>your browser</small></div>
+   <div class="node" id="sv"><h4>🖥️ Server</h4><small id="route"></small></div>
+   <div class="node" id="dbx"><h4>🗄️ Database</h4><div id="rows"></div></div>
+  </div>
+ </div>
+ <ol id="steps"></ol>
+</section>
+<div class="grid">
+ <div class="card"><h3>📤 Raw HTTP request</h3><pre id="req"></pre></div>
+ <div class="card"><h3>📥 Raw HTTP response</h3><pre id="res"></pre></div>
+</div>
+<div class="grid">
+ <div class="card"><h3>🖥️ Server code (the running line lights up)</h3><pre id="code"></pre></div>
+ <div class="card"><h3>💻 Client code</h3><pre id="cc"></pre></div>
+</div>
+</main>
+<script>
+const $=s=>document.querySelector(s),sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const val=v=>v?esc(v):'<i>—</i>';
+// hl = code lines to light up: [route matched, database work, success reply, error reply]
+const C={
+GET:{n:'Read',e:'📖',d:'Asks the server for data. Nothing on the server changes.',a:'Like reading a menu: you look, you do not change anything.',safe:'Yes',idem:'Yes',body:'No',
+ db:'READ the row (nothing changes)',tip:'Send it again: same answer every time. Clear the id box to get ALL users, or try id 99 for a 404.',
+ code:["app.get('/users/:id', (req, res) => {","  const user = db.find(u => u.id == req.params.id);","  if (!user) return res.sendStatus(404);","  res.status(200).json(user);","});"],hl:[0,1,3,2]},
+POST:{n:'Create',e:'➕',d:'Sends new data so the server CREATES a new thing. The server picks its id.',a:'Like placing a new order: every order you place is a new one.',safe:'No',idem:'No',body:'Yes',
+ db:'INSERT a brand new row',tip:'Press Send twice: you get TWO new users. That is why POST is not idempotent.',
+ code:["app.post('/users', (req, res) => {","  const user = { id: nextId++, ...req.body };","  db.push(user);","  res.status(201).json(user);","});"],hl:[0,2,3,3]},
+PUT:{n:'Replace',e:'🔁',d:'REPLACES a whole existing thing with exactly what you send.',a:'Like swapping the entire dish: whatever you leave off the new plate is gone.',safe:'No',idem:'Yes',body:'Yes',
+ db:'REPLACE the whole row',tip:'Clear the role box and Send: the role is wiped, because PUT replaces everything. Send twice: same result.',
+ code:["app.put('/users/:id', (req, res) => {","  const i = db.findIndex(u => u.id == req.params.id);","  if (i < 0) return res.sendStatus(404);","  db[i] = { id: db[i].id, ...req.body };","  res.status(200).json(db[i]);","});"],hl:[0,3,4,2]},
+DELETE:{n:'Delete',e:'🗑️',d:'Tells the server to REMOVE a thing.',a:'Like cancelling an order: it is gone.',safe:'No',idem:'Yes',body:'No',
+ db:'REMOVE the row',tip:'Send twice: first 204, then 404. But the end result (user gone) is the same, so DELETE is idempotent.',
+ code:["app.delete('/users/:id', (req, res) => {","  const i = db.findIndex(u => u.id == req.params.id);","  if (i < 0) return res.sendStatus(404);","  db.splice(i, 1);","  res.sendStatus(204);","});"],hl:[0,3,4,2]},
+PATCH:{n:'Update part',e:'✏️',d:'Changes ONLY the fields you send. Everything else stays as it is.',a:'Like telling the chef: no onions, please. The rest of the dish stays the same.',safe:'No',idem:'Usually',body:'Yes',
+ db:'UPDATE only the changed fields',tip:'Change just ONE box and Send: only that field travels in the request. Compare with PUT!',
+ code:["app.patch('/users/:id', (req, res) => {","  const user = db.find(u => u.id == req.params.id);","  if (!user) return res.sendStatus(404);","  Object.assign(user, req.body);","  res.status(200).json(user);","});"],hl:[0,3,4,2]}
+};
+let cur='GET',busy=false,db,nid;
+function reset(){db=[{id:1,name:'Ada',role:'Engineer'},{id:2,name:'Linus',role:'Maintainer'},{id:3,name:'Grace',role:'Admiral'}];nid=4}
+// the "server": takes method + id + body, changes the data, returns [status, text, data, touchedId, kind]
+function handle(m,id,b){
+ const f=db.find(u=>u.id==id),nf=[404,'Not Found',{error:'User '+id+' not found'},null,'miss'];
+ if(m=='GET')return id===''?[200,'OK',db.slice(),'all','read']:f?[200,'OK',f,f.id,'read']:nf;
+ if(m=='POST'){const u={id:nid++,...b};db.push(u);return[201,'Created',u,u.id,'new']}
+ if(!f)return nf;
+ if(m=='PUT'){const i=db.indexOf(f);db[i]={id:f.id,...b};return[200,'OK',db[i],f.id,'put']}
+ if(m=='PATCH'){Object.assign(f,b);return[200,'OK',f,f.id,'patch']}
+ db.splice(db.indexOf(f),1);return[204,'No Content',null,f.id,'del'];
+}
+function renderDb(flash,kind){
+ const box=$('#rows');box.innerHTML='';
+ db.forEach(u=>{const d=document.createElement('div');d.className='row';d.dataset.id=u.id;
+  d.innerHTML='<b>#'+u.id+'</b> '+val(u.name)+' · '+val(u.role);
+  if(flash=='all'||flash==u.id)d.classList.add(kind);box.appendChild(d)});
+ if(kind=='miss')$('#dbx').classList.add('miss');
+}
+function gather(){
+ const m=cur,idv=$('#id').value.trim(),n=$('#nm').value.trim(),r=$('#rl').value.trim(),rec=db.find(u=>u.id==idv);
+ let body=null;
+ if(m=='POST'||m=='PUT'){body={};if(n)body.name=n;if(r)body.role=r}
+ if(m=='PATCH'){body={};if(n&&(!rec||n!==rec.name))body.name=n;if(r&&(!rec||r!==rec.role))body.role=r}
+ return{idv,body,path:m=='POST'?'/users':'/users'+(idv?'/'+idv:'')};
+}
+const rawReq=(m,p,b)=>m+' '+p+' HTTP/1.1\nHost: api.example.com'+(b?'\nContent-Type: application/json\nContent-Length: '+JSON.stringify(b).length+'\n\n'+JSON.stringify(b,null,2):'');
+const rawRes=r=>'HTTP/1.1 '+r[0]+' '+r[1]+(r[0]==201?'\nLocation: /users/'+r[2].id:'')+(r[2]?'\nContent-Type: application/json\n\n'+JSON.stringify(r[2],null,2):'\n\n(empty body)');
+const clientCode=(m,p,b)=>"fetch('"+p+"', {\n  method: '"+m+"'"+(b?",\n  headers: {'Content-Type': 'application/json'},\n  body: JSON.stringify("+JSON.stringify(b)+")":'')+"\n})\n.then(res => console.log(res.status));";
+function showCode(lines){const p=$('#code');p.innerHTML='';lines.forEach(t=>{const s=document.createElement('span');s.className='ln';s.textContent=t;p.appendChild(s)})}
+const hl=n=>document.querySelectorAll('#code .ln').forEach((s,i)=>s.classList.toggle('hl',i===n));
+const steps=n=>document.querySelectorAll('#steps li').forEach((l,i)=>{l.classList.toggle('on',i==n);l.classList.toggle('done',i<n)});
+function at(el,t,c){const p=$('#pkt');p.textContent=t;p.style.background=c;p.style.left=(el.offsetLeft+el.offsetWidth/2)+'px'}
+function home(){const p=$('#pkt');p.style.transition='none';at($('#cl'),'✉️','var(--mu)');p.offsetWidth;p.style.transition=''}
+function fill(){
+ const rec=db.find(u=>u.id==$('#id').value.trim());
+ if(cur=='POST'){$('#nm').value='Alan';$('#rl').value='Mathematician'}
+ else if(cur=='PUT'||cur=='PATCH'){$('#nm').value=rec&&rec.name||'';$('#rl').value=rec&&rec.role||''}
+}
+function pick(m){
+ if(busy)return;cur=m;const c=C[m];
+ document.documentElement.style.setProperty('--m','var(--'+m+')');
+ document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.m==m));
+ $('#info').innerHTML='<div><span class="pill">'+m+'</span><b>'+c.e+' '+c.n+'</b></div><p>'+c.d+' <span class="mu">'+c.a+'</span></p><div class="tags"><span>Safe (never changes data): <b>'+c.safe+'</b></span><span>Idempotent (10x = 1x): <b>'+c.idem+'</b></span><span>Request body: <b>'+c.body+'</b></span></div><p class="tip">💡 '+c.tip+'</p>';
+ $('#fid').hidden=m=='POST';$('#fnm').hidden=$('#frl').hidden=m=='GET'||m=='DELETE';
+ $('#id').placeholder=m=='GET'?'all':'1';
+ $('#hint').textContent=m=='PATCH'?'PATCH only sends the fields you change.':m=='PUT'?'PUT sends every field in the boxes.':'';
+ $('#route').textContent=m+(m=='POST'?' /users':' /users/:id');
+ $('#steps').innerHTML=['Client builds the request','Request travels to the server','Server matches method + path to a handler','Database: '+c.db,'Response travels back'].map(t=>'<li>'+t+'</li>').join('');
+ showCode(c.code);fill();
+ $('#req').textContent='Press Send to make a request…';$('#res').textContent='';$('#cc').textContent='';
+ home();
+}
+async function send(){
+ if(busy)return;busy=true;$('#go').disabled=true;
+ const m=cur,c=C[m],col='var(--'+m+')',{idv,body,path}=gather();
+ $('#req').textContent=rawReq(m,path,body);$('#res').textContent='…waiting for the server';$('#cc').textContent=clientCode(m,path,body);
+ hl(-1);
+ steps(0);at($('#cl'),m,col);await sleep(700);
+ steps(1);at($('#sv'),m+' '+path,col);await sleep(1000);
+ steps(2);hl(c.hl[0]);$('#sv').classList.add('on');await sleep(1100);
+ steps(3);at($('#dbx'),m,col);await sleep(1000);hl(c.hl[1]);
+ if(m=='DELETE'){const row=document.querySelector('.row[data-id="'+idv+'"]');if(row)row.classList.add('del');await sleep(800)}
+ const r=handle(m,idv,body);renderDb(r[3],r[4]);await sleep(1100);
+ const ok=r[0]<400,rc=ok?'var(--POST)':'var(--DELETE)';
+ steps(4);hl(ok?c.hl[2]:c.hl[3]);at($('#sv'),String(r[0]),rc);await sleep(800);
+ at($('#cl'),r[0]+' '+r[1],rc);await sleep(900);
+ $('#res').textContent=rawRes(r);$('#sv').classList.remove('on');$('#dbx').classList.remove('miss');
+ steps(5);fill();busy=false;$('#go').disabled=false;
+}
+Object.keys(C).forEach(m=>{const b=document.createElement('button');b.dataset.m=m;b.textContent=m;b.style.setProperty('--c','var(--'+m+')');b.onclick=()=>pick(m);$('#tabs').appendChild(b)});
+$('#go').onclick=send;
+$('#id').oninput=()=>{if(!busy)fill()};
+$('#rs').onclick=()=>{if(busy)return;reset();renderDb();fill();$('#res').textContent='Data reset.'};
+window.onresize=()=>{if(!busy)home()};
+reset();renderDb();pick('GET');
+</script></body></html>
